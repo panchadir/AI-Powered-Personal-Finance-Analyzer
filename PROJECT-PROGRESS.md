@@ -395,6 +395,114 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 ---
 
+## Step 10 — Product Brief (Phase 1, WDS Module)
+
+**Timestamp:** 2026-07-07 (this conversation, branch `bmad-wds-project-brief`)
+**BMAD Phase:** Phase 1: Product Brief (Whiteport Design Studio methodology — first use of the `wds-*` module in this project; all prior steps used `bmad-cis-*` / `bmad-brainstorming` / `bmad-domain-research` / `bmad-market-research` skills instead)
+**Workflow:** `wds-1-project-brief` (Complete Brief flow declared, but executed as a single synthesized draft rather than the full 36-step sequential dialog — see Deviation note below)
+**User Goal:** Produce the Phase 1 Product Brief strategic-foundation document, explicitly requested to be completed in **15 minutes**, using the six prior BMAD artifacts already in `_bmad-output/` as source material rather than re-eliciting the same information conversationally.
+**BMAD Command:** `/wds-1-project-brief` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Saga (Business Analyst persona defined in `.claude/skills/wds-1-project-brief/steps-c/step-01-init.md`)
+- **Role:** Strategic Business Analyst / Product Brief facilitator
+- **Reason Invoked:** User ran `/wds-1-project-brief` to establish Phase 1 of the WDS pipeline (vision, positioning, business model, ICP, success criteria, competitive landscape, constraints, platform strategy, tone of voice) as the strategic foundation for all subsequent design work.
+- **Triggering Context:** Direct slash-command invocation.
+- **Input:** All six pre-existing `_bmad-output/` artifacts, read in full: `brainstorm-intent.md`, `design-thinking-2026-07-07.md`, `innovation-strategy-2026-07-07.md`, `problem-solution-2026-07-07.md`, `market-personal-finance-copilot-market-india-research-2026-07-07.md`, `domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md`.
+- **Output:** `A-Product-Brief/project-brief.md` (Complete Brief) and a newly created `_progress/00-design-log.md`.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `wds-1-project-brief`
+- **Purpose:** Establish the Phase 1 strategic foundation (vision → positioning → business model → ICP → success criteria → competitive landscape → constraints → platform strategy → tone of voice) via either a 36-step "Complete" dialog or a lightweight "Simplified" flow.
+- **Reason Invoked:** First Phase 1 workflow run for this project; no `{output_folder}/wds-workflow-status.yaml` existed, so `brief_level` was undetermined at invocation time.
+- **Contribution:** Produced a fully-populated Complete Brief covering every template section (Vision, Positioning, Business Model, ICP, Success Criteria, Competitive Landscape, Constraints, Platform & Device Strategy, Tone of Voice, Business Context, Next Steps).
+- **Triggering Agent:** Saga.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Loaded `workflow.md` → found no `_bmad/wds/config.yaml`-referenced `wds-workflow-status.yaml` and no `_progress/00-design-log.md` (both prerequisites for automatic brief-level/mode resolution) → asked the user via `AskUserQuestion` whether to run Complete vs. Simplified → user did not select either option, instead instructing to read all `_bmad-output/**` markdown files and complete the brief within 15 minutes → read all 6 prior artifacts in full → synthesized a Complete-level brief directly into the template structure (`templates/project-brief.template.md`) in a single pass → wrote `_progress/00-design-log.md` (did not previously exist) using the Phase-0 design-log template plus the Step-35 "Progress"/"Key Decisions" sections → presented the draft to the user for review rather than looping through the 36 prescribed dialog steps.
+- **Inputs:** 6 prior BMAD artifacts (Steps 2, 3, 4, 5, 7, 8 of this tracker).
+- **Outputs:** `A-Product-Brief/project-brief.md`, `_progress/00-design-log.md`.
+- **Key Decisions (Observed, made either by the user or by Saga during synthesis):**
+  - Brief level: **Complete**, but delivered as a single synthesized draft instead of the prescribed sequential 36-step interactive flow, per the user's explicit 15-minute constraint.
+  - Competitor list corrected in the brief per Steps 7/8 findings: axio (not Walnut); Jupiter, Fi, and Cleo named as closer competitive threats than the original Step 4 innovation-strategy framing assumed; Mint marked defunct/historical-only.
+  - Pricing (₹199/₹499) and retention/conversion targets (D30 ≥40%, paid-conversion ≥5%) explicitly reframed in the brief as **hypotheses requiring Wizard-of-Oz validation**, not settled planning figures — directly applying the corrections both Step 7 and Step 8 recommended but had not yet been applied to any downstream document.
+  - Regulatory framing hardened: all product output must read as "information," never "advice"; a legal opinion on the SEBI Investment Adviser boundary is named as a hard prerequisite before the 10,000-user checkpoint, not an optional footnote.
+  - Multi-source data ingestion (manual/CSV/PDF/receipts) named as load-bearing MVP infrastructure, not a v2 nicety, given the AA framework's ~38%-of-borrowers real-world adoption ceiling.
+  - Three open constraint questions from Step 5 (data-latency display, Confidence Score cold-start, multi-bank gap handling) were **not resolved** — carried forward verbatim into the new design log's Backlog section as still-open items.
+- **Deliverables:** Complete Product Brief; initial Design Log for the project (first one created — Phase 0 `wds-0-project-setup` has not been run for this project, so no prior design log or `wds-project-outline.yaml` existed).
+- **Artifacts Created:** `_bmad-output/A-Product-Brief/project-brief.md`, `_bmad-output/_progress/00-design-log.md`.
+- **Artifacts Updated:** None (design log was created fresh, not appended to an existing one).
+- **Dependencies:** Steps 2, 4, 5, 7, 8 (all declared as source inputs); Step 3 and Step 5 remain **partial/paused** upstream (Design Thinking's Ideate/Prototype/Test and Problem-Solving's Steps 4–9 were never resumed) — the brief was written using their partial content as-is, without waiting for completion.
+- **Next Recommended BMAD Command:** Phase 2: Trigger Mapping (`wds-2-trigger-mapping`), per the brief's own "Next Steps" section — though the still-open items below should be considered first.
+- **Notes / Deviations (flagged directly rather than silently omitted):**
+  1. **Workflow-schema deviation:** `wds-1-project-brief/workflow.md` mandates halting at each of 36 sequential steps for user confirmation ("WAIT FOR INPUT," "NEVER generate content without user input"). This session instead synthesized the entire Complete Brief in one pass and presented it for a single end-of-process review, per the user's explicit time-boxed instruction. This is a deliberate, user-directed deviation from the skill's own execution protocol, not an oversight — recorded here so the brief's provenance (synthesized-from-artifacts vs. elicited-through-dialog) is traceable.
+  2. **Open reconciliation item (from Step 8) partially addressed:** Steps 7 and 8's overlapping research was never merged into a single standalone research artifact as Step 8 recommended. Instead, this step directly applied both documents' corrections into `project-brief.md` in one synthesis pass. The two source research documents themselves remain separate, unreconciled files in `planning-artifacts/research/` — only their *conclusions* were merged, not the source documents.
+  3. **Upstream gaps not resolved before proceeding:** Design Thinking (Step 3: Ideate/Prototype/Test) and Problem Solving (Step 5: Steps 4–9) remain exactly as paused; the Product Brief proceeded without them being completed, contrary to Step 8's "Next Recommended BMAD Command." This was a user-directed sequencing choice (time constraint), not a discovery of new information that made those steps unnecessary — they remain genuinely open.
+  4. **Module/methodology shift:** this is the first step in the project to use the `wds-*` (Whiteport Design Studio) skill family rather than `bmad-cis-*` / `bmad-brainstorming` / `bmad-domain-research` / `bmad-market-research`. `wds-0-project-setup` (Phase 0) was never run, so `brief_level` had no prior value and `_bmad-output/_progress/00-design-log.md` / `wds-project-outline.yaml` did not exist before this step — both gaps were filled ad hoc rather than through the normal Phase 0 flow.
+
+---
+
+## Step 11 — Trigger Mapping (Phase 2, WDS Module)
+
+**Timestamp:** 2026-07-07 (this conversation, branch `bmad-wds-project-brief`)
+**BMAD Phase:** Phase 2: Trigger Mapping (Whiteport Design Studio) — Effect Mapping adapted by WDS (goals-first, no premature features, enhanced with negative driving forces)
+**Workflow:** `wds-2-trigger-mapping` (Dream mode — autonomous generation + self-review, not the 4-workshop interactive facilitation path)
+**User Goal:** Produce the Phase 2 Trigger Map (business goals → target groups → driving forces → prioritization) as the strategic North Star for all subsequent design, building directly on the Phase 1 Product Brief.
+**BMAD Command:** `/wds-2-trigger-mapping` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Saga (Strategic Analyst persona; Trigger Mapping facilitator role)
+- **Role:** Strategic Analyst / Effect Mapping facilitator
+- **Reason Invoked:** User ran `/wds-2-trigger-mapping` to establish Phase 2 after the Phase 1 brief (Step 10).
+- **Triggering Context:** Direct slash-command invocation; user selected engagement mode **[D] Dream** (autonomous generation, review final result) at the step-01 overview.
+- **Input:** `A-Product-Brief/project-brief.md` (Complete Brief, Step 10) read in full; `_progress/00-design-log.md` for prior context; the skill's own step files, templates, and data references (business-goals template, key-insights structure, mermaid guide, quality checklist).
+- **Output:** Seven Trigger Map artifacts under `B-Trigger-Map/` plus a Dream-mode session log.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `wds-2-trigger-mapping`
+- **Purpose:** Map business goals to user psychology via Effect Mapping (Business Goals → Platform → Target Groups → Driving Forces → Prioritization), projected into a hub + business-goals doc + per-persona docs + key-insights doc + feature-impact analysis, with a styled Mermaid diagram.
+- **Reason Invoked:** User explicitly ran `/wds-2-trigger-mapping`.
+- **Contribution:** Produced the full Phase 2 deliverable set autonomously (Dream mode's Layer 1–5 process: learn form → load project context → per-step domain research → generate → self-review).
+- **Triggering Agent:** Saga.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Loaded `workflow.md` + config + design log → read step-01 overview → presented 3 engagement modes → user chose **Dream** → read all four workshop step files (business goals, target groups, driving forces, prioritization) + persona/hub generation steps + data templates (business-goals, key-insights, mermaid guide, quality checklist) → generated artifacts in dependency order (session log → business goals → primary persona → secondary persona → tertiary persona → key insights → feature impact → hub with Mermaid) → self-reviewed against `quality-checklist.md` (~9.3/10) → updated design log and this tracker.
+- **Inputs:** Step 10 Product Brief (single source of truth, which itself merged the Step 7/Step 8 research conclusions); no separate re-research — domain evidence was drawn from the brief's embedded, already-reconciled research (referral 34.92%, trust-sequencing order, B2B2C 40%-higher-job-search incentive, 1-5% conversion realism).
+- **Outputs:** Complete Trigger Map document set (7 files) + Dream session log.
+- **Key Decisions (Observed):**
+  - **Three target groups defined:** ⭐ **Priya — The Overwhelmed Earner** (PRIMARY / THE ENGINE, directly from the brief); 🚀 **Rohan — The Money-Managing Partner** (SECONDARY — household multiplier / Premium couples tier); 🌟 **Kavya — The Workplace Wellness Sponsor** (TERTIARY — Year-2 B2B2C distribution multiplier, decision-maker not end-user).
+  - Vision set to "become the most trusted daily financial voice for anxious salaried Indians — turning money dread into calm confidence, and never causing harm through a wrong number" (character-identical across hub and business-goals doc, per the skill's cross-validation rule).
+  - Business objectives structured in 3 priority tiers with the anxiety-reduction WoZ gate as THE ENGINE; growth/monetization targets deliberately framed as hypotheses (D30 ~4.2% baseline, 1-5% conversion, ₹199/₹499 to test) rather than settled figures — carrying forward the brief's research corrections.
+  - Feature Impact scoring (persona-weighted 5/3/1 for primary, 3/1/0 for secondary/tertiary) put the **honesty layer** and **trust-first onboarding** at a perfect 11/11 — the two features that serve all three personas and encode the moat.
+  - Kavya deliberately scoped as Year-2-only throughout, with every MVP feature anchored to Priya, to honor the brief's explicit "do not dilute Phase 1 focus" constraint.
+- **Deliverables:** Complete Phase 2 Trigger Map — strategic North Star ready to feed Phase 3 (UX Scenarios).
+- **Artifacts Created:**
+  - `_bmad-output/B-Trigger-Map/trigger-map.md`
+  - `_bmad-output/B-Trigger-Map/01-business-goals.md`
+  - `_bmad-output/B-Trigger-Map/personas/02-priya-the-overwhelmed-earner.md`
+  - `_bmad-output/B-Trigger-Map/personas/03-rohan-the-money-managing-partner.md`
+  - `_bmad-output/B-Trigger-Map/personas/04-kavya-the-wellness-sponsor.md`
+  - `_bmad-output/B-Trigger-Map/05-key-insights.md`
+  - `_bmad-output/B-Trigger-Map/feature-impact-analysis.md`
+  - `_bmad-output/B-Trigger-Map/handover-to-ux.md` (Phase 2 → Phase 3 handover package, created at wrap)
+  - `_bmad-output/_progress/agent-experiences/2026-07-07-trigger-map-D.md` (Dream session log)
+- **Artifacts Updated:** `_bmad-output/_progress/00-design-log.md` (Phase 2 progress entry + Key Decisions rows).
+- **Dependencies:** Step 10 (Product Brief) as the sole declared input.
+- **Next Recommended BMAD Command:** Phase 3: UX Scenarios (`wds-3-scenarios`) — after the user confirms the two analyst-inferred personas (see Notes).
+- **Notes / Deviations (flagged directly):**
+  1. **Mode deviation from the interactive default:** the skill's workshop path halts at each of four workshops for user input; **Dream mode** (user-selected [D]) instead generated all four autonomously and presented the final result. This is a documented, user-chosen mode of the skill, not an oversight — but it means the personas and prioritization were **not confirmed interactively**.
+  2. **Analyst-inferred personas:** Priya is taken directly from the brief. **Rohan** and **Kavya** are reasonable extrapolations of the brief's secondary-user notes (Premium couples tier; B2B2C employer channel), not names or profiles the user supplied. Flagged in both the session log and design log as **pending user confirmation** before Phase 3.
+  3. **No fresh web research performed:** Dream mode's "Layer 3 domain research" was satisfied from the brief's already-reconciled embedded research rather than new WebSearches, since Step 10 had already merged the Step 7/Step 8 findings into a single source of truth — avoiding re-opening the reconciliation item.
+  4. **Output-path naming:** hub named `trigger-map.md` (per workflow OUTPUT spec) while sub-docs use the templates' numbered convention (`01-…`, `05-…`); personas live in a `personas/` subfolder per the workflow's declared output structure. Internal cross-reference links were written to match this reconciled layout.
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -410,6 +518,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 7 | Market Research (complete) | `bmad-market-research` (Observed) | ALPHA | market-personal-finance-copilot-market-india-research-2026-07-07.md |
 | 8 | Domain Research (complete) | `bmad-domain-research` (Observed) | ALPHA | domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md |
 | 9 | Process Governance | None (direct instruction) | Claude Code (Process Historian) | `.claude/settings.json` (new Stop hook) |
+| 10 | Phase 1: Product Brief (WDS) | `/wds-1-project-brief` (Observed) | Saga | `A-Product-Brief/project-brief.md`, `_progress/00-design-log.md` |
+| 11 | Phase 2: Trigger Mapping (WDS) | `/wds-2-trigger-mapping` (Observed) | Saga | `B-Trigger-Map/**` (7 files), Dream session log |
 
 ## Commands Used
 
@@ -423,6 +533,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | None (direct user instruction) | 2 |
 | `bmad-market-research` (Observed) | 1 |
 | `bmad-domain-research` (Observed) | 1 |
+| `/wds-1-project-brief` (Observed) | 1 |
+| `/wds-2-trigger-mapping` (Observed) | 1 |
 
 ## Agent Usage
 
@@ -432,6 +544,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Carson (Inferred) | 1 |
 | Unknown (Step 1 setup) | 1 |
 | Claude Code (Process Historian) | 2 |
+| Saga | 2 |
 
 ## Skill Usage
 
@@ -443,6 +556,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-cis-problem-solving` | 1 |
 | `bmad-market-research` | 1 |
 | `bmad-domain-research` | 1 |
+| `wds-1-project-brief` | 1 |
+| `wds-2-trigger-mapping` | 1 |
 
 ## Agent → Skill Mapping
 
@@ -450,6 +565,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 |---|---|
 | ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-market-research`, `bmad-domain-research` |
 | Carson (Inferred) | `bmad-brainstorming` |
+| Saga | `wds-1-project-brief`, `wds-2-trigger-mapping` |
 | Claude Code (Process Historian) | None (document/config maintenance only) |
 
 ## Artifacts
@@ -464,20 +580,32 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/design-thinking-2026-07-07.md` | Step 3 | Pending (Ideate/Prototype/Test) |
 | `_bmad-output/innovation-strategy-2026-07-07.md` | Step 4 | — |
 | `_bmad-output/problem-solution-2026-07-07.md` | Step 5 | Pending (Steps 4 cont.–9) |
-| `PROJECT-PROGRESS.md` | Step 3 (v1, bundled in commit `f344d11`) | Step 6 (schema restructure), Step 7, Step 8, Step 9 (these additions) |
+| `PROJECT-PROGRESS.md` | Step 3 (v1, bundled in commit `f344d11`) | Step 6 (schema restructure), Step 7, Step 8, Step 9, Step 10 (these additions) |
 | `_bmad-output/planning-artifacts/research/market-personal-finance-copilot-market-india-research-2026-07-07.md` | Step 7 | — (untracked in git as of this writing) |
 | `_bmad-output/planning-artifacts/research/domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md` | Step 8 | — |
 | `.claude/settings.json` | Step 9 | — (new file; project-level, committed) |
+| `_bmad-output/A-Product-Brief/project-brief.md` | Step 10 | — |
+| `_bmad-output/_progress/00-design-log.md` | Step 10 | Step 11 (Phase 2 entry + Key Decisions) |
+| `_bmad-output/B-Trigger-Map/trigger-map.md` (hub + Mermaid) | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/01-business-goals.md` | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/personas/02-priya-the-overwhelmed-earner.md` | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/personas/03-rohan-the-money-managing-partner.md` | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/personas/04-kavya-the-wellness-sponsor.md` | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/05-key-insights.md` | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/feature-impact-analysis.md` | Step 11 | — |
+| `_bmad-output/B-Trigger-Map/handover-to-ux.md` | Step 11 (wrap) | — |
+| `_bmad-output/_progress/agent-experiences/2026-07-07-trigger-map-D.md` | Step 11 | — |
 
 ## Corrections & Rework Log
 
 | Original Step | Corrected In Step | Agent | Reason | Status |
 |---|---|---|---|---|
 | Step 1 | Step 6 | Claude Code (Process Historian) | Prior tracker claimed a `design-artifacts/` directory (A–E stage folders) was created; it does not exist anywhere in the repository | Corrected |
+| Step 4 (innovation-strategy) | Step 10 (applied within `project-brief.md`, not by editing Step 4's source file) | Saga | Steps 7/8 both flagged that the innovation strategy's competitor list (Walnut), D30 retention target (≥40%), and paid-conversion target (≥5%) were outdated or optimistic against external benchmarks; corrections had been recommended since Step 8 but not applied to any downstream document until now | Corrected (in the new Product Brief only — `innovation-strategy-2026-07-07.md` itself remains unedited) |
 
 ## Open Reconciliation Item
 
-**Step 7 and Step 8 are two independently-produced research artifacts covering substantially overlapping ground** (India personal-finance-copilot market/competitive/regulatory research), written in different, uncoordinated sessions on different branches. They agree on several major findings (D30 retention ~4.2% too optimistic a target, AA adoption/consent friction, unvalidated SAM/SOM) but were never reconciled into one source of truth. **Action needed before Product Brief:** merge or explicitly supersede one with the other; do not carry both forward as independent inputs.
+**Step 7 and Step 8 are two independently-produced research artifacts covering substantially overlapping ground** (India personal-finance-copilot market/competitive/regulatory research), written in different, uncoordinated sessions on different branches. They agree on several major findings (D30 retention ~4.2% too optimistic a target, AA adoption/consent friction, unvalidated SAM/SOM) but were never reconciled into one source of truth. **Status update (Step 10):** their *conclusions* were merged directly into `A-Product-Brief/project-brief.md`, so downstream Phase 2+ work can now treat the brief as the single source of truth going forward — but the two source research documents themselves remain separate, unmerged files. If either is revisited independently in the future, re-check it against the brief for drift.
 
 ## Workflow Progress
 
@@ -489,30 +617,33 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [PARTIAL] Step 5 — Problem Solving      (Steps 1-3 done; Step 4 paused w/ 3 open questions; Steps 5-9 not started)  <-- action needed
 [DONE]    Step 6 — Process Historian tracker migration (this document)
 [DONE]    Step 7 — Market Research                (untracked in git — action needed: commit)  <-- action needed
-[DONE]    Step 8 — Domain Research                (overlaps Step 7 — action needed: reconcile)  <-- action needed
+[DONE]    Step 8 — Domain Research                (overlaps Step 7 — conclusions merged into Step 10 brief)
 [DONE]    Step 9 — Process Historian automation fix (Stop hook added; needs /hooks reload)      <-- action needed
-[TODO]    Product Brief
+[DONE]    Step 10 — Product Brief (WDS Phase 1)    (synthesized directly from artifacts, not via 36-step dialog — see Step 10 Notes)
+[DONE]    Step 11 — Trigger Mapping (WDS Phase 2)   (Dream mode — Rohan & Kavya personas pending user confirmation)  <-- action needed
+[PARTIAL] Step 3 / Step 5 still unresolved          (Design Thinking Ideate/Prototype/Test; Problem-Solving Steps 4-9 — later phases proceeded without them)  <-- action needed
+[TODO]    Phase 3: UX Scenarios
 [TODO]    PRD
 [TODO]    Architecture
 [TODO]    UX Design / Scenarios
 [TODO]    Epics & Stories / Development
 ```
 
-**Current phase:** Pre-PRD discovery — two independent research passes (Steps 7 and 8) are now complete and both externally validate most of the prior thesis, but they overlap and need reconciliation before proceeding. Two workflows (Design Thinking, Problem Solving) also remain mid-session and should be resumed before the Product Brief is started, since both feed directly into MVP scope decisions. Pre-PRD action items now standing: (1) reconcile Step 7 and Step 8 into one research source of truth, (2) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel, (3) SAM/SOM figures and the ₹199/₹499 price points should be treated as hypotheses pending a category-specific validation pass, and (4) apply the corrections both research steps surfaced to `innovation-strategy-2026-07-07.md` (outdated competitor references, retention-target risk, revenue-model risk).
+**Current phase:** Phase 2: Trigger Mapping is now complete (`B-Trigger-Map/**`, 7 files), generated in **Dream mode** (autonomous) from the Phase 1 brief. It defines three target groups (Priya/primary/engine, Rohan/secondary/household, Kavya/tertiary/Year-2 employer), a 3-tier business-goals structure, per-persona driving forces with Product Promises, a persona-weighted feature-impact analysis, and a styled Mermaid trigger-map hub. Standing action items carried forward: (1) **confirm the two analyst-inferred personas (Rohan, Kavya)** — Dream mode did not elicit them interactively; this is the immediate next action before Phase 3; (2) resume Design Thinking (Step 3: Ideate/Prototype/Test) and Problem Solving (Step 5: Steps 4–9) — both remain genuinely paused and still block confident MVP/PRD scoping on the Safe-to-Spend/Confidence Score features; (3) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel before the 10,000-user checkpoint; (4) SAM/SOM figures and the ₹199/₹499 price points remain hypotheses pending a category-specific validation pass / Wizard-of-Oz test; (5) three open Safe-to-Spend/Confidence Score design questions (data-latency display, cold-start behavior, multi-bank gap) remain unresolved, tracked in `_bmad-output/_progress/00-design-log.md`'s Backlog and re-flagged in the Trigger Map's Key Insights.
 
 ## Project Statistics
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 9 |
-| Distinct BMAD commands/workflows observed or inferred | 7 |
-| Distinct agents | 4 (ALPHA, Carson [Inferred], Unknown, Claude Code/Process Historian) |
-| Distinct skills | 6 |
-| Deliverables (complete) | 4 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md) |
+| Steps recorded | 11 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 9 |
+| Distinct agents | 5 (ALPHA, Carson [Inferred], Unknown, Claude Code/Process Historian, Saga) |
+| Distinct skills | 8 |
+| Deliverables (complete) | 6 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 12 |
-| Corrections logged | 1 |
-| Rework events | 0 (1 reconciliation pending — Step 7/Step 8 overlap, not yet counted as rework since neither has been discarded or redone) |
+| Artifact groups tracked | 15 |
+| Corrections logged | 2 |
+| Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 
 ---
 
