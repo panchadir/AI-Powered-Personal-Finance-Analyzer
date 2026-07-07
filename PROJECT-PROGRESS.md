@@ -272,6 +272,53 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 
 ---
 
+## Step 7 — Market Research Session
+
+**Timestamp:** 2026-07-07 (this conversation; file `mtime` 16:35, created 15:55 — not yet committed to git as of this writing)
+**BMAD Phase:** Pre-PRD Discovery / Market Validation
+**Workflow:** `bmad-market-research` (frontmatter `workflowType: 'research'`, `research_type: 'market'` — **Observed** directly from the artifact's YAML frontmatter)
+**User Goal:** "Validate TAM/SAM/SOM sizing for financially-stressed salaried adults in India; build sourced competitor profiles ... to pressure-test the 'empathetic + proactive AI' white-space claim; map the regulatory/compliance landscape ...; gather customer/demand-side evidence ... to validate the Priya persona and avoidance-loop thesis." **Source: Observed** (verbatim from frontmatter `research_goals:` field).
+**BMAD Command:** Unknown exact invocation string; workflow identity Observed from frontmatter (`workflowType: research`, `research_type: market`).
+**Trigger:** User (current session, branch `Bmad-MarketResearch`)
+
+### Agent Log
+- **Agent Name:** ALPHA
+- **Role:** Market Researcher / facilitator
+- **Reason Invoked:** All four prior sessions (Brainstorming, Design Thinking, Innovation Strategy, Problem Solving) rested on internally-derived market assumptions (TAM/SAM/SOM, competitor claims, regulatory posture) that had not been checked against current external sources before proceeding to a PRD.
+- **Triggering Context:** Explicit `inputDocuments` frontmatter lists all four prior artifacts as direct inputs.
+- **Input:** `brainstorm-intent.md`, `design-thinking-2026-07-07.md`, `innovation-strategy-2026-07-07.md`, `problem-solution-2026-07-07.md`.
+- **Output:** Fully populated market-research report — customer behavior/pain-points/journey analysis, sourced competitive landscape, market-sizing validation, regulatory/compliance landscape, and a strategic-synthesis section with risk-register updates and implementation priorities.
+- **Source:** **Observed** — frontmatter field `user_name: 'ALPHA'` and in-document byline `**Author:** ALPHA`.
+
+### Skill Log
+- **Skill Name:** `bmad-market-research`
+- **Purpose:** Structured, web-sourced market-research workflow (customer behavior → pain points → decision journey → competitive/regulatory landscape → synthesis) with inline confidence-level and source-citation discipline.
+- **Reason Invoked:** To pressure-test market-sizing, competitive-positioning, and regulatory assumptions carried since Step 4 with current, cited evidence rather than repeat them uncritically.
+- **Contribution:** Produced a complete, all-steps-done report (frontmatter `stepsCompleted: [1, 2, 3, 4, 5, 6]`, ends in a proper "Research Conclusion" section — no placeholder sections found).
+- **Triggering Agent:** ALPHA.
+- **Source:** **Observed** (frontmatter `stepsCompleted` array and direct inspection of document structure, headers, and ending).
+
+### Execution Summary
+- **Agent execution order:** Initialization/Scope → Customer Behavior & Segments → Customer Pain Points & Needs → Customer Decision Process & Journey → Competitive Landscape → Market Sizing Validation → Regulatory & Compliance Landscape → Research Synthesis (Strategic Recommendations & Risk Assessment) → Research Conclusion.
+- **Inputs:** Steps 2–5 artifacts (brainstorming, design thinking, innovation strategy, problem solving).
+- **Outputs:** Single comprehensive market-research report (~402 lines), ~22 web searches across 4 analysis passes per the document's own methodology note.
+- **Key Decisions / Findings (Observed):**
+  - Avoidance-loop thesis and Priya persona externally corroborated (68% category-wide app abandonment, 4.2% Day-30 retention; 54% of Indian employees live paycheck-to-paycheck 3+ months; only 26% feel emergency-prepared).
+  - Competitive landscape shifted since Step 4: Fi Money winding down banking services (March 2026), ET Money repositioned toward investment platform, YNAB structurally weak in India — "empathetic + proactive AI" white space survives scrutiny but the field is moving faster than the 18-month founding-window estimate assumed.
+  - Market-sizing correction: general fintech-market figures disagree ~3x across sources and none isolate the PFM category — the innovation strategy's SAM (40–50M) / SOM (500K–2M) remain internally-derived, not externally validated; recommends commissioning a category-specific sizing pass.
+  - Regulatory finding (flagged as most consequential): SEBI's Investment Adviser framework already applies to robo-advisory tools, and the incoming Securities Markets Code, 2025 gives SEBI explicit statutory authority over AI-driven advisory — sharpens the existing "information, not advice" framing from a soft precaution into a concrete compliance requirement; recommends getting the SEBI IA boundary in front of legal counsel before the innovation strategy's existing 10,000-user checkpoint (possibly earlier).
+  - New risks surfaced (not previously named in the Step 4 risk register): India/SEA freemium conversion typically 1–5%, putting the ≥5% paid-conversion target at the optimistic edge, not a conservative floor; AA consent-screen UX is independently documented as confusing ("reads like legal documents"), a concrete onboarding drop-off risk and fixable opportunity; Jupiter (well-funded neobank, $186–201M) is structurally positioned to bundle a copilot layer faster than a standalone app can build trust from zero.
+  - Recommends re-evaluating whether Hindi-language support should move earlier than the innovation strategy's Phase 3 placement, given sourced vernacular-timing GTM guidance.
+  - Treats ₹199/₹499 price points as hypotheses to test in the planned Wizard-of-Oz cohort, not settled figures.
+- **Deliverables:** Complete, cited market-research report ready to feed into Product Brief/PRD work.
+- **Artifacts Created:** `_bmad-output/planning-artifacts/research/market-personal-finance-copilot-market-india-research-2026-07-07.md` (complete).
+- **Artifacts Updated:** None.
+- **Dependencies:** Steps 2, 3, 4, and 5 (all four prior artifacts are declared inputs).
+- **Next Recommended BMAD Command:** Per the document's own "Next Steps": feed this research into Product Brief/PRD work, alongside completing the still-paused Design Thinking (Ideate/Prototype/Test, Step 3) and Problem-Solving (Steps 4–9, Step 5) sessions.
+- **Notes:** This artifact is **untracked in git** as of this writing (`git status` shows `_bmad-output/planning-artifacts/research/` as an untracked directory, not yet committed) — flagged here rather than silently assumed committed. Also note the directory structure differs from Steps 2–5: this output lives under a new `_bmad-output/planning-artifacts/research/` path rather than directly under `_bmad-output/`, matching the current branch name `Bmad-MarketResearch`.
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -284,6 +331,7 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | 4 | Innovation Strategy (complete) | `bmad-cis-innovation-strategy` (Inferred) | ALPHA | innovation-strategy-2026-07-07.md |
 | 5 | Problem Solving (partial) | `bmad-cis-problem-solving` (Inferred) | ALPHA | problem-solution-2026-07-07.md |
 | 6 | Process Governance | None (direct instruction) | Claude Code (Process Historian) | PROJECT-PROGRESS.md (this restructure) |
+| 7 | Market Research (complete) | `bmad-market-research` (Observed) | ALPHA | market-personal-finance-copilot-market-india-research-2026-07-07.md |
 
 ## Commands Used
 
@@ -295,12 +343,13 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | `bmad-cis-innovation-strategy` (Inferred) | 1 |
 | `bmad-cis-problem-solving` (Inferred) | 1 |
 | None (direct user instruction) | 1 |
+| `bmad-market-research` (Observed) | 1 |
 
 ## Agent Usage
 
 | Agent | Count |
 |---|---|
-| ALPHA | 3 |
+| ALPHA | 4 |
 | Carson (Inferred) | 1 |
 | Unknown (Step 1 setup) | 1 |
 | Claude Code (Process Historian) | 1 |
@@ -313,12 +362,13 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | `bmad-cis-design-thinking` | 1 |
 | `bmad-cis-innovation-strategy` | 1 |
 | `bmad-cis-problem-solving` | 1 |
+| `bmad-market-research` | 1 |
 
 ## Agent → Skill Mapping
 
 | Agent | Skills |
 |---|---|
-| ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving` |
+| ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-market-research` |
 | Carson (Inferred) | `bmad-brainstorming` |
 | Claude Code (Process Historian) | None (document maintenance only) |
 
@@ -334,7 +384,8 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | `_bmad-output/design-thinking-2026-07-07.md` | Step 3 | Pending (Ideate/Prototype/Test) |
 | `_bmad-output/innovation-strategy-2026-07-07.md` | Step 4 | — |
 | `_bmad-output/problem-solution-2026-07-07.md` | Step 5 | Pending (Steps 4 cont.–9) |
-| `PROJECT-PROGRESS.md` | Step 3 (v1, bundled in commit `f344d11`) | Step 6 (schema restructure) |
+| `PROJECT-PROGRESS.md` | Step 3 (v1, bundled in commit `f344d11`) | Step 6 (schema restructure), Step 7 (this addition) |
+| `_bmad-output/planning-artifacts/research/market-personal-finance-copilot-market-india-research-2026-07-07.md` | Step 7 | — (untracked in git as of this writing) |
 
 ## Corrections & Rework Log
 
@@ -351,6 +402,7 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 [DONE]    Step 4 — Innovation Strategy
 [PARTIAL] Step 5 — Problem Solving      (Steps 1-3 done; Step 4 paused w/ 3 open questions; Steps 5-9 not started)  <-- action needed
 [DONE]    Step 6 — Process Historian tracker migration (this document)
+[DONE]    Step 7 — Market Research                (untracked in git — action needed: commit)  <-- action needed
 [TODO]    Product Brief
 [TODO]    PRD
 [TODO]    Architecture
@@ -358,19 +410,19 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 [TODO]    Epics & Stories / Development
 ```
 
-**Current phase:** Pre-PRD discovery — two workflows (Design Thinking, Problem Solving) are left mid-session and should be resumed before the Product Brief is started, since both feed directly into MVP scope decisions.
+**Current phase:** Pre-PRD discovery — market research (Step 7) is now complete and externally validates most of the prior thesis, but two workflows (Design Thinking, Problem Solving) remain mid-session and should still be resumed before the Product Brief is started, since both feed directly into MVP scope decisions. Additionally, Step 7's own findings raise two new pre-PRD action items: (1) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel, and (2) SAM/SOM figures and the ₹199/₹499 price points should be treated as hypotheses pending a category-specific validation pass, not settled planning inputs.
 
 ## Project Statistics
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 6 |
-| Distinct BMAD commands/workflows observed or inferred | 5 |
+| Steps recorded | 7 |
+| Distinct BMAD commands/workflows observed or inferred | 6 |
 | Distinct agents | 4 (ALPHA, Carson [Inferred], Unknown, Claude Code/Process Historian) |
-| Distinct skills | 4 |
-| Deliverables (complete) | 2 (brainstorm-intent.md, innovation-strategy-2026-07-07.md) |
+| Distinct skills | 5 |
+| Deliverables (complete) | 3 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 9 |
+| Artifact groups tracked | 10 |
 | Corrections logged | 1 |
 | Rework events | 0 |
 
