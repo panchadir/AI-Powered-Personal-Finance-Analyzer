@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Confusion to Confidence — Brainstorm Keepsake</title>
+<style>
+  :root{
+    --bg:#0b0f14; --bg2:#0f1620; --panel:#121b26; --panel2:#16212e;
+    --ink:#e9f0f7; --muted:#93a4b8; --line:#22303f;
+    --calm:#4fd1c5; --calm2:#38b2ac; --gold:#f6c453; --coral:#ff7a7a;
+    --sky:#5aa9ff; --violet:#a78bfa; --good:#5be0a6;
+    --shadow:0 20px 60px rgba(0,0,0,.45);
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 700px at 12% -8%, rgba(79,209,197,.14), transparent 60%),
+      radial-gradient(1000px 620px at 100% 0%, rgba(90,169,255,.12), transparent 55%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+    color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; letter-spacing:.1px;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:28px 22px 90px}
+  .eyebrow{font-size:.8rem; text-transform:uppercase; letter-spacing:.28em; color:var(--calm); font-weight:700}
+  h1{font-size:clamp(2.1rem,6vw,4rem); line-height:1.02; margin:.35em 0 .2em; font-weight:800; letter-spacing:-.02em}
+  h1 .fade{color:var(--muted)}
+  h1 .glow{background:linear-gradient(90deg,var(--calm),var(--sky),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  h2{font-size:clamp(1.4rem,3.4vw,2rem); margin:.2em 0; font-weight:800; letter-spacing:-.01em}
+  h3{margin:.2em 0; font-size:1.06rem}
+  p{color:#cdd9e6}
+  .sub{color:var(--muted); font-size:1.05rem; max-width:60ch}
+  .hero{
+    position:relative; padding:46px 30px 40px; border:1px solid var(--line);
+    border-radius:26px; background:linear-gradient(160deg,rgba(18,27,38,.9),rgba(11,15,20,.6));
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .hero .orb{position:absolute; inset:auto -120px -160px auto; width:360px; height:360px;
+    background:radial-gradient(circle at 30% 30%,rgba(79,209,197,.5),transparent 62%); filter:blur(8px); opacity:.5}
+  .meta{display:flex; flex-wrap:wrap; gap:10px; margin-top:22px}
+  .chip{font-size:.78rem; color:var(--muted); border:1px solid var(--line); background:rgba(255,255,255,.02);
+    padding:6px 12px; border-radius:999px}
+  .chip b{color:var(--ink)}
+
+  /* Confidence gauge */
+  .gaugewrap{display:flex; align-items:center; gap:26px; flex-wrap:wrap; margin-top:30px}
+  .gauge{position:relative; width:190px; height:190px; flex:0 0 auto}
+  .gauge svg{transform:rotate(-90deg)}
+  .gauge .num{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .gauge .num b{font-size:2.6rem; font-weight:800; letter-spacing:-.02em}
+  .gauge .num span{font-size:.72rem; text-transform:uppercase; letter-spacing:.22em; color:var(--muted)}
+  .gaugetext{max-width:44ch}
+  .gaugetext .ex{color:var(--calm); font-weight:700}
+
+  section{margin-top:64px}
+  .tnum{display:inline-flex; align-items:center; gap:12px; margin-bottom:6px}
+  .tnum .dot{width:34px; height:34px; border-radius:10px; display:grid; place-items:center; font-weight:800;
+    background:linear-gradient(135deg,var(--calm),var(--sky)); color:#08121a}
+  .lens{color:var(--muted); font-size:.86rem; letter-spacing:.16em; text-transform:uppercase}
+
+  .grid{display:grid; gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:760px){.g3,.g2{grid-template-columns:1fr}}
+  .card{background:linear-gradient(160deg,var(--panel),var(--panel2)); border:1px solid var(--line);
+    border-radius:var(--r); padding:20px; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .card .tag{font-size:.72rem; text-transform:uppercase; letter-spacing:.2em; font-weight:700}
+
+  /* time horizon */
+  .horizon .card{position:relative; overflow:hidden}
+  .horizon .card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px}
+  .horizon .behind::before{background:var(--coral)} .horizon .behind .tag{color:var(--coral)}
+  .horizon .now::before{background:var(--calm)} .horizon .now .tag{color:var(--calm)}
+  .horizon .ahead::before{background:var(--sky)} .horizon .ahead .tag{color:var(--sky)}
+  .quote{font-style:italic; color:#dbe6f2; border-left:2px solid var(--line); padding-left:14px; margin:12px 0}
+  .want{font-size:.92rem; color:var(--muted)}
+  .want b{color:var(--gold)}
+
+  /* behavioral insights */
+  .beh{display:grid; gap:12px; grid-template-columns:repeat(2,1fr)}
+  @media(max-width:760px){.beh{grid-template-columns:1fr}}
+  .beh .item{display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border:1px solid var(--line);
+    border-radius:14px; background:rgba(255,255,255,.015)}
+  .beh .ic{font-size:1.3rem; line-height:1.2}
+  .beh .item.spot{border-color:rgba(246,196,83,.5); background:linear-gradient(160deg,rgba(246,196,83,.08),transparent)}
+  .beh h4{margin:0 0 3px; font-size:.98rem}
+  .beh small{color:var(--muted)}
+
+  .flow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0 2px}
+  .flow .step{padding:7px 13px; border-radius:999px; border:1px solid var(--line); font-size:.82rem; background:rgba(255,255,255,.02); font-weight:600}
+  .flow .arw{color:var(--calm); font-weight:800}
+
+  /* HMW */
+  .hmw{display:flex; gap:14px; align-items:flex-start; padding:16px 18px; border:1px solid var(--line); border-radius:14px;
+    background:rgba(90,169,255,.05)}
+  .hmw .q{font-size:1.5rem; font-weight:800; color:var(--sky); line-height:1}
+  /* concepts */
+  .concept{position:relative}
+  .concept .kicker{color:var(--calm); font-weight:700; font-size:.8rem; letter-spacing:.12em; text-transform:uppercase}
+  .concept.spine{border-color:rgba(246,196,83,.55); box-shadow:0 0 0 1px rgba(246,196,83,.15), 0 8px 30px rgba(0,0,0,.3)}
+  .spinebadge{display:inline-block; margin-left:8px; font-size:.66rem; letter-spacing:.16em; text-transform:uppercase;
+    color:#0b0f14; background:var(--gold); padding:3px 8px; border-radius:999px; font-weight:800; vertical-align:middle}
+
+  /* timeline demo */
+  .tl{border:1px solid var(--line); border-radius:16px; padding:20px 22px; background:linear-gradient(160deg,var(--panel),var(--panel2))}
+  .tl .row{display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px dashed var(--line)}
+  .tl .row:last-child{border-bottom:0}
+  .tl .when{width:96px; color:var(--muted); font-size:.82rem; flex:0 0 auto}
+  .tl .bar{flex:1; height:10px; border-radius:999px; background:rgba(255,255,255,.05); overflow:hidden}
+  .tl .bar i{display:block; height:100%}
+  .tl .amt{width:96px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; flex:0 0 auto}
+  .out{color:var(--coral)} .in{color:var(--good)} .safe{color:var(--calm)}
+
+  /* trust loop */
+  .loop{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:8px}
+  @media(max-width:760px){.loop{grid-template-columns:1fr 1fr}}
+  .loop .node{position:relative; text-align:center; padding:22px 14px; border:1px solid var(--line); background:rgba(255,255,255,.02)}
+  .loop .node:first-child{border-radius:14px 0 0 14px}
+  .loop .node:last-child{border-radius:0 14px 14px 0}
+  @media(max-width:760px){.loop .node{border-radius:12px!important}}
+  .loop .node b{display:block; font-size:1.05rem}
+  .loop .node small{color:var(--muted)}
+  .loop .node .n{font-size:1.6rem}
+  .loop .node.on{background:linear-gradient(160deg,rgba(79,209,197,.16),transparent); border-color:rgba(79,209,197,.5)}
+
+  /* humility */
+  .fail{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media(max-width:760px){.fail{grid-template-columns:1fr}}
+  .fail .f{border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:rgba(255,122,122,.05)}
+  .fail .f b{color:var(--coral)}
+  .fail .f span{color:var(--muted); font-size:.9rem}
+
+  .billboard{margin-top:18px; padding:36px 28px; border-radius:20px; text-align:center;
+    background:linear-gradient(120deg,rgba(79,209,197,.14),rgba(246,196,83,.12)); border:1px solid var(--line)}
+  .billboard b{font-size:clamp(1.3rem,3.6vw,2.1rem); font-weight:800; letter-spacing:-.01em; line-height:1.2; display:block}
+  .billboard span{color:var(--muted)}
+
+  /* synthesis */
+  .syn .card{background:linear-gradient(160deg,rgba(18,27,38,.95),rgba(15,22,32,.7))}
+  .syn .link{display:flex; gap:16px; align-items:flex-start; padding:18px 0; border-bottom:1px solid var(--line)}
+  .syn .link:last-child{border-bottom:0}
+  .syn .n{font-size:1.5rem; font-weight:800; color:var(--violet); flex:0 0 auto; width:40px}
+  .syn .link p{margin:.2em 0 0}
+  .syn .link .k{color:var(--calm); font-weight:700}
+
+  .stats{display:flex; gap:14px; flex-wrap:wrap; margin-top:20px}
+  .stat{flex:1; min-width:150px; border:1px solid var(--line); border-radius:14px; padding:16px 18px; background:rgba(255,255,255,.02)}
+  .stat b{font-size:1.8rem; display:block; letter-spacing:-.01em}
+  .stat span{color:var(--muted); font-size:.85rem}
+
+  footer{margin-top:70px; padding-top:26px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem}
+  .foot-title{color:var(--ink); font-weight:700}
+  a{color:var(--sky)}
+  .divelabel{text-align:center; color:var(--muted); font-size:.8rem; letter-spacing:.3em; text-transform:uppercase; margin:34px 0 -20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="orb"></div>
+    <div class="eyebrow">🧠 Brainstorming Keepsake · Creative Partner Session</div>
+    <h1><span class="fade">From financial</span> <span class="glow">confusion</span><br><span class="fade">to financial</span> <span class="glow">confidence.</span></h1>
+    <p class="sub">The story of one session that turned a "personal finance analyzer" into a product with a soul — an AI Financial Copilot that wins not by sounding smart, but by being honest.</p>
+
+    <div class="gaugewrap">
+      <div class="gauge" aria-label="Financial Confidence Score">
+        <svg width="190" height="190" viewBox="0 0 190 190">
+          <circle cx="95" cy="95" r="82" fill="none" stroke="#22303f" stroke-width="14"/>
+          <circle id="ring" cx="95" cy="95" r="82" fill="none" stroke="url(#grad)" stroke-width="14"
+            stroke-linecap="round" stroke-dasharray="515" stroke-dashoffset="515"/>
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#4fd1c5"/><stop offset=".6" stop-color="#5aa9ff"/><stop offset="1" stop-color="#f6c453"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="num"><b id="score">0</b><span>Confidence</span></div>
+      </div>
+      <div class="gaugetext">
+        <p><span class="ex">"Your confidence is 82."</span> Not because you're rich — because you're <em>prepared</em>. Rent's covered, the electricity bill is reserved, your buffer is untouched, and you're on track for your savings goal.</p>
+        <p class="want" style="margin-top:6px">The one number that goes up when you're okay. The emotional heartbeat of the whole product.</p>
+      </div>
+    </div>
+
+    <div class="meta">
+      <span class="chip">Topic · <b>AI-Powered Personal Finance Analyzer</b></span>
+      <span class="chip">Goal · <b>An implementation-ready product</b></span>
+      <span class="chip">Mode · <b>Creative Partner</b></span>
+      <span class="chip">Lenses · <b>3 techniques</b></span>
+      <span class="chip"><b>37</b> ideas &amp; decisions captured</span>
+    </div>
+  </div>
+
+  <div class="divelabel">▽ the three lenses ▽</div>
+
+  <!-- TECHNIQUE 1 -->
+  <section>
+    <div class="tnum"><span class="dot">1</span><div><span class="lens">Lens One</span><h2>Jobs To Be Done</h2></div></div>
+    <p class="sub">Nobody wakes up wanting a pie chart. We went underneath the features to find the <em>emotional job</em> — and discovered it splits cleanly across three time-horizons.</p>
+
+    <div class="grid g3 horizon" style="margin-top:20px">
+      <div class="card behind">
+        <div class="tag">◂ Behind · the past</div>
+        <h3>End-of-Month Shock</h3>
+        <p class="quote">"I'm shocked how little is left, and the transactions are scattered across dozens of purchases."</p>
+        <p class="want">Wants: <b>where it went + which habits caused it + what to change.</b></p>
+      </div>
+      <div class="card now">
+        <div class="tag">● Now · the present</div>
+        <h3>Payday Uncertainty</h3>
+        <p class="quote">"After rent and bills, I've no idea how much I can safely spend this month."</p>
+        <p class="want">Wants: <b>"You're safe to spend this much — and here's why."</b></p>
+      </div>
+      <div class="card ahead">
+        <div class="tag">▸ Ahead · the future</div>
+        <h3>Upcoming-Expenses Anxiety</h3>
+        <p class="quote">"Rent, utilities, insurance, a birthday — will I have enough? I can't hold it all in my head."</p>
+        <p class="want">Wants: <b>look ahead, predict, reassure — or warn me early.</b></p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:30px">The behavioral mirror — 7 "ouch, but thank you" truths</h3>
+    <p class="want" style="margin-bottom:14px">Every insight designed to follow one pattern &nbsp;
+      <span class="flow"><span class="step">Observation</span><span class="arw">→</span><span class="step">Evidence</span><span class="arw">→</span><span class="step">Explanation</span><span class="arw">→</span><span class="step">Action</span></span>
+    </p>
+    <div class="beh">
+      <div class="item"><div class="ic">😮‍💨</div><div><h4>Stress spending</h4><small>Delivery &amp; convenience buys spike on Sunday evenings and after busy workdays.</small></div></div>
+      <div class="item"><div class="ic">🩹</div><div><h4>Death by small purchases</h4><small>Frequent tiny buys quietly outweigh the occasional big one.</small></div></div>
+      <div class="item"><div class="ic">🎉</div><div><h4>Post-payday spike</h4><small>First-week splurge leaves no flexibility later in the month.</small></div></div>
+      <div class="item"><div class="ic">🧟</div><div><h4>Zombie subscriptions</h4><small>Recurring memberships you barely use anymore.</small></div></div>
+      <div class="item"><div class="ic">🔁</div><div><h4>The repeating cycle</h4><small>Comfortable start → fast 2-week spend → cautious month-end. Every month.</small></div></div>
+      <div class="item"><div class="ic">📅</div><div><h4>"Surprises" aren't surprises</h4><small>Insurance, annual subs, family events recur predictably — they can be planned for.</small></div></div>
+      <div class="item spot" style="grid-column:1/-1"><div class="ic">🛟</div><div><h4>The real risk isn't overspending — it's the missing buffer</h4><small>Most months the plan works, but one small emergency could break it. The contrarian truth the whole product now stands on.</small></div></div>
+    </div>
+  </section>
+
+  <!-- TECHNIQUE 2 -->
+  <section>
+    <div class="tnum"><span class="dot">2</span><div><span class="lens">Lens Two</span><h2>How Might We</h2></div></div>
+    <p class="sub">We flipped the jobs into opportunity questions — then built the product to answer them. Four gears of one engine: <b>past → pattern → prediction → prescription.</b></p>
+
+    <div class="grid g2" style="margin-top:20px">
+      <div class="hmw"><div class="q">1</div><div>How might we <b>warn about shortfalls before they happen</b> — with time to adjust, not react after the damage?</div></div>
+      <div class="hmw"><div class="q">2</div><div>How might we <b>surface hidden habits</b> users can't see themselves — supportively, never judgmentally?</div></div>
+      <div class="hmw"><div class="q">3</div><div>How might we turn complex transactions into <b>simple personalized insights</b> — no financial expertise required?</div></div>
+      <div class="hmw"><div class="q">4</div><div>How might we <b>balance today's spend vs. tomorrow's commitments</b> with real-time safe-to-spend guidance?</div></div>
+    </div>
+
+    <h3 style="margin-top:34px">The answer: four concepts, one Copilot</h3>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card concept">
+        <div class="kicker">Concept 01</div>
+        <h3>🗣️ AI Financial Copilot</h3>
+        <p>You open the app to a <em>conversation</em>, not a chart. A daily briefing hands you a Safe-to-Spend number and — crucially — the plain-language <em>why</em> behind it.</p>
+      </div>
+      <div class="card concept spine">
+        <div class="kicker">Concept 02 <span class="spinebadge">the spine</span></div>
+        <h3>📈 Financial Confidence Score</h3>
+        <p>A 0–100 score of <em>preparedness</em>, not wealth. Retention loop, emotional payoff, and honesty meter — all in one number that goes up. The sleeper hit.</p>
+      </div>
+      <div class="card concept">
+        <div class="kicker">Concept 03</div>
+        <h3>🗺️ Financial Timeline</h3>
+        <p>"Google Maps for money." See your financial <em>future</em> as a timeline; every purchase instantly recalculates what's safe and confirms your commitments still hold.</p>
+      </div>
+      <div class="card concept">
+        <div class="kicker">Concept 04</div>
+        <h3>🛡️ Financial Guardian</h3>
+        <p>Quietly watches; speaks only when it helps. Pace warnings, gentle nudges, purchase reassurance. Informs, reassures, suggests — <em>never criticizes.</em></p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:30px">The Financial Timeline, alive</h3>
+    <div class="tl" style="margin-top:10px">
+      <div class="row"><div class="when">Today</div><div class="bar"><i class="safe" style="width:100%;background:linear-gradient(90deg,#4fd1c5,#5aa9ff)"></i></div><div class="amt safe">₹920 safe</div></div>
+      <div class="row"><div class="when">+5 days</div><div class="bar"><i class="out" style="width:26%;background:#ff7a7a"></i></div><div class="amt out">−₹2,300</div></div>
+      <div class="row"><div class="when">+9 days</div><div class="bar"><i class="out" style="width:8%;background:#ff7a7a"></i></div><div class="amt out">−₹649</div></div>
+      <div class="row"><div class="when">+14 days</div><div class="bar"><i class="out" style="width:70%;background:#ff7a7a"></i></div><div class="amt out">−₹15,000</div></div>
+      <div class="row"><div class="when">Payday</div><div class="bar"><i class="in" style="width:100%;background:#5be0a6"></i></div><div class="amt in">+₹52,000</div></div>
+    </div>
+
+    <h3 style="margin-top:34px">The Trust Loop <span style="color:var(--muted);font-weight:500;font-size:.9rem">— the loyalty mechanic behind every recommendation</span></h3>
+    <div class="loop" id="loop">
+      <div class="node" data-i="0"><div class="n">🔮</div><b>Prediction</b><small>"You're safe to spend ₹920 today."</small></div>
+      <div class="node" data-i="1"><div class="n">🧾</div><b>Explanation</b><small>"Balance, bills, subs &amp; savings all accounted for."</small></div>
+      <div class="node" data-i="2"><div class="n">🧭</div><b>Recommendation</b><small>"Stay under ₹900/day and you'll cover everything."</small></div>
+      <div class="node" data-i="3"><div class="n">✅</div><b>Outcome</b><small>"You'll finish the month with savings intact."</small></div>
+    </div>
+
+    <h3 style="margin-top:34px">🌡️ The moat: Confidence <em>with Humility</em></h3>
+    <p class="sub">The AI wins by being honest, not certain. When it can't be sure, it becomes <b>more transparent, more conservative, more collaborative — never silent.</b> That's the one thing incumbents can't copy without breaking their "always right" brand.</p>
+    <div class="fail" style="margin-top:14px">
+      <div class="f"><b>Irregular income</b><br><span>Conservative estimate, labelled unconfirmed — auto-raises the moment income lands.</span></div>
+      <div class="f"><b>Unexpected one-off</b><br><span>Doesn't pretend it was predictable. Recalculates &amp; adapts. <em>Adapt, don't apologize.</em></span></div>
+      <div class="f"><b>Missing / cash data</b><br><span>Discloses its blind spots instead of faking confidence.</span></div>
+      <div class="f"><b>Variable bills</b><br><span>Reserves top-of-range, shows the range, releases spending if the actual is lower.</span></div>
+      <div class="f" style="grid-column:1/-1"><b>Low confidence</b><br><span>Surfaces the % + <em>why</em> it's lower + what data would improve it — turning uncertainty into collaboration.</span></div>
+    </div>
+  </section>
+
+  <!-- TECHNIQUE 3 -->
+  <section>
+    <div class="tnum"><span class="dot">3</span><div><span class="lens">Lens Three</span><h2>Build on What Works</h2></div></div>
+    <p class="sub">Stand on the shoulders of what already works — then reach higher. We absorbed YNAB's most powerful idea and stripped away the thing that makes people quit it.</p>
+
+    <div class="grid g2" style="margin-top:20px">
+      <div class="card">
+        <div class="tag" style="color:var(--muted)">What YNAB nailed</div>
+        <h3>"Give Every Rupee a Job"</h3>
+        <p>A mindset shift: every rupee has a purpose <em>before</em> it's spent → control and intention. But it demands time, discipline, and financial literacy — so people abandon it.</p>
+      </div>
+      <div class="card" style="border-color:rgba(79,209,197,.4)">
+        <div class="tag" style="color:var(--calm)">The AI-native leapfrog</div>
+        <h3>The same philosophy, effortless</h3>
+        <p>The AI infers the allocations continuously in the background — rent, bills, subs, savings, forecasts — and the <em>transparency pillars</em> earn the buy-in that manual assignment used to.</p>
+      </div>
+    </div>
+
+    <div class="billboard">
+      <span>The positioning, on a billboard:</span>
+      <b>"Every Rupee Already Has a Job —<br>Your AI Is Managing It for You."</b>
+    </div>
+
+    <h3 style="margin-top:34px">🔌 The fuel: data that feels like teaching, not typing</h3>
+    <p class="sub">The AI adapts to <em>your</em> financial life — not the reverse. Every input immediately makes it visibly smarter.</p>
+    <div class="flow" style="margin:14px 0">
+      <span class="step">User acts</span><span class="arw">→</span><span class="step">AI learns</span><span class="arw">→</span><span class="step" style="border-color:var(--calm)">User sees immediate benefit</span>
+    </div>
+    <div class="grid g3" style="margin-top:6px">
+      <div class="card"><h3 style="font-size:.98rem">🏦 Connect · 📄 Upload · 🧾 Scan · ✍️ Cash · 📆 Commitments</h3><p style="font-size:.9rem">Pick your own level of automation. Bank APIs, CSV/PDF statements, receipt scans, quick cash notes, future obligations — all welcome.</p></div>
+      <div class="card"><h3 style="font-size:.98rem">"I've learned something"</h3><p style="font-size:.9rem">Never just "thanks." After a statement upload: "Found 3 subscriptions, recalculated your Safe-to-Spend." Correcting a category teaches merchant rules for next time.</p></div>
+      <div class="card"><h3 style="font-size:.98rem">Radical provenance</h3><p style="font-size:.9rem">Every recommendation lists exactly what it used — <em>and what's missing.</em> Doubles as a privacy trust-builder and a gentle onboarding nudge.</p></div>
+    </div>
+  </section>
+
+  <!-- SYNTHESIS -->
+  <section class="syn">
+    <div class="tnum"><span class="dot" style="background:linear-gradient(135deg,var(--violet),var(--sky))">✦</span><div><span class="lens">The Climax</span><h2>The connections underneath</h2></div></div>
+    <p class="sub">These weren't separate ideas. They interlock — and that's what makes it a product, not a feature list.</p>
+    <div class="card" style="margin-top:16px">
+      <div class="link"><div class="n">1</div><p><span class="k">The moat and the automation are the same coin.</span> Confidence-with-Humility is exactly what earns the right to remove YNAB's manual effort. Automating the planning would normally kill buy-in — <em>transparency is what pays for it.</em></p></div>
+      <div class="link"><div class="n">2</div><p><span class="k">The Confidence Score is the spine, not a feature.</span> It's the single surface where behavioral insight, forecast, and %confidence all render as one number that goes up — retention loop, emotional payoff, and honesty meter wearing three hats.</p></div>
+      <div class="link"><div class="n">3</div><p><span class="k">The "failure moments" ARE the feature.</span> Everyone builds safe-to-spend. Handling the freelancer, the cash, the variable bill honestly is the thing incumbents structurally can't copy. <em>The bug-handling is the moat.</em></p></div>
+      <div class="link"><div class="n">4</div><p><span class="k">A throwaway line became the engine.</span> "Surprises aren't surprises" quietly powers the scariest, best feature: the Guardian warning you weeks before the storm.</p></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>3</b><span>time-horizons: Behind · Now · Ahead</span></div>
+      <div class="stat"><b>4</b><span>concepts, one Copilot</span></div>
+      <div class="stat"><b>7</b><span>behavioral truths uncovered</span></div>
+      <div class="stat"><b>1</b><span>honest moat that's hard to copy</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-title">🧠 Facilitated by Carson — Elite Brainstorming Specialist · Creative Partner mode</div>
+    <p>Every idea and decision here was generated by <b>ALPHA</b>. Session record: <code>.memlog.md</code> · Companion: <code>brainstorm-intent.md</code> (ready for <code>bmad-product-brief</code>).<br>
+    Wild ideas today become obvious innovations tomorrow. 🎉</p>
+  </footer>
+</div>
+
+<script>
+  // Animate confidence gauge to 82
+  (function(){
+    var ring=document.getElementById('ring'), out=document.getElementById('score');
+    var C=515, target=82, start=null, dur=1600;
+    function ease(t){return 1-Math.pow(1-t,3);}
+    function step(ts){
+      if(!start)start=ts;
+      var p=Math.min((ts-start)/dur,1), e=ease(p);
+      ring.style.strokeDashoffset = C - (C*(target/100))*e;
+      out.textContent = Math.round(target*e);
+      if(p<1)requestAnimationFrame(step);
+    }
+    // start when visible-ish
+    setTimeout(function(){requestAnimationFrame(step);},300);
+  })();
+
+  // Trust Loop pulse
+  (function(){
+    var nodes=[].slice.call(document.querySelectorAll('#loop .node')), i=0;
+    setInterval(function(){
+      nodes.forEach(function(n){n.classList.remove('on');});
+      nodes[i%nodes.length].classList.add('on');
+      i++;
+    },1100);
+  })();
+</script>
+</body>
+</html>
