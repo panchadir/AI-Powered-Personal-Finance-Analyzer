@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "statusMessage": "Checking PROJECT-PROGRESS.md is up to date...",
+            "timeout": 15,
+            "command": "b=$(git status --porcelain -- _bmad-output _bmad/custom 2>/dev/null | wc -l | tr -d ' '); p=$(git status --porcelain -- PROJECT-PROGRESS.md 2>/dev/null | wc -l | tr -d ' '); if [ \"${b:-0}\" -gt 0 ] 2>/dev/null && [ \"${p:-0}\" -eq 0 ] 2>/dev/null; then echo \"{\\\"continue\\\": false, \\\"stopReason\\\": \\\"BMAD output files under _bmad-output/ or _bmad/custom/ changed this session but PROJECT-PROGRESS.md was not updated. Append a new Step entry (Phase / Workflow / Goal / Command / Trigger + Agent Log + Skill Log + Execution Summary) and update the Summary Tables, following the schema already established in that file, before stopping.\\\"}\"; else echo \"{\\\"continue\\\": true}\"; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

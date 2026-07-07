@@ -319,6 +319,82 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 
 ---
 
+## Step 8 — Domain Research Session (India-Focused AI Personal Finance Apps)
+
+**Timestamp:** 2026-07-07 (this conversation, branch `Domain-Research`)
+**BMAD Phase:** Domain / Market Research — pre-Product Brief validation
+**Workflow:** `bmad-domain-research`
+**User Goal:** Independently validate (and correct where necessary) the TAM/SAM/SOM, competitor landscape, and AI-feasibility claims already asserted in `innovation-strategy-2026-07-07.md`, while exploring fresh ground in market landscape & competitors, AI/tech capabilities, and user behavior/industry trends. Scope was expanded mid-session, at user request, to add **User Pain Research** and **Banking & Statement Classification** as explicit priority areas.
+**BMAD Command:** `/bmad-domain-research` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User
+
+⚠️ **Cross-session note:** This step ran concurrently with **Step 7** (`bmad-market-research`, branch `Bmad-MarketResearch`) in a different session/worktree, discovered only because this file was found already modified when this step went to append. The two research efforts are **substantially overlapping in scope and partially overlapping in findings** (both independently flag: the D30/retention target as optimistic, AA-consent/adoption friction, unvalidated SAM/SOM figures, and competitive-window compression). They were not coordinated and should be **reconciled into a single research artifact** before either feeds into Product Brief work — see Next Recommended BMAD Command below.
+
+### Agent Log
+- **Agent Name:** ALPHA
+- **Role:** Domain Research Facilitator (role shifts per skill step: Industry Analyst → Competitive Analyst → Regulatory Analyst → Technology Analyst → Research Strategist)
+- **Reason Invoked:** Four prior ideation sessions (brainstorming, design thinking, innovation strategy, problem-solving) contained no independently-verified market data; user wanted validation before proceeding to Product Brief.
+- **Triggering Context:** User-initiated via `/bmad-domain-research` slash command.
+- **Input:** `brainstorm-intent.md`, `design-thinking-2026-07-07.md`, `innovation-strategy-2026-07-07.md`, `problem-solution-2026-07-07.md` (read as context); ~15+ live web searches; 1 WebFetch (Luminix competitive-landscape report).
+- **Output:** Full domain research document — Industry Analysis, Competitive Landscape, Regulatory Requirements (light-touch), Technical Trends (incl. Banking/Statement Classification), User Pain Research, Executive Summary/Synthesis.
+- **Source:** **Observed** (this session; frontmatter `user_name: 'ALPHA'`).
+
+### Skill Log
+- **Skill Name:** `bmad-domain-research`
+- **Purpose:** Structured 6-step domain/industry research workflow (scope confirmation → industry analysis → competitive landscape → regulatory focus → technical trends → synthesis).
+- **Reason Invoked:** User explicitly ran `/bmad-domain-research`.
+- **Contribution:** All 6 steps completed in full (frontmatter `stepsCompleted: [1,2,3,4,5,6]`); scope expanded mid-workflow (between Steps 4 and 5) to add two user-requested focus areas.
+- **Triggering Agent:** ALPHA.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Step 1 (scope confirmation) → Step 2 (industry analysis) → Step 3 (competitive landscape) → Step 4 (regulatory, light-touch) → *[user-requested scope addition: User Pain Research + Banking & Statement Classification]* → Step 5 (technical trends, expanded) → Step 6 (synthesis).
+- **Inputs:** 4 prior BMAD artifacts (Steps 2–5 of this tracker); live web research; no prior research artifacts were consulted from Step 7 (parallel session, not visible to this one until after completion).
+- **Outputs:** Complete domain research report with every finding explicitly tagged as confirming, correcting, or adding to a specific prior-session claim.
+- **Key Decisions (Observed):**
+  - Geographic scope: India-focused; global players (Cleo, Monarch, YNAB, Rocket Money, Copilot Money) used strictly as benchmark, never as India-market claims.
+  - Research goal: both validate existing claims AND explore fresh ground (user's explicit choice).
+  - Regulatory analysis deliberately scoped to light-touch per user's own prioritization.
+- **Corrections surfaced for downstream artifacts (not yet applied — flagged as recommendations):**
+  - `innovation-strategy-2026-07-07.md` competitor list is outdated: "Walnut" no longer exists independently (merged into **axio**).
+  - Jupiter (India neobank) already markets AI budgeting — closer competitor than the doc's "passive dashboard" framing assumed. *(Step 7 independently found a related but different signal: Fi Money winding down banking services — both steps agree the competitive map has moved since Step 4, via different evidence.)*
+  - Cleo (global) already ships an agentic "Autopilot" feature — undercuts the doc's 18-month founding-window assumption; should be treated as a ceiling, not a safe estimate.
+  - Pure-subscription revenue model (₹199/₹499) faces a global ~$100M-scale ceiling pattern seen across comparable apps.
+  - The doc's D30 retention target (≥40%) may be set against too-optimistic a baseline (category benchmark ~4.2%, confidence: medium) — **independently corroborated by Step 7**, which cites the same ~4.2% figure from a different source.
+  - AA framework real-world adoption is only ~38% of borrowers — the multi-source data strategy is load-bearing infrastructure, not a nice-to-have. *(Step 7 independently flags a related AA friction point: consent-screen UX is confusing.)*
+- **Deliverables:** `domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md` (complete, all 6 workflow steps).
+- **Artifacts Created:** `_bmad-output/planning-artifacts/research/domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md`.
+- **Artifacts Updated:** None — corrections were surfaced as recommendations only; `innovation-strategy-2026-07-07.md` itself was not edited during this session.
+- **Dependencies:** Steps 2, 4, 5 (brainstorming, innovation strategy, problem-solving) as the claims being validated/cross-referenced.
+- **Next Recommended BMAD Command:** **Reconcile this document with Step 7's market-research artifact** (`market-personal-finance-copilot-market-india-research-2026-07-07.md`) — they were produced independently and should not both be carried forward as separate sources of truth into Product Brief work. After reconciliation: apply the merged corrections to `innovation-strategy-2026-07-07.md`; resume `bmad-cis-design-thinking` (Ideate/Prototype/Test) and `bmad-cis-problem-solving` (Steps 4–9); then proceed to `bmad-product-brief`.
+- **Notes:** First session in this project to independently verify (rather than assume) claims made in prior ideation sessions. User separately flagged that this tracker file was not being updated automatically after each change — confirmed directly by this step's own discovery of an un-synced parallel Step 7. See Step 9 for the remediation.
+
+---
+
+## Step 9 — Process Historian Automation Fix
+
+**Timestamp:** 2026-07-07 (this conversation)
+**BMAD Phase:** Process Governance / Meta
+**Workflow:** N/A — direct user instruction, remediated via a Claude Code hook (`update-config` skill).
+**User Goal:** The user observed that `PROJECT-PROGRESS.md` was not actually being updated automatically after each change, despite Step 6's stated intent ("From this point forward, every new BMAD command... will be appended"), and asked for this to be fixed going forward.
+**BMAD Command:** None (direct instruction).
+**Trigger:** User
+
+### Root Cause
+Step 6's "append-only from this point forward" commitment was a **stated intention recorded in a document**, not an enforced mechanism. Nothing in the Claude Code harness (hooks, settings) actually required or reminded any agent to update this file after BMAD work — it depended entirely on each session's acting agent remembering unprompted, which does not hold across separate sessions/context windows. Step 8's own discovery of an un-synced Step 7 (written by a different, uncoordinated session) is direct, concrete proof of this failure mode, not a hypothetical one.
+
+### Remediation
+- **Agent Name:** Claude Code, acting as BMAD Process Historian.
+- **Action Taken:** Added a Claude Code hook (via the `update-config` skill) that fires on session **Stop** and checks whether any files under `_bmad-output/**` (or `_bmad/custom/**`) changed during the session without a corresponding change to `PROJECT-PROGRESS.md`. If so, it blocks the stop and surfaces a reminder so the tracker gets updated before the session ends, rather than silently relying on memory.
+- **Limitation (documented honestly):** A hook can *detect and remind*; it cannot *write the narrative log entry itself* — that still requires an agent to interpret what happened and produce a properly-sourced Step entry (Observed/Inferred/Unknown tagging, key decisions, etc.). This closes the "forgot entirely" failure mode; it does not fully automate authorship.
+- **Does not solve:** Cross-session/cross-worktree coordination (the Step 7/Step 8 collision) — each session's hook only sees its own session's file changes. Concurrent sessions on different branches can still race to append and hit merge conflicts, as nearly happened in Step 8. Flagged as a known residual risk, not fixed by this change.
+- **Config Change:** Created `.claude/settings.json` (did not previously exist) with a `Stop`-event hook. Logic (bash, pipe-tested with mock stdin before being written): compares `git status --porcelain` for `_bmad-output/` + `_bmad/custom/` against `git status --porcelain` for `PROJECT-PROGRESS.md`; if the former shows changes and the latter shows none, returns `{"continue": false, "stopReason": "..."}` to block the stop with a reminder; otherwise returns `{"continue": true}`. Committed to the project-level (team-shared) settings file, not a personal/local override, since this is a project-wide convention.
+- **Verification performed:** JSON schema validated (`node -e` JSON.parse + field checks — `jq` unavailable in this environment); both branches (block / allow) pipe-tested with synthetic stdin; the exact command string extracted from the written file was re-executed standalone and returned the expected `{"continue": true}` given the current (already-updated) state of this file. Live end-to-end firing of the Stop event itself could not be proven within this turn (Stop only fires when a session actually ends) — flagged rather than asserted as fully verified.
+- **Known caveat:** Since `.claude/settings.json` did not exist before this session, Claude Code's settings watcher may not pick it up until the user opens `/hooks` once or restarts the session — flagged directly rather than silently assumed active.
+- **Source:** **Observed** (this session; hook configuration is in `.claude/settings.json`, newly created).
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -332,6 +408,8 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | 5 | Problem Solving (partial) | `bmad-cis-problem-solving` (Inferred) | ALPHA | problem-solution-2026-07-07.md |
 | 6 | Process Governance | None (direct instruction) | Claude Code (Process Historian) | PROJECT-PROGRESS.md (this restructure) |
 | 7 | Market Research (complete) | `bmad-market-research` (Observed) | ALPHA | market-personal-finance-copilot-market-india-research-2026-07-07.md |
+| 8 | Domain Research (complete) | `bmad-domain-research` (Observed) | ALPHA | domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md |
+| 9 | Process Governance | None (direct instruction) | Claude Code (Process Historian) | `.claude/settings.json` (new Stop hook) |
 
 ## Commands Used
 
@@ -342,17 +420,18 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | `bmad-cis-design-thinking` (Inferred) | 1 |
 | `bmad-cis-innovation-strategy` (Inferred) | 1 |
 | `bmad-cis-problem-solving` (Inferred) | 1 |
-| None (direct user instruction) | 1 |
+| None (direct user instruction) | 2 |
 | `bmad-market-research` (Observed) | 1 |
+| `bmad-domain-research` (Observed) | 1 |
 
 ## Agent Usage
 
 | Agent | Count |
 |---|---|
-| ALPHA | 4 |
+| ALPHA | 5 |
 | Carson (Inferred) | 1 |
 | Unknown (Step 1 setup) | 1 |
-| Claude Code (Process Historian) | 1 |
+| Claude Code (Process Historian) | 2 |
 
 ## Skill Usage
 
@@ -363,14 +442,15 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | `bmad-cis-innovation-strategy` | 1 |
 | `bmad-cis-problem-solving` | 1 |
 | `bmad-market-research` | 1 |
+| `bmad-domain-research` | 1 |
 
 ## Agent → Skill Mapping
 
 | Agent | Skills |
 |---|---|
-| ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-market-research` |
+| ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-market-research`, `bmad-domain-research` |
 | Carson (Inferred) | `bmad-brainstorming` |
-| Claude Code (Process Historian) | None (document maintenance only) |
+| Claude Code (Process Historian) | None (document/config maintenance only) |
 
 ## Artifacts
 
@@ -384,14 +464,20 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 | `_bmad-output/design-thinking-2026-07-07.md` | Step 3 | Pending (Ideate/Prototype/Test) |
 | `_bmad-output/innovation-strategy-2026-07-07.md` | Step 4 | — |
 | `_bmad-output/problem-solution-2026-07-07.md` | Step 5 | Pending (Steps 4 cont.–9) |
-| `PROJECT-PROGRESS.md` | Step 3 (v1, bundled in commit `f344d11`) | Step 6 (schema restructure), Step 7 (this addition) |
+| `PROJECT-PROGRESS.md` | Step 3 (v1, bundled in commit `f344d11`) | Step 6 (schema restructure), Step 7, Step 8, Step 9 (these additions) |
 | `_bmad-output/planning-artifacts/research/market-personal-finance-copilot-market-india-research-2026-07-07.md` | Step 7 | — (untracked in git as of this writing) |
+| `_bmad-output/planning-artifacts/research/domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md` | Step 8 | — |
+| `.claude/settings.json` | Step 9 | — (new file; project-level, committed) |
 
 ## Corrections & Rework Log
 
 | Original Step | Corrected In Step | Agent | Reason | Status |
 |---|---|---|---|---|
 | Step 1 | Step 6 | Claude Code (Process Historian) | Prior tracker claimed a `design-artifacts/` directory (A–E stage folders) was created; it does not exist anywhere in the repository | Corrected |
+
+## Open Reconciliation Item
+
+**Step 7 and Step 8 are two independently-produced research artifacts covering substantially overlapping ground** (India personal-finance-copilot market/competitive/regulatory research), written in different, uncoordinated sessions on different branches. They agree on several major findings (D30 retention ~4.2% too optimistic a target, AA adoption/consent friction, unvalidated SAM/SOM) but were never reconciled into one source of truth. **Action needed before Product Brief:** merge or explicitly supersede one with the other; do not carry both forward as independent inputs.
 
 ## Workflow Progress
 
@@ -403,6 +489,8 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 [PARTIAL] Step 5 — Problem Solving      (Steps 1-3 done; Step 4 paused w/ 3 open questions; Steps 5-9 not started)  <-- action needed
 [DONE]    Step 6 — Process Historian tracker migration (this document)
 [DONE]    Step 7 — Market Research                (untracked in git — action needed: commit)  <-- action needed
+[DONE]    Step 8 — Domain Research                (overlaps Step 7 — action needed: reconcile)  <-- action needed
+[DONE]    Step 9 — Process Historian automation fix (Stop hook added; needs /hooks reload)      <-- action needed
 [TODO]    Product Brief
 [TODO]    PRD
 [TODO]    Architecture
@@ -410,21 +498,21 @@ Steps 1–5 below describe BMAD activity that occurred **before this conversatio
 [TODO]    Epics & Stories / Development
 ```
 
-**Current phase:** Pre-PRD discovery — market research (Step 7) is now complete and externally validates most of the prior thesis, but two workflows (Design Thinking, Problem Solving) remain mid-session and should still be resumed before the Product Brief is started, since both feed directly into MVP scope decisions. Additionally, Step 7's own findings raise two new pre-PRD action items: (1) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel, and (2) SAM/SOM figures and the ₹199/₹499 price points should be treated as hypotheses pending a category-specific validation pass, not settled planning inputs.
+**Current phase:** Pre-PRD discovery — two independent research passes (Steps 7 and 8) are now complete and both externally validate most of the prior thesis, but they overlap and need reconciliation before proceeding. Two workflows (Design Thinking, Problem Solving) also remain mid-session and should be resumed before the Product Brief is started, since both feed directly into MVP scope decisions. Pre-PRD action items now standing: (1) reconcile Step 7 and Step 8 into one research source of truth, (2) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel, (3) SAM/SOM figures and the ₹199/₹499 price points should be treated as hypotheses pending a category-specific validation pass, and (4) apply the corrections both research steps surfaced to `innovation-strategy-2026-07-07.md` (outdated competitor references, retention-target risk, revenue-model risk).
 
 ## Project Statistics
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 7 |
-| Distinct BMAD commands/workflows observed or inferred | 6 |
+| Steps recorded | 9 |
+| Distinct BMAD commands/workflows observed or inferred | 7 |
 | Distinct agents | 4 (ALPHA, Carson [Inferred], Unknown, Claude Code/Process Historian) |
-| Distinct skills | 5 |
-| Deliverables (complete) | 3 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md) |
+| Distinct skills | 6 |
+| Deliverables (complete) | 4 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 10 |
+| Artifact groups tracked | 12 |
 | Corrections logged | 1 |
-| Rework events | 0 |
+| Rework events | 0 (1 reconciliation pending — Step 7/Step 8 overlap, not yet counted as rework since neither has been discarded or redone) |
 
 ---
 
