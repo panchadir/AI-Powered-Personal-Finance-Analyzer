@@ -728,6 +728,92 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 ---
 
+## Step 25 — PRD + Architecture Validation Gap-Fill (Cross-Document Consistency + Rubric Review)
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Requirements governance — validation pass across all planning artifacts after Step 24 architecture spine was finalized.
+**Workflow:** `bmad-validate-prd` (deprecated shim) → `bmad-prd` Validate intent; two parallel subagents (rubric-walker + cross-document consistency checker)
+**User Goal:** "review the complete PRD and architect files, invoke the necessary agents and fill the gaps if anything."
+**BMAD Command:** `/bmad-validate-prd` (**Observed** — explicit invocation this session; forwarded to `bmad-prd` with validate intent per the shim; deprecation notice emitted)
+**Trigger:** User
+
+### Agent Log
+- **Agent 1:** bmad-prd rubric-walker subagent — ran 7-dimension quality review against `prd.md` + `addendum.md`. Wrote full findings to `review-rubric.md`.
+- **Agent 2:** Cross-document consistency checker subagent — ran paired-document review across PRD × Epics × Scenarios × UX Spec × Architecture Spine. Wrote full findings to `consistency-report.md`.
+- Both agents ran in parallel; parent assembled combined `validation-report.md` from their compact summaries.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-validate-prd` (deprecated shim) → `bmad-prd` Validate intent
+- **Purpose:** Full quality review of the finalized PRD and companion planning documents; cross-document consistency audit; AC coverage check.
+- **Triggering Agent:** Claude Code (PRD validation facilitator).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Inputs:** `planning-artifacts/prd.md` (status: final, Step 23), `planning-artifacts/epics-and-stories.md`, `planning-artifacts/safe-to-spend-scenarios.md`, `planning-artifacts/ux-spec-mvp.md`, `architecture/architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/ARCHITECTURE-SPINE.md`
+- **Findings:**
+  - rubric-walker: 22 findings — 3 critical, 7 high, 7 medium, 5 low (7 dimensions)
+  - consistency audit: 20 findings — 1 critical, 3 high, 10 medium, 6 low (across 5 documents)
+- **Fixes applied (17 total across 5 documents):**
+
+| Fix | Severity | Documents |
+|---|---|---|
+| `safe_to_spend_after_salary` → `safe_to_spend_after_income` in PRD §8 API table | Critical | `prd.md` |
+| Never-cut list ≥1 → ≥3 detectors; cut order floor set at 3 | High | `epics-and-stories.md` |
+| "Step 1 of 3" step indicator (FR-2.5 P0) added to S2.4 AC + UX spec checklist | High | `epics-and-stories.md`, `ux-spec-mvp.md` |
+| `aria-disabled` on Upload CTA (FR-2.8 / NFR-8 P0) added to S2.4 AC | High | `epics-and-stories.md` |
+| FR-5.7 30-day stale data amber banner added to S5.1 AC | Medium | `epics-and-stories.md` |
+| `trigger_event`/`suggested_action` field names canonicalized in CS-3 + AD-9 | Medium | `safe-to-spend-scenarios.md`, `ARCHITECTURE-SPINE.md` |
+| DPDP Rule 4 no-pre-ticked-consent added to S1.3 AC | Medium | `epics-and-stories.md` |
+| FR-1.9 aria-live auto-auth + 3s fallback added to S1.3 AC | Medium | `epics-and-stories.md` |
+| Scenario 11 added: over-conservatism guard (FR-5.8) | Medium | `safe-to-spend-scenarios.md` |
+| Scenario 12 added: salary-not-detected graceful fallback (FR-4.8) | Medium | `safe-to-spend-scenarios.md` |
+| FR-7.8 context handoff chip + `insight_id` in POST body added to S6.3 AC | Medium | `epics-and-stories.md` |
+| FR-7.10 Copilot accessibility (`role="log"`, `aria-live`, `aria-disabled`) added to S6.1 AC | Medium | `epics-and-stories.md` |
+| FR-9.3 `due_day=31` → "end of month" edge case added to S7.2 AC | Medium | `epics-and-stories.md` |
+| Persistent left nav (FR-6.4 P0) added to UX spec enforcement checklist | Medium | `ux-spec-mvp.md` |
+| S8.2 AC routing: "surface on dashboard" → "surface on the Insights page" | Low | `epics-and-stories.md` |
+| `uploaded_files` table added to ARCHITECTURE-SPINE.md C4 SQLite container description | Low | `ARCHITECTURE-SPINE.md` |
+| `ux-spec-mvp.md` added to PRD §Sources | Medium | `prd.md` |
+
+- **Pre-validation fixes (applied before agent dispatch):**
+  - `ux-spec-mvp.md` Copilot label: "stretch; ship if Day 3 allows" → "must-ship (scope locked 2026-07-08)"
+  - `ux-spec-mvp.md` score chip: "Confidence 87 🛡" raw number removed → FR-5.5 compliant label
+  - `epics-and-stories.md` E8 header and S8.1 AC: "≥1 detector" minimum → "all 5 coded; ≥3 must fire (FR-8.1 P0)"
+
+- **Deferred (3 items):**
+  - F-17: Transactions Table wireframe (ux-spec intentionally minimal)
+  - F-19: Configurable buffer test (parametrize at build time)
+  - F-20: `seen`/`dismissed` ERD detail (PRD §7 is authoritative)
+
+- **Carry-forward to build start (not fix-in-doc items):**
+  - DC-1: FR-6/FR-8 ACs need machine-assertable proxies before implementing those FRs
+  - DC-2: FR-7.6 "graceful" AC needs a quoted-string + scripted-query assertion
+  - DC-3: FR-5 contradiction invariant needs a pytest assertion
+  - SH-1: Confirm `data/demo-data.json` path exists and add to §Sources
+  - SF-2: §3.1 Emotional Design Constraints subsection (5 bullets) — add before build
+
+- **Deliverables:**
+  - `planning-artifacts/review-rubric.md` — 7-dimension rubric walk (22 findings)
+  - `planning-artifacts/consistency-report.md` — cross-document consistency audit (20 findings, fix status table)
+  - `planning-artifacts/validation-report.md` — consolidated validation report (this session's record)
+
+### Execution Summary
+- **Agent execution order:** Two parallel validation subagents (rubric-walker, consistency-checker) → parent applied findings → wrote three report files.
+- **Key Decisions (Observed):**
+  - Scenario suite expanded from 10 to 12 (Scenarios 11 and 12 added); PRD FR-4 AC and §9 item 2 updated accordingly.
+  - `epics-and-stories.md` S8.1 AC and E8 header tightened to ≥3 detector floor before agent dispatch (pre-validation fix).
+  - `ux-spec-mvp.md` Copilot scope lock applied pre-validation (scope was already locked at Step 16/23; label was stale).
+- **Artifacts Created:** `planning-artifacts/review-rubric.md`, `planning-artifacts/consistency-report.md`, `planning-artifacts/validation-report.md`
+- **Artifacts Updated:** `planning-artifacts/prd.md`, `planning-artifacts/epics-and-stories.md`, `planning-artifacts/safe-to-spend-scenarios.md`, `planning-artifacts/ux-spec-mvp.md`, `ARCHITECTURE-SPINE.md`
+- **Dependencies:** Steps 23 (prd.md final), 24 (ARCHITECTURE-SPINE.md final)
+- **Next Recommended BMAD Command:** Begin 3-day build. Hard first actions: (1) confirm `data/demo-data.json` exists; (2) address DC-1/DC-2/DC-3 carry-forward ACs before implementing FR-5/FR-6/FR-7/FR-8; (3) validate PDF/CSV parser against real bank statements (S2.3) before committing to supported formats. Then `bmad-quick-dev` / `bmad-create-story`.
+- **Notes / Deviations (flagged directly):**
+  - `bmad-validate-prd` shim emitted a deprecation notice on activation — forwarded to `bmad-prd` normally; no functional impact.
+  - This session's `review-rubric.md` overwrote Step 23's `review-rubric.md` (which was a rubric from the initial PRD finalization pass). The Step 25 rubric is the current authoritative version.
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -757,6 +843,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 21 | Phase 5: Prototyping — Scenario 01 fully built (7 views) + integration test | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | 7 HTML prototypes + shared CSS/JS; per-view + integration verification (0 console errors) |
 | 22 | Phase 5: Prototyping — Scenario 01 refinements (theme, left nav, Add-Commitment form) + wrap | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | Rebranded/re-navigated prototype + `README.md` + `HANDOFF.md` |
 | 23 | PRD Update — UX Design (Steps 17–19) + prototype HANDOFF (Steps 20–22) incorporated into prd.md | `/bmad-prd` → Update (Observed) | Claude Code (bmad-prd Update facilitator) | Updated `planning-artifacts/prd.md` (9 FRs expanded, §8 API Surface + §12 Open Items added, 2 new NFRs); new `.memlog.md` |
+| 24 | Architecture Spine — 14 ADs distilled from technical research + PRD | `/bmad-architecture` (Observed) | Claude Code (Architecture facilitator) | `ARCHITECTURE-SPINE.md` (14 ADs, status: final) |
+| 25 | PRD + Architecture Validation Gap-Fill — rubric walk + cross-document consistency audit + 17 fixes | `/bmad-validate-prd` → `bmad-prd` Validate (Observed) | 2 parallel subagents (rubric-walker, consistency-checker) | `review-rubric.md`, `consistency-report.md`, `validation-report.md`; 5 documents patched |
 
 ## Commands Used
 
@@ -778,6 +866,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/wds-4-ux-design` (Observed) | 1 (Dream session spanning Steps 17–18; Step 19 = direct instruction) |
 | `/wds-5-agentic-development` (Observed) | 1 (Prototyping session, Steps 20–21) |
 | `/bmad-prd` → Update (Observed) | 1 (Step 23) |
+| `/bmad-validate-prd` → `bmad-prd` Validate (Observed) | 1 (Step 25) |
 
 ## Agent Usage
 
@@ -792,6 +881,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (Party Mode orchestrator) | 1 |
 | Claude Code (WDS Phase 5 Implementation Partner) | 1 |
 | Claude Code (bmad-prd Update facilitator) | 1 |
+| 2 parallel subagents (rubric-walker, consistency-checker) | 1 (Step 25) |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 
@@ -813,6 +903,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `wds-4-ux-design` | 1 |
 | `wds-5-agentic-development` | 1 |
 | `bmad-prd` | 1 |
+| `bmad-architecture` | 1 |
+| `bmad-validate-prd` (shim) → `bmad-prd` Validate | 1 |
 
 ## Agent → Skill Mapping
 
@@ -856,12 +948,16 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/B-Trigger-Map/handover-to-ux.md` | Step 11 (wrap) | — |
 | `_bmad-output/_progress/agent-experiences/2026-07-07-trigger-map-D.md` | Step 11 | — |
 | `_bmad-output/planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md` | Step 12 | Step 12 (Reflex revision, same session) |
-| `_bmad-output/planning-artifacts/prd.md` | Step 13 | Step 16 → Step 23 Update → Step 23 Finalize (**status: final**; §13 Glossary; §3 User Journey; FR-4 formula/floor/rounding/struct; kill-signal protocol; counter-metric; NFR-9 perf baseline; all phase-blockers resolved) |
+| `_bmad-output/planning-artifacts/prd.md` | Step 13 | Step 16 → Step 23 Update → Step 23 Finalize (**status: final**) → Step 25 (§8 API field name; §Sources + ux-spec; FR-4 AC + §9 item 2 scenario count 10→12) |
 | `_bmad-output/planning-artifacts/.memlog.md` | Step 23 | Step 23 Finalize (entry 11 — finalization event) |
-| `_bmad-output/planning-artifacts/review-rubric.md` | Step 23 Finalize | — |
+| `_bmad-output/planning-artifacts/review-rubric.md` | Step 23 Finalize | Step 25 (overwritten — Step 25 rubric is the current authoritative version) |
+| `_bmad-output/planning-artifacts/consistency-report.md` | Step 25 | — |
+| `_bmad-output/planning-artifacts/validation-report.md` | Step 25 | — |
 | `_bmad-output/planning-artifacts/reconcile-brief.md` | Step 23 Finalize | — |
 | `_bmad-output/planning-artifacts/reconcile-sts-scenarios.md` | Step 23 Finalize | — |
-| `_bmad-output/planning-artifacts/epics-and-stories.md` | Step 13 | Step 16 (E6/E8 must-ship; cut-line retired) |
+| `_bmad-output/planning-artifacts/architecture/architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/ARCHITECTURE-SPINE.md` | Step 24 | Step 25 (AD-9 field name; C4 SQLite added `uploaded_files`) |
+| `_bmad-output/planning-artifacts/architecture/architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/.memlog.md` | Step 24 | — |
+| `_bmad-output/planning-artifacts/epics-and-stories.md` | Step 13 | Step 16 (E6/E8 must-ship; cut-line retired) → Step 25 (11 story AC extensions; never-cut list; E8 detector floor) |
 | `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md` | Step 14 | Step 15 (Critical fixes) → Step 16 (reverted — all steps now must-ship) |
 | `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md` | Step 14 | — |
 | `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` | Step 14 (untracked) | Step 15 (Critical fixes) → Step 16 (stretch labels reverted) |
@@ -876,6 +972,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `prototypes/01-.../work/Register-Work.yaml` + `stories/*.md` | Step 21 | — |
 | `prototypes/01-.../PROTOTYPE-ROADMAP.md` | Step 20 | Step 21 (all 7 views ✅ Built) |
 | `prototypes/01-.../data/demo-data.json` | Step 20 | Step 21 (statement counts + insights O→E→E→A structure) |
+| `_bmad-output/planning-artifacts/safe-to-spend-scenarios.md` | Step 13 | Step 25 (CS-3 field names canonicalized; Scenarios 11 and 12 added) |
+| `_bmad-output/planning-artifacts/ux-spec-mvp.md` | Step 13 | Step 25 (Copilot scope label; score chip FR-5.5 compliant; enforcement checklist 5→7 items) |
 
 ## Corrections & Rework Log
 
@@ -920,11 +1018,13 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 21 — Phase 5: Prototyping — Scenario 01 fully built (all 7 views) + integration test (0 console errors)
 [DONE]    Step 22 — Phase 5: Prototyping — refinements (branded theme, left nav, Add-Commitment form) + wrap docs (README + HANDOFF)  <-- prototype review-ready & documented
 [DONE]    Step 23 — PRD Update + Finalize   (status: final; §13 Glossary; §3 User Journey; all phase-blockers resolved; 4 open items tabled in §12)
+[DONE]    Step 24 — Architecture Spine   (14 ADs distilled; status: final; build substrate for E1–E9)
+[DONE]    Step 25 — PRD + Architecture Validation Gap-Fill   (rubric-walker + cross-doc consistency; 17 fixes across 5 docs; 12 scenarios; 3 reports written; 5 carry-forwards flagged for build start)
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
-[TODO]    Development (3-day MVP build)   — start with S2.3 statement-parser validation, then bmad-quick-dev / bmad-create-story
+[TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) add machine-assertable ACs for FR-5/FR-6/FR-7/FR-8 carry-forwards (DC-1/DC-2/DC-3); (3) validate CSV/PDF parser on real bank statements (S2.3). Then bmad-quick-dev / bmad-create-story.
 ```
 
-**Current phase (updated Step 21):** **Phase 5: Agentic Development — Scenario 01 prototype complete.** Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
+**Current phase (updated Step 24):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
 
 ---
 
@@ -1262,4 +1362,65 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 - `_bmad-output/planning-artifacts/reconcile-brief.md` (created by reconciliation subagent)
 - `_bmad-output/planning-artifacts/reconcile-sts-scenarios.md` (created by reconciliation subagent)
 - `_bmad-output/planning-artifacts/prd.md` → **status: final** (this finalize pass)
+
+---
+
+## Step 24 — Architecture Spine
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Architecture / Pre-Build
+**Workflow:** `bmad-architecture` (Fast path — spine distilled from existing finalized artifacts; no coaching dialog)
+**User Goal:** Produce a build-substrate architecture spine for the Phase 1 MVP — codifying the invariants that independently-built units (E1–E9 stories) cannot read off compliant code, as a stable reference before the 3-day build begins.
+**BMAD Command:** `/bmad-architecture` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (architecture facilitator)
+- **Role:** Architecture Spine author / BMAD Architecture skill executor
+- **Reason Invoked:** The PRD (Step 23) and Epics (Step 13/16) are finalized; the next planned phase is the 3-day MVP build. The architecture spine is the missing structural contract between planning and build — particularly for the honesty-spine invariants (engine/narrate boundary, STS floor/rounding, score-events write path, Copilot read-only tools) which are otherwise scattered across the PRD.
+- **Triggering Context:** User ran `/bmad-architecture`, then confirmed Fast path (input "1").
+- **Input:** `prd.md` (finalized), `technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md`, `epics-and-stories.md`, `safe-to-spend-scenarios.md`. No project-context.md existed.
+- **Output:** `ARCHITECTURE-SPINE.md` (status: final) + `.memlog.md` (20 entries).
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-architecture`
+- **Purpose:** Produce a build-substrate architecture spine — invariants (ADs), conventions, stack seed, structural diagrams, capability map, deferred list.
+- **Reason Invoked:** User invoked `/bmad-architecture` to create the pre-build structural contract.
+- **Contribution:** 14 Architecture Decisions distilled from three finalized planning documents; all tagged `[ADOPTED]`; 2 `[ASSUMPTION]` tags for Day-1 validation items; full C4 container diagram; ERD; source-tree seed; capability→architecture map.
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Resolved customization → read config.yaml → read PRD, technical research, epics/stories, memlog → initialized run folder + memlog (20 entries) → wrote ARCHITECTURE-SPINE.md → updated PROJECT-PROGRESS.md.
+- **Inputs:** `prd.md` (final), `technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md`, `epics-and-stories.md`, `safe-to-spend-scenarios.md`, `.memlog.md` (PRD run).
+- **Outputs:** `ARCHITECTURE-SPINE.md` (status: final), `.memlog.md` (20 entries).
+- **Key Decisions (Observed — all ADOPTED from prior finalized artifacts):**
+  - AD-1: engine/narrate hard boundary (no LLM in STS/CS computation path)
+  - AD-2: services/ framework-agnosticism (no reflex imports in services/)
+  - AD-3: single state-mutation path (financial state only via services/engine/)
+  - AD-4: user_id data isolation on every DB query
+  - AD-5: auth token in httpOnly cookie only
+  - AD-6: canonical transaction schema as the ingestion contract
+  - AD-7: category enum hard-constraint (structured output, Pydantic Literal)
+  - AD-8: STS formula, max(0,…) floor, round-down-to-₹10 rounding
+  - AD-9: score_events as score write path
+  - AD-10: Copilot read-only tool contract
+  - AD-11: SSE event schema as Copilot streaming contract
+  - AD-12: parser failure is honest refusal (never silent wrong data)
+  - AD-13: shared formatting utilities (formatINR, formatDate)
+  - AD-14: services/ as Phase 2 migration boundary
+- **Deliverables:** Architecture spine (build substrate, feature altitude) — the structural contract for E1–E9.
+- **Artifacts Created:**
+  - `_bmad-output/planning-artifacts/architecture/architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/ARCHITECTURE-SPINE.md`
+  - `_bmad-output/planning-artifacts/architecture/architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/.memlog.md`
+- **Artifacts Updated:** `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Step 23 (PRD, final), Step 12 (technical research), Step 13/16 (epics/stories), Step 13 (safe-to-spend-scenarios.md).
+- **Next Recommended BMAD Command:** `bmad-dev-story` or `bmad-quick-dev` to begin the 3-day MVP build — starting with S2.3 (statementsparser + pdfplumber validation against real statements, Day 1 hour 1) per the [ASSUMPTION] tags in the spine.
+- **Notes / Deviations:**
+  1. **Fast path selected** — user confirmed "1" (Fast path). All 14 ADs are [ADOPTED] from finalized prior artifacts; no coaching dialog was needed since the stack and major decisions were already settled in the PRD and technical research.
+  2. **project-context.md not found** — persistent facts file does not exist yet (`{project-root}/**/project-context.md` glob returned no matches); the spine was built directly from the finalized planning artifacts instead. No impact on the spine's completeness.
+  3. **Two [ASSUMPTION] tags remain** — statementsparser HDFC coverage and Reflex WebSocket availability — both explicitly flagged for Day-1-hour-1 validation in the spine's Stack table and Deferred section.
+  4. **Spine only deliverable** — user confirmed the spine alone (no deck, no solution-design doc) as the output. The build is proximate; a terse build reference was the right form.
+
 

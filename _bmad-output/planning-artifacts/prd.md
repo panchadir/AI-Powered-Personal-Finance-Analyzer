@@ -13,7 +13,7 @@ updated: 2026-07-08
 **Status:** Final
 **Type:** Lean MVP PRD
 
-> **Sources of record:** strategic foundation from [`A-Product-Brief/project-brief.md`](A-Product-Brief/project-brief.md) and [`B-Trigger-Map/`](B-Trigger-Map/); technical architecture from [`planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md`](planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md); Safe-to-Spend/Confidence-Score design from [`problem-solution-2026-07-07.md`](problem-solution-2026-07-07.md); engine test suite from [`planning-artifacts/safe-to-spend-scenarios.md`](safe-to-spend-scenarios.md); UX page specs from [`C-UX-Scenarios/`](C-UX-Scenarios/); prototype decisions from [`prototypes/01-priyas-first-honest-morning-Prototype/HANDOFF.md`](../../prototypes/01-priyas-first-honest-morning-Prototype/HANDOFF.md). This PRD does **not** restate those — it turns them into buildable requirements.
+> **Sources of record:** strategic foundation from [`A-Product-Brief/project-brief.md`](A-Product-Brief/project-brief.md) and [`B-Trigger-Map/`](B-Trigger-Map/); technical architecture from [`planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md`](planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md); Safe-to-Spend/Confidence-Score design from [`problem-solution-2026-07-07.md`](problem-solution-2026-07-07.md) §3 Design Decisions DD-1/DD-2; engine test suite from [`planning-artifacts/safe-to-spend-scenarios.md`](safe-to-spend-scenarios.md); UX page specs from [`C-UX-Scenarios/`](C-UX-Scenarios/); UX layout hierarchy, microcopy, and enforcement from [`planning-artifacts/ux-spec-mvp.md`](ux-spec-mvp.md); prototype decisions from [`prototypes/01-priyas-first-honest-morning-Prototype/HANDOFF.md`](../../prototypes/01-priyas-first-honest-morning-Prototype/HANDOFF.md). This PRD does **not** restate those — it turns them into buildable requirements.
 
 ---
 
@@ -188,7 +188,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
   }
   ```
 
-**AC:** the pytest suite in [`safe-to-spend-scenarios.md`](safe-to-spend-scenarios.md) (7 core + 3 boundary) passes with exact expected outputs, asserting every field of the evidence-pack struct. `safety_ok` is `True` for scenarios 1–9 and `False`-with-honest-shortfall for scenario 10. Rounding: all STS figures end in 0 (e.g. ₹1,250, not ₹1,254). Zero-floor: scenario 10 returns ₹0 with shortfall message, not a negative or crash.
+**AC:** the pytest suite in [`safe-to-spend-scenarios.md`](safe-to-spend-scenarios.md) (7 core + 3 boundary + scenario 11 over-conservatism guard + scenario 12 salary-not-detected = 12 total) passes with exact expected outputs, asserting every field of the evidence-pack struct. `safety_ok` is `True` for scenarios 1–9, 11, 12 and `False`-with-honest-shortfall for scenario 10. Rounding: all STS figures end in 0 (e.g. ₹1,250, not ₹1,254). Zero-floor: scenario 10 returns ₹0 with shortfall message, not a negative or crash. Scenario 11 returns non-zero STS (over-conservatism guard, FR-5.8). Scenario 12 returns `safe_to_spend_after_income=null` + `"no_income_detected"` flag (FR-4.8).
 
 ---
 
@@ -324,7 +324,7 @@ Full schema and migration notes in the technical research document.
 | `/statements/{id}/status` | GET/WS | Parse progress — WS preferred, polling fallback; emits named step events |
 | `/statements/{id}/transactions` | GET | Transaction list with category/confidence/badge |
 | `/transactions/{id}/categorise` | PATCH | User correction; writes merchant rule; returns updated matches |
-| `/dashboard` | GET | `{ safe_to_spend_today, safe_to_spend_after_salary, confidence, confidence_explanation, briefing_text, data_date, commitments[], spending_by_category[] }` |
+| `/dashboard` | GET | `{ safe_to_spend_today, safe_to_spend_after_income, confidence, confidence_explanation, briefing_text, data_date, commitments[], spending_by_category[] }` |
 | `/insights` | GET | `[{ id, pattern_name, observation, evidence[], explanation, action_suggestions[], confidence, data_months }]` |
 | `/insights/{id}/dismiss` | POST | Mark insight dismissed |
 | `/commitments` | GET, POST | List / add; POST returns `safe_to_spend_updated` |
@@ -336,7 +336,7 @@ Full schema and migration notes in the technical research document.
 ## 9. Success Metrics (MVP acceptance)
 
 1. All 9 capabilities demonstrable end-to-end on the demo statement (HDFC June 2026 Priya dataset).
-2. `services/engine/` pytest suite green across all 10 scenarios in [`safe-to-spend-scenarios.md`](safe-to-spend-scenarios.md), asserting all evidence-pack struct fields.
+2. `services/engine/` pytest suite green across all 12 scenarios in [`safe-to-spend-scenarios.md`](safe-to-spend-scenarios.md) (7 core + 3 boundary + over-conservatism guard + salary-not-detected), asserting all evidence-pack struct fields.
 3. ≥90% of demo statement's 24 transactions auto-categorized; every remainder resolvable via Teach Me.
 4. Every displayed number traceable: source data → engine evidence pack → narration.
 5. Copilot answers 10 scripted questions with zero invented numbers; trace chips present on all data-citing responses.
