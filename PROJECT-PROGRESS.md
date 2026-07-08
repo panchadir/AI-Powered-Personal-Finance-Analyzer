@@ -814,6 +814,76 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 ---
 
+## Step 26 — Generate Project Context
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Build / Agent Enablement
+**Workflow:** `bmad-generate-project-context` (3-step micro-file workflow: discover → generate → complete)
+**User Goal:** Produce a lean, LLM-optimized `project-context.md` — the "rules of the road" AI coding agents read before implementing — distilled from the finalized `ARCHITECTURE-SPINE.md` (AD-1 → AD-14) and hardened with review-surfaced rules that fall between the ADs, ahead of the 3-day MVP build.
+**BMAD Command:** `/bmad-generate-project-context` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Agent Name:** Claude Code (Project Context facilitator)
+- **Role:** `bmad-generate-project-context` skill executor + orchestrator of the invoked elicitation/party sub-skills
+- **Reason Invoked:** The architecture spine (Step 24) and validation (Step 25) are complete; no `project-context.md` existed (confirmed missing at Step 24). The build phase needs an agent-facing rules file so independently-dispatched dev/story agents implement the honesty-spine invariants consistently.
+- **Triggering Context:** User ran `/bmad-generate-project-context`, selected `[C]` to proceed past discovery, then `[P]` (Party Mode) and `[A]` (Advanced Elicitation) to pressure-test the ruleset, accepting findings from both before wrapping up.
+- **Input:** `ARCHITECTURE-SPINE.md` (final), `prd.md` (final), `technical-…-stack-research`, prototype `README.md`/`HANDOFF.md`, `_bmad/bmm/config.yaml`. No prior `project-context.md`.
+- **Output:** `_bmad-output/project-context.md` (status: complete, rule_count: 40, optimized_for_llm: true).
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-generate-project-context` (primary)
+  - **Purpose:** Create the agent-facing project-context rules file.
+  - **Contribution:** Discovered stack + 14 ADs + conventions; generated 7 rule categories; finalized with Usage Guidelines and completion frontmatter.
+  - **Triggering Agent:** Claude Code. **Source: Observed.**
+- **Skill Name:** `bmad-party-mode` (invoked from step-02 `[P]`)
+  - **Purpose:** Pressure-test the drafted rules from multiple implementation perspectives.
+  - **Contribution:** Convened the **Code Review Crew** (Vex, Grumbal, Boundary, Yui, Dana); surfaced **4 "Seams" findings** the spine didn't cover — STS denominator divide-by-zero guard, SSE `done`-in-`finally`, explicit normalized dedup key, untrusted DB text as LLM input. All accepted and folded in.
+  - **Triggering Agent:** Claude Code. **Source: Observed.**
+- **Skill Name:** `bmad-advanced-elicitation` (invoked from step-02 `[A]`)
+  - **Purpose:** Deeper critique pass for agent-misread traps.
+  - **Contribution:** Ran **Inversion Analysis** + **Failure Mode Analysis**; surfaced **6 "Agent-Misread Guards"** — `Decimal` money math (not float), no derived math in narrate, `user_id` on all user-scoped tables/joins, normalize-before-dedup, chart axes through format utils, SSE cookie-not-URL-token. All accepted and folded in.
+  - **Triggering Agent:** Claude Code. **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** Resolve customization (`resolve_customization.py`, run via `py` after `python3`/`uv` unavailable) → load config.yaml → glob for existing project-context (none) → read ARCHITECTURE-SPINE + prototype docs → write initial file (frontmatter + stack) → [C] → draft 7 rule categories → [P] → Party Mode (Code Review Crew) → fold 4 Seams → [A] → Advanced Elicitation (Inversion + Failure Mode) → fold 6 Guards → wrap: append Usage Guidelines + complete frontmatter → log this step.
+- **Inputs:** `ARCHITECTURE-SPINE.md`, `prd.md`, technical research, prototype `README.md`/`HANDOFF.md`, `config.yaml`.
+- **Outputs:** `_bmad-output/project-context.md` — 40 rules across 9 rule groups (Architecture/Layer Boundaries, Language, Framework, Testing, Code Quality, Workflow, Critical Don't-Miss, Party Seams, Agent-Misread Guards) + Usage Guidelines.
+- **Key Decisions (Observed):**
+  - project-context.md is a **projection of ARCHITECTURE-SPINE.md**; the spine remains source of truth for the 14 ADs. The context file adds the 10 review-surfaced cross-cutting rules (4 Seams + 6 Guards) that compliant-looking code still violates.
+  - Placed the file at `{output_folder}/project-context.md` (`_bmad-output/`), matching the workflow's `output_file` path and the persistent-facts glob the architecture skill looks for.
+  - Ran the full A/P/C hardening loop rather than accepting the first draft — user explicitly chose both `[P]` and `[A]`.
+- **Deliverables:** Agent-facing rules-of-the-road file for the MVP build.
+- **Artifacts Created:** `_bmad-output/project-context.md`.
+- **Artifacts Updated:** `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Step 24 (ARCHITECTURE-SPINE.md final), Step 23 (prd.md final), Step 12 (technical research).
+- **Next Recommended BMAD Command:** Begin the 3-day build — `bmad-create-story` / `bmad-quick-dev` — with `project-context.md` now available as a persistent-facts input to every dev/story agent. Hard first actions carry over from Step 25 (confirm `demo-data.json`; DC-1/DC-2/DC-3 ACs; S2.3 parser validation).
+- **Notes / Deviations:**
+  1. **Toolchain:** `uv` and `python3` were unavailable in the shell; the customization/party resolver scripts were run via the `py` launcher with `PYTHONUTF8=1` (the party resolver emitted a cp1252 `UnicodeDecodeError` until UTF-8 was forced). No functional impact on resolved output.
+  2. **Party room switch:** the default installed roster was overridden to the purpose-built `code-review-crew` group for the review, then the workflow returned to the step-02 A/P/C menu as designed.
+  3. **10 net-new rules** (4 Seams + 6 Guards) originated in this session's review passes — none were in the spine; they were surfaced by adversarial/inversion/failure-mode analysis and are tagged in the file as extending/sharpening specific ADs.
+
+### Step 26 continued — General Engineering Standards addendum
+
+**Trigger:** User pasted a set of baseline org/coding standards (Error Handling, General Coding, Testing, SQL Injection, Input Validation, Dependency Injection, Performance, OWASP, Code Review Checklist) and asked to add them to `project-context.md`.
+
+- **Stack-mismatch flagged (Observed):** the pasted standards were **.NET/C#-idiomatic** (`ErrorOr`, `using`-statement cleanup, FluentValidation, constructor-injection/service-locator framing, EF "migration reviewed"). This project is **Python 3.11 / Reflex / sqlmodel / pytest**. Raised the mismatch to the user rather than pasting verbatim.
+- **Decision (Observed — `AskUserQuestion`):** user chose **"Adapt to Python/Reflex"** over verbatim or annotated-verbatim.
+- **Action:** added a new **`## General Engineering Standards`** section, translating each standard to the real stack and cross-referencing existing ADs to avoid duplication:
+  - `ErrorOr` → typed `Result`/`Optional` return + the existing typed-exception set (extends AD-12).
+  - FluentValidation → **Pydantic** validators + `extra="forbid"`; file-upload type/size validation ties to AD-12.
+  - SQL injection → sqlmodel/SQLAlchemy parameterized queries; raw SQL only via `text()` with bound params.
+  - DI → constructor/param injection into `services/` (reinforces AD-2/AD-14 mockability + AD-1 raising fixture); no service-locator.
+  - Testing → unit/integration/validation/repository/service layers, ≥80% `services/` coverage, engine gate (AD-1).
+  - Performance → async I/O, pagination, no N+1, reference-data + prompt caching; explicitly *not* gold-plating a single-user local MVP.
+  - OWASP → mapped Top-10 items to existing ADs (A01→AD-4, A03→AD-7/AD-10, A02/A07→AD-5, secrets→`.env`, A09 logging no-secrets).
+  - Code Review Checklist → adapted ("no compiler warnings"→ruff/mypy; "migration reviewed"→sqlmodel schema-change ripple; added the engine gate + format-util + untrusted-text checks).
+- **Artifacts Updated:** `_bmad-output/project-context.md` (new section; frontmatter `general_standards_added: true`, `sections_completed` extended), `PROJECT-PROGRESS.md` (this continuation).
+- **Note:** `rule_count` frontmatter left at 40 (the *architecture-derived* rule set); the General Engineering Standards are baseline standards layered on top, tracked via `general_standards_added: true` rather than folded into that count.
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -845,6 +915,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 23 | PRD Update — UX Design (Steps 17–19) + prototype HANDOFF (Steps 20–22) incorporated into prd.md | `/bmad-prd` → Update (Observed) | Claude Code (bmad-prd Update facilitator) | Updated `planning-artifacts/prd.md` (9 FRs expanded, §8 API Surface + §12 Open Items added, 2 new NFRs); new `.memlog.md` |
 | 24 | Architecture Spine — 14 ADs distilled from technical research + PRD | `/bmad-architecture` (Observed) | Claude Code (Architecture facilitator) | `ARCHITECTURE-SPINE.md` (14 ADs, status: final) |
 | 25 | PRD + Architecture Validation Gap-Fill — rubric walk + cross-document consistency audit + 17 fixes | `/bmad-validate-prd` → `bmad-prd` Validate (Observed) | 2 parallel subagents (rubric-walker, consistency-checker) | `review-rubric.md`, `consistency-report.md`, `validation-report.md`; 5 documents patched |
+| 26 | Generate Project Context — agent-facing rules file distilled from spine; hardened via Party Mode (4 Seams) + Advanced Elicitation (6 Guards) | `/bmad-generate-project-context` (Observed); invoked `/bmad-party-mode` + `/bmad-advanced-elicitation` | Claude Code (Project Context facilitator); Code Review Crew (party) | `_bmad-output/project-context.md` (40 rules, status: complete) |
 
 ## Commands Used
 
@@ -867,6 +938,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/wds-5-agentic-development` (Observed) | 1 (Prototyping session, Steps 20–21) |
 | `/bmad-prd` → Update (Observed) | 1 (Step 23) |
 | `/bmad-validate-prd` → `bmad-prd` Validate (Observed) | 1 (Step 25) |
+| `/bmad-generate-project-context` (Observed) | 1 (Step 26) |
+| `/bmad-party-mode` (Observed) | +1 (Step 26; nested — total 2 sessions) |
+| `/bmad-advanced-elicitation` (Observed) | 1 (Step 26; nested) |
 
 ## Agent Usage
 
@@ -882,6 +956,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (WDS Phase 5 Implementation Partner) | 1 |
 | Claude Code (bmad-prd Update facilitator) | 1 |
 | 2 parallel subagents (rubric-walker, consistency-checker) | 1 (Step 25) |
+| Claude Code (Project Context facilitator) | 1 (Step 26) |
+| Code Review Crew — Vex, Grumbal, Boundary, Yui, Dana (party personas) | 1 (Step 26) |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 
@@ -974,6 +1050,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `prototypes/01-.../data/demo-data.json` | Step 20 | Step 21 (statement counts + insights O→E→E→A structure) |
 | `_bmad-output/planning-artifacts/safe-to-spend-scenarios.md` | Step 13 | Step 25 (CS-3 field names canonicalized; Scenarios 11 and 12 added) |
 | `_bmad-output/planning-artifacts/ux-spec-mvp.md` | Step 13 | Step 25 (Copilot scope label; score chip FR-5.5 compliant; enforcement checklist 5→7 items) |
+| `_bmad-output/project-context.md` | Step 26 | — (40 rules; projection of ARCHITECTURE-SPINE + 4 Party Seams + 6 Agent-Misread Guards; status: complete) |
 
 ## Corrections & Rework Log
 
@@ -1020,6 +1097,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 23 — PRD Update + Finalize   (status: final; §13 Glossary; §3 User Journey; all phase-blockers resolved; 4 open items tabled in §12)
 [DONE]    Step 24 — Architecture Spine   (14 ADs distilled; status: final; build substrate for E1–E9)
 [DONE]    Step 25 — PRD + Architecture Validation Gap-Fill   (rubric-walker + cross-doc consistency; 17 fixes across 5 docs; 12 scenarios; 3 reports written; 5 carry-forwards flagged for build start)
+[DONE]    Step 26 — Generate Project Context   (`_bmad-output/project-context.md`; 40 agent-facing rules; hardened via Party Mode [4 Seams] + Advanced Elicitation [6 Guards]; status: complete — build-ready agent rules file)
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
 [TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) add machine-assertable ACs for FR-5/FR-6/FR-7/FR-8 carry-forwards (DC-1/DC-2/DC-3); (3) validate CSV/PDF parser on real bank statements (S2.3). Then bmad-quick-dev / bmad-create-story.
 ```
@@ -1038,13 +1116,13 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 23 |
+| Steps recorded | 26 |
 | Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update) |
 | Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
-| Distinct skills | 13 |
+| Distinct skills | 15 (+`bmad-generate-project-context`, +`bmad-advanced-elicitation` at Step 26; `bmad-party-mode` already counted at Steps 15–16) |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 21 |
+| Artifact groups tracked | 22 (+`project-context.md` at Step 26) |
 | Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 
