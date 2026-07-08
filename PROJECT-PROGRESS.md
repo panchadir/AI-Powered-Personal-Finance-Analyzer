@@ -503,6 +503,108 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 ---
 
+## Step 12 — Technical Research (MVP Architecture & Stack)
+
+**Timestamp:** 2026-07-07 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-PRD Technical Discovery / Architecture Research
+**Workflow:** `bmad-technical-research` (frontmatter `workflowType: 'research'`, `research_type: 'technical'`)
+**User Goal:** Produce a verified, build-ready technical architecture and stack recommendation for a **re-scoped Phase 1 MVP** defined directly by the user mid-session: a locally-run web app (no complex infrastructure), buildable in **3 days**, covering sign-up/login, PDF/CSV bank-statement upload, automatic extraction + categorization, dashboard with charts, Safe-to-Spend recommendation with explanation, Confidence Score with visible drivers, NL Q&A AI Copilot, and proactive insights.
+**BMAD Command:** `/bmad-technical-research` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** ALPHA
+- **Role:** Technical Research Facilitator (Technology Stack Analyst → Integration Analyst → Systems Architect → Implementation Engineer → Research Strategist per skill steps)
+- **Reason Invoked:** The brainstorming session had explicitly deferred "the concrete technical architecture (which models / RAG / agent design)"; every later artifact layered constraints on that gap. User invoked technical research to close it before PRD/build.
+- **Triggering Context:** User ran `/bmad-technical-research`, then directed the research at all prior `_bmad-output/` docs, then **re-scoped the target mid-workflow** to the 3-day local MVP (superseding the initially-proposed 6-pillar production-architecture scope of AA/WhatsApp/hybrid-pipeline research).
+- **Input:** All six prior BMAD artifacts (brief, brainstorm-intent, problem-solution, innovation-strategy, design-thinking, domain+market research); 7 live web searches; the `claude-api` skill reference (for verified 2026 model IDs/pricing/API patterns).
+- **Output:** Complete technical research report — technology stack, integration patterns, architectural patterns, 3-day implementation plan, synthesis — recommending Python/Streamlit modular monolith + SQLite + pdfplumber/pandas + Claude `claude-opus-4-8`, with deterministic Safe-to-Spend/Confidence-Score engines separated from LLM narration.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-technical-research`
+- **Purpose:** 6-step web-verified technical research workflow (scope confirmation → technology stack → integration patterns → architectural patterns → implementation research → synthesis).
+- **Reason Invoked:** User explicitly ran `/bmad-technical-research`.
+- **Contribution:** All 6 steps completed (frontmatter `stepsCompleted: [1,2,3,4,5,6]`) in a single full pass.
+- **Triggering Agent:** ALPHA.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Activation (config load, persistent facts — no `project-context.md` exists, none loaded) → topic discovery grounded in all prior artifacts → Step 1 scope proposal (6-pillar production architecture) → **user re-scope directive** (9-bullet MVP definition, local dev only, 3-day deadline, "do the complete technical analysis") → Steps 2–6 executed continuously: 7 web searches (PDF-parsing libraries, Streamlit-vs-FastAPI, LLM categorization benchmarks, streamlit-authenticator, Indian bank statement parsers, Streamlit+Plotly dashboards, SQLite-vs-Postgres) + `claude-api` skill loaded for authoritative model/pricing facts → full report written → frontmatter finalized.
+- **Inputs:** Steps 2–5, 7, 8, 10 artifacts; live web sources; Anthropic API reference (2026).
+- **Outputs:** `technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md` (complete).
+- **Key Decisions (Observed):**
+  - **MVP scope re-set by user:** AA/FIU, WhatsApp delivery, DPDP consent architecture, cloud infra all explicitly deferred out of Phase 1 (recorded as deferred-not-dropped, with an evolution-path table).
+  - **Stack:** Python 3.11+/Streamlit modular monolith; streamlit-authenticator (bcrypt); pdfplumber primary + camelot fallback + statementsparser accelerator + pandas for CSV; SQLite via SQLAlchemy; Plotly charts; Anthropic `claude-opus-4-8` (structured outputs via `messages.parse`, read-only tool use for the Copilot, streaming, prompt caching, Batch API option).
+  - **Load-bearing architecture decision:** deterministic `engine/` (Safe-to-Spend with proximity ring-fencing, two-indicator Confidence Score with event-to-explanation binding via a `score_events` table) strictly separated from LLM `narrate/` layer — the LLM explains numbers, never computes them, making the brief's kill-signal constraint testable.
+  - **Categorization:** hybrid rules-first → Claude structured-output fallback → user "Teach Me" corrections writing merchant rules (provenance + confidence stored per transaction).
+  - **Two of the three open Step-5 constraint questions resolved-for-MVP:** freshness = statement end date (displayed); cold start = compute immediately with visible Low prediction-confidence; multi-bank = single-statement scope with caveat.
+  - Scanned/image PDFs declared out of MVP scope (text-layer PDFs + CSV only, honest refusal in UI); scope-guard cut list defined for timeline slip.
+- **Deliverables:** Complete technical research report with 3-day build plan (day-by-day checkpoints), risk register, cost envelope (<$15 API spend for build+demo), MVP acceptance metrics, and Phase 2 evolution path.
+- **Artifacts Created:** `_bmad-output/planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md`.
+- **Artifacts Updated:** `PROJECT-PROGRESS.md` (this entry + the Post-Step Decision below); `technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md` (revised in place — Streamlit → Reflex — per the Post-Step Decision below).
+- **Dependencies:** Steps 2, 3, 4, 5, 7, 8, 10 (all read as grounding context); Anthropic API documentation.
+- **Next Recommended BMAD Command:** Given the 3-day deadline: `bmad-prd` (fast pass) or directly `bmad-quick-dev` / `bmad-create-epics-and-stories` scoped to the 9-bullet MVP, using this report + the project brief as inputs. Hour-1 action item: validate statementsparser/pdfplumber against the user's real bank statements.
+- **Notes / Deviations (flagged directly):**
+  1. **Workflow-gate deviation (user-directed):** the skill mandates a [C] continue gate after every step; the user's explicit instruction ("Based on these please do the complete technical analysis") authorized a single continuous pass through Steps 2–6. Recorded in the report's completion footer as well.
+  2. **Mid-workflow re-scope:** Step 1 initially proposed researching the production architecture (AA/FIU, WhatsApp, hybrid vernacular pipeline per the brief). The user's MVP definition superseded it; the research file's frontmatter topic/goals were rewritten before content generation. The production-architecture research remains **not done** — it will be needed before Phase 2 and is flagged as an open item.
+  3. **Python environment note:** `python3`/`python` resolve to the MS Store alias on this machine (resolver script unrunnable); customization was merged manually per the skill's fallback rules (result: defaults, no overrides).
+  4. This step ran on branch `Bmad-Brainstorming` while Steps 10–11 artifacts (referenced as inputs) were authored on `bmad-wds-project-brief` — same cross-branch caveat as the Step 7/8 note.
+
+### Post-Step Decision (2026-07-08) — UI Framework changed to Reflex
+- **Trigger:** User asked whether Streamlit's UI is easily modifiable or whether another framework would better support "balanced UI and backend flows." Claude presented an honest tradeoff analysis (Streamlit's UI customization ceiling; Reflex vs. FastAPI+HTMX alternatives, all web-verified) and posed the choice via `AskUserQuestion`.
+- **Decision (Observed):** User selected **Reflex** (pure Python → React frontend + FastAPI/Starlette backend) over the originally-recommended Streamlit, for full UI control and an explicit `State`(backend)/component(UI) split.
+- **Verification performed:** 5 additional web searches (Reflex vs Streamlit UI/state/production; Streamlit CSS limits + shadcn; FastAPI+HTMX; reflex-local-auth; Reflex chat streaming + rx.plotly + rx.Model) confirmed first-party fits for every MVP feature — `reflex-local-auth` (bcrypt login/register), built-in ORM `rx.Model` (sqlmodel/SQLAlchemy → SQLite), `rx.plotly` charts, native streaming chat.
+- **Artifact impact:** `technical-...-research-2026-07-07.md` was **revised in place** — the decision is recorded as an "Application Framework: Reflex (SELECTED)" decision record, and every Streamlit-specific reference (stack summary, architecture diagram, auth, DB, charts, 3-day build plan, risk table, evolution path, executive summary) was updated to Reflex. Streamlit is retained explicitly as the documented runner-up / escape-hatch if the ~½-day Reflex ramp threatens the 3-day deadline. The deterministic-engine vs. LLM-narration architecture is framework-agnostic and unchanged.
+- **New risk logged (in the research doc):** Reflex learning curve vs. the 3-day clock — mitigated by front-loading the ramp in Day 1 and keeping the `services/` layer framework-agnostic so a Streamlit fallback stays cheap.
+- **Source:** **Observed** (this session).
+
+---
+
+## Step 13 — MVP PRD + Epics/Stories (build handoff, direct authoring)
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Requirements + Backlog (build handoff for the 3-day MVP)
+**Workflow:** N/A as an interactive skill run — the `bmad-prd` and `bmad-create-epics-and-stories` **deliverable shapes** were produced by **direct authoring**, synthesized from the existing artifacts (same established pattern as Step 10's Product Brief), per the user's explicit wrap-and-create instruction.
+**User Goal:** "Looks good for me, please wrap and create the necessary docs" — conclude the technical-research effort and produce the documents a developer needs to start the 3-day Reflex MVP build.
+**BMAD Command:** None (freeform wrap-up instruction; not a slash-command invocation of `bmad-prd`/`bmad-create-epics-and-stories`).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (acting as build-handoff author; no distinct BMAD persona invoked)
+- **Role:** Requirements + backlog author
+- **Reason Invoked:** User approved the Reflex technical direction and asked to wrap and create the necessary docs to move from research → build.
+- **Triggering Context:** Direct instruction after the Step 12 technical research + the Reflex UI-framework decision.
+- **Input:** `prd`-relevant + `epics`-relevant content synthesized from `A-Product-Brief/project-brief.md`, `B-Trigger-Map/**`, `problem-solution-2026-07-07.md`, and the Step 12 technical research doc (as revised to Reflex).
+- **Output:** Two build-handoff artifacts — a lean MVP PRD (9 capabilities → functional requirements FR-1…FR-9 with acceptance criteria, NFRs, data model, success metrics, resolved-for-MVP decisions) and an Epics & Stories backlog (E1…E9, story IDs mapped to FRs, day-by-day build order, scope-guard cut order).
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** None invoked interactively. The output intentionally mirrors the structure of `bmad-prd` and `bmad-create-epics-and-stories` deliverables but was authored directly (no step-gated dialog), consistent with the user's repeated preference in this project for direct synthesis over interactive workflows (see Step 10 Notes).
+- **Reason:** User asked to "wrap and create the necessary docs," not to run a specific workflow; the source material (brief, trigger map, problem-solution, tech research) was already complete and sufficient to author from.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Confirmed technical research was complete (Step 12) → authored `prd.md` (requirements spec, tightly scoped to the 9-bullet MVP, referencing the research doc as the architecture of record rather than duplicating it) → authored `epics-and-stories.md` (backlog mapped to the 3-day plan, story-to-FR traceability, scope-guard cut order) → updated this tracker.
+- **Inputs:** Steps 4, 5, 10, 11, 12 artifacts (strategy, personas, problem-solving, brief, trigger map, tech research).
+- **Outputs:** `prd.md`, `epics-and-stories.md`.
+- **Key Decisions (Observed):**
+  - PRD scoped to exactly the 9 user-defined MVP capabilities; Phase 2 items (AA, WhatsApp, DPDP, cloud, OCR, vernacular, multi-account) explicitly listed as out-of-scope-deferred.
+  - The three previously-open problem-solving constraint questions recorded as **resolved-for-MVP** in the PRD (freshness = statement date; cold-start = compute-now-with-low-confidence; multi-bank = single-statement-with-caveat).
+  - Architecture **not duplicated** — the PRD names the Step 12 research doc as the technical architecture of record and points to it.
+  - Backlog encodes the honesty/safety spine as never-cut stories (engine + pytest suite S4.1–S4.4, read-only Copilot tools S6.2).
+- **Deliverables:** MVP PRD + Epics/Stories backlog — the build-ready handoff pair.
+- **Artifacts Created:** `_bmad-output/planning-artifacts/prd.md`, `_bmad-output/planning-artifacts/epics-and-stories.md`.
+- **Artifacts Updated:** `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Steps 10 (brief), 11 (trigger map), 12 (technical research + Reflex decision); Steps 5's design constraints.
+- **Next Recommended BMAD Command:** `create the next story` (`bmad-create-story`) to expand any backlog story into a full dev-context file under `implementation-artifacts/`, or begin building with `bmad-quick-dev` / `bmad-dev-story`. Hard first action before coding: validate statementsparser/pdfplumber against the user's real bank statements (S2.3).
+- **Notes / Deviations (flagged directly):**
+  1. **Direct-authoring deviation:** these are `bmad-prd`/`bmad-create-epics-and-stories`-shaped deliverables produced without running those interactive skills — the same deliberate, user-aligned pattern recorded for Step 10. Provenance is therefore *synthesized-from-artifacts*, not *elicited-through-dialog*.
+  2. **Upstream gaps still open:** Design Thinking (Step 3: Ideate/Prototype/Test) and Problem-Solving (Step 5: Steps 4–9) remain paused; the PRD proceeded on their partial content plus the resolved-for-MVP decisions, consistent with the user's time-boxed sequencing throughout this project.
+  3. Both docs live in `planning-artifacts/`; per-story dev-context files (if generated later via `bmad-create-story`) would belong in `implementation-artifacts/`.
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -520,6 +622,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 9 | Process Governance | None (direct instruction) | Claude Code (Process Historian) | `.claude/settings.json` (new Stop hook) |
 | 10 | Phase 1: Product Brief (WDS) | `/wds-1-project-brief` (Observed) | Saga | `A-Product-Brief/project-brief.md`, `_progress/00-design-log.md` |
 | 11 | Phase 2: Trigger Mapping (WDS) | `/wds-2-trigger-mapping` (Observed) | Saga | `B-Trigger-Map/**` (7 files), Dream session log |
+| 12 | Technical Research (complete) | `/bmad-technical-research` (Observed) | ALPHA | technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md |
+| 13 | Requirements + Backlog (build handoff) | None (direct instruction) | Claude Code (build-handoff author) | prd.md, epics-and-stories.md |
 
 ## Commands Used
 
@@ -530,20 +634,22 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-cis-design-thinking` (Inferred) | 1 |
 | `bmad-cis-innovation-strategy` (Inferred) | 1 |
 | `bmad-cis-problem-solving` (Inferred) | 1 |
-| None (direct user instruction) | 2 |
+| None (direct user instruction) | 3 |
 | `bmad-market-research` (Observed) | 1 |
 | `bmad-domain-research` (Observed) | 1 |
 | `/wds-1-project-brief` (Observed) | 1 |
 | `/wds-2-trigger-mapping` (Observed) | 1 |
+| `/bmad-technical-research` (Observed) | 1 |
 
 ## Agent Usage
 
 | Agent | Count |
 |---|---|
-| ALPHA | 5 |
+| ALPHA | 6 |
 | Carson (Inferred) | 1 |
 | Unknown (Step 1 setup) | 1 |
 | Claude Code (Process Historian) | 2 |
+| Claude Code (build-handoff author) | 1 |
 | Saga | 2 |
 
 ## Skill Usage
@@ -558,15 +664,17 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-domain-research` | 1 |
 | `wds-1-project-brief` | 1 |
 | `wds-2-trigger-mapping` | 1 |
+| `bmad-technical-research` | 1 |
 
 ## Agent → Skill Mapping
 
 | Agent | Skills |
 |---|---|
-| ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-market-research`, `bmad-domain-research` |
+| ALPHA | `bmad-cis-design-thinking`, `bmad-cis-innovation-strategy`, `bmad-cis-problem-solving`, `bmad-market-research`, `bmad-domain-research`, `bmad-technical-research` |
 | Carson (Inferred) | `bmad-brainstorming` |
 | Saga | `wds-1-project-brief`, `wds-2-trigger-mapping` |
 | Claude Code (Process Historian) | None (document/config maintenance only) |
+| Claude Code (build-handoff author) | None (direct authoring — `prd.md`, `epics-and-stories.md`) |
 
 ## Artifacts
 
@@ -595,6 +703,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/B-Trigger-Map/feature-impact-analysis.md` | Step 11 | — |
 | `_bmad-output/B-Trigger-Map/handover-to-ux.md` | Step 11 (wrap) | — |
 | `_bmad-output/_progress/agent-experiences/2026-07-07-trigger-map-D.md` | Step 11 | — |
+| `_bmad-output/planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md` | Step 12 | Step 12 (Reflex revision, same session) |
+| `_bmad-output/planning-artifacts/prd.md` | Step 13 | — |
+| `_bmad-output/planning-artifacts/epics-and-stories.md` | Step 13 | — |
 
 ## Corrections & Rework Log
 
@@ -621,27 +732,33 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 9 — Process Historian automation fix (Stop hook added; needs /hooks reload)      <-- action needed
 [DONE]    Step 10 — Product Brief (WDS Phase 1)    (synthesized directly from artifacts, not via 36-step dialog — see Step 10 Notes)
 [DONE]    Step 11 — Trigger Mapping (WDS Phase 2)   (Dream mode — Rohan & Kavya personas pending user confirmation)  <-- action needed
+[DONE]    Step 12 — Technical Research (MVP arch & stack, 3-day local build scope — production-architecture research [AA/WhatsApp/DPDP] deferred, still needed before Phase 2)
+[DONE]    Step 13 — MVP PRD + Epics/Stories (build handoff — direct authoring; prd.md + epics-and-stories.md)
 [PARTIAL] Step 3 / Step 5 still unresolved          (Design Thinking Ideate/Prototype/Test; Problem-Solving Steps 4-9 — later phases proceeded without them)  <-- action needed
-[TODO]    Phase 3: UX Scenarios
-[TODO]    PRD
-[TODO]    Architecture
-[TODO]    UX Design / Scenarios
-[TODO]    Epics & Stories / Development
+[DONE]    PRD (lean MVP, scoped to the 9-bullet MVP + Reflex tech research)   — Step 13
+[DONE]    Architecture                (of record = the Step 12 technical research doc; not separately duplicated)
+[DONE]    Epics & Stories list        (E1-E9, mapped to the 3-day plan)   — Step 13
+[TODO]    Development (3-day MVP build)   — start with S2.3 statement-parser validation, then bmad-quick-dev / bmad-create-story
+[TODO]    Phase 3: UX Scenarios       (optional for a 3-day MVP; deferred)
 ```
 
-**Current phase:** Phase 2: Trigger Mapping is now complete (`B-Trigger-Map/**`, 7 files), generated in **Dream mode** (autonomous) from the Phase 1 brief. It defines three target groups (Priya/primary/engine, Rohan/secondary/household, Kavya/tertiary/Year-2 employer), a 3-tier business-goals structure, per-persona driving forces with Product Promises, a persona-weighted feature-impact analysis, and a styled Mermaid trigger-map hub. Standing action items carried forward: (1) **confirm the two analyst-inferred personas (Rohan, Kavya)** — Dream mode did not elicit them interactively; this is the immediate next action before Phase 3; (2) resume Design Thinking (Step 3: Ideate/Prototype/Test) and Problem Solving (Step 5: Steps 4–9) — both remain genuinely paused and still block confident MVP/PRD scoping on the Safe-to-Spend/Confidence Score features; (3) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel before the 10,000-user checkpoint; (4) SAM/SOM figures and the ₹199/₹499 price points remain hypotheses pending a category-specific validation pass / Wizard-of-Oz test; (5) three open Safe-to-Spend/Confidence Score design questions (data-latency display, cold-start behavior, multi-bank gap) remain unresolved, tracked in `_bmad-output/_progress/00-design-log.md`'s Backlog and re-flagged in the Trigger Map's Key Insights.
+**Current phase:** **Build handoff complete — ready for development.** Step 12 (Technical Research) selected a Reflex/Python local stack for the re-scoped 3-day MVP (deterministic Safe-to-Spend/Confidence engines + LLM narration; Claude `claude-opus-4-8`), and Step 13 turned it into a lean MVP **PRD** (`planning-artifacts/prd.md`, FR-1…FR-9 with acceptance criteria) and an **Epics & Stories** backlog (`planning-artifacts/epics-and-stories.md`, E1–E9 mapped to the 3-day plan). The immediate next action is **development**: validate statement parsing against real bank statements (story S2.3), then build via `bmad-quick-dev` / `bmad-create-story`. Standing items still open from earlier phases are unchanged — see the list below.
+
+---
+
+*Earlier-phase status (unchanged, retained for continuity):* Phase 2 Trigger Mapping was completed in **Dream mode** (autonomous) from the Phase 1 brief. It defines three target groups (Priya/primary/engine, Rohan/secondary/household, Kavya/tertiary/Year-2 employer), a 3-tier business-goals structure, per-persona driving forces with Product Promises, a persona-weighted feature-impact analysis, and a styled Mermaid trigger-map hub. Standing action items carried forward: (1) **confirm the two analyst-inferred personas (Rohan, Kavya)** — Dream mode did not elicit them interactively; this is the immediate next action before Phase 3; (2) resume Design Thinking (Step 3: Ideate/Prototype/Test) and Problem Solving (Step 5: Steps 4–9) — both remain genuinely paused and still block confident MVP/PRD scoping on the Safe-to-Spend/Confidence Score features; (3) the SEBI Investment Adviser regulatory boundary should go in front of legal counsel before the 10,000-user checkpoint; (4) SAM/SOM figures and the ₹199/₹499 price points remain hypotheses pending a category-specific validation pass / Wizard-of-Oz test; (5) three open Safe-to-Spend/Confidence Score design questions (data-latency display, cold-start behavior, multi-bank gap) remain unresolved, tracked in `_bmad-output/_progress/00-design-log.md`'s Backlog and re-flagged in the Trigger Map's Key Insights.
 
 ## Project Statistics
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 11 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 9 |
-| Distinct agents | 5 (ALPHA, Carson [Inferred], Unknown, Claude Code/Process Historian, Saga) |
-| Distinct skills | 8 |
-| Deliverables (complete) | 6 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files]) |
+| Steps recorded | 13 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 10 (Step 13 used no command — direct authoring) |
+| Distinct agents | 5 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author], Saga) |
+| Distinct skills | 9 |
+| Deliverables (complete) | 9 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 15 |
+| Artifact groups tracked | 18 |
 | Corrections logged | 2 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 
