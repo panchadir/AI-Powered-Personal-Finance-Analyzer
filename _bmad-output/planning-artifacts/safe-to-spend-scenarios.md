@@ -57,6 +57,13 @@ Rounded **down** to the nearest ₹10 (never round a spend figure up). Two-layer
 | **9** | **Payday tomorrow + same-day commitment, uncertain income** (÷1 blow-up guard) | bal ₹18,000; buffer ₹2,000; rent ₹15,000 due tomorrow (income day); salary **Medium** confidence, 1d | ₹15,000 (income Medium → don't assume it covers same-day rent) | ₹1,000 | 1 | **₹1,000** | Same-day commitment reserved from present balance when income confidence < High; prevents the "÷1 → ₹16,000" over-payout |
 | **10** | **Shortfall / would-be-negative** (never negative, never hidden) | bal ₹16,000; buffer ₹2,000; rent ₹15,000 + EMI ₹8,500 due before income = ₹23,500 | ₹23,500 | −₹9,500 | any | **₹0** (floored) | STS floored at ₹0 (never negative); honest shortfall surfaced ("committed bills before payday exceed your balance by ₹9,500 — here's what to do"); no crash |
 
+## Additional boundary cases (11–12)
+
+| # | Boundary (tests) | Key inputs | reserved_total | pool | days | **STS today** | Must-hold assertion |
+|---|---|---|---|---|---|---|---|
+| **11** | **Over-conservatism guard (FR-5.8)** — commitment-free, positive balance must yield non-zero STS | bal ₹30,000; buffer ₹2,000; **no commitments** due before next income; next income in 20d | ₹0 | ₹28,000 | 20 | **₹1,400/day** | STS must be > ₹0 when balance is positive and no commitments are due this cycle — ₹0 on these inputs is a **bug** (over-conservatism) |
+| **12** | **Salary not detected (FR-4.8)** — no income credit identified in statement | bal ₹20,000; buffer ₹2,000; no transaction identified as salary; no confirmed income date | ₹0 (no commitments) | ₹18,000 | unknown | **N/A** | `safe_to_spend_after_income` = null; `data_quality_flags` includes `"no_income_detected"`; user-facing copy matches FR-4.8: "We couldn't detect a salary — add one manually?" — never a zero or crash |
+
 ---
 
 ## Confidence-Score companion assertions (FR-5)
@@ -65,7 +72,7 @@ Run alongside the Safe-to-Spend suite so the two indicators never contradict:
 
 - **CS-1** Confidence Score reflects **preparedness only** — Scenario 6 (tight but covered) scores lower than Scenario 1 (comfortable), and **Scenario 10 (shortfall) scores lowest**; app-usage never moves it.
 - **CS-2** Prediction Confidence tracks **data completeness** — High in S1/S2/S6, Medium in S4/S5, **Low in S7** — independent of the Score itself.
-- **CS-3** Every score delta writes a `score_events` row with (delta, trigger_event, explanation, action). A score change with no matching row **fails the test** (event-to-explanation binding).
+- **CS-3** Every score delta writes a `score_events` row with (`delta`, `trigger_event`, `explanation`, `suggested_action`). A score change with no matching row **fails the test** (event-to-explanation binding). Field names must match the data model exactly: `trigger_event` (not `triggering_event`) and `suggested_action` (not `action`).
 - **CS-4** No contradiction: a scenario is invalid if Score says "well prepared" while Safe-to-Spend is ₹0 (S10 must show both low Score **and** ₹0, telling one story).
 
 ## Implementation note
