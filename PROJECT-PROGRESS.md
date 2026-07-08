@@ -605,6 +605,129 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 ---
 
+## Step 14 — Phase 3: UX Scenarios (WDS Module) — IN PROGRESS
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 3: UX Scenarios (Whiteport Design Studio) — first use of `wds-3-scenarios` in this project
+**Workflow:** `wds-3-scenarios` (step-file architecture, Steps 01–09; currently mid-flight at Step 05 — outlining individual scenarios)
+**User Goal:** Transform the Phase 2 Trigger Map into concrete UX scenario outlines (linear sunshine paths) exposing all pages of the Phase-1 MVP for design scrutiny, ahead of Phase 4 UX Design.
+**BMAD Command:** `/wds-3-scenarios` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code, acting as **UX Scenario Facilitator** — the `wds-3-scenarios` skill does not declare a named persona (unlike Saga in Phases 1–2 or Freya in Phase 4).
+- **Role:** UX Scenario Facilitator, collaborating with the project owner (ask-don't-generate stance).
+- **Reason Invoked:** User ran `/wds-3-scenarios` directly after Phase 2 (Trigger Mapping, Step 11) to begin scenario planning for the MVP build already scoped in Steps 12–13.
+- **Triggering Context:** Direct slash-command invocation.
+- **Input:** `A-Product-Brief/project-brief.md`, `B-Trigger-Map/**` (hub, business goals, 3 personas, key insights) per the skill's own prerequisites; also read `planning-artifacts/prd.md`, `planning-artifacts/epics-and-stories.md`, and `planning-artifacts/ux-spec-mvp.md` (not required by the skill's step-01 file list, but consulted directly to ground the page inventory in the actual build spec rather than inventing pages).
+- **Output (so far):** Approved scope analysis, approved strategic-context chains, approved 3-scenario plan, Scenario 01 outline file, and its first page-step outline. Scenarios 02–03 and the overview/quality-review/handover steps are **not yet done** — this entry will need a follow-up update.
+- **Source:** **Observed** (this session, in progress).
+
+### Skill Log
+- **Skill Name:** `wds-3-scenarios`
+- **Purpose:** Convert the Trigger Map into linear-sunshine-path UX scenario outlines via a 9-step, checkpoint-gated dialog (load context → analyze scope → build strategic context → suggest scenarios → outline each scenario's 8 questions + per-page steps → generate overview → quality review → design-log update → handover).
+- **Reason Invoked:** User explicitly ran `/wds-3-scenarios`.
+- **Contribution (so far):** Steps 01–04 completed with explicit user checkpoints at each; Step 05 in progress (Scenario 01 fully outlined + first page step; Scenarios 02–03 pending).
+- **Triggering Agent:** Claude Code (UX Scenario Facilitator role).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Step 01 (loaded Product Brief, Trigger Map hub + business goals + all 3 personas + key insights; found no existing `C-UX-Scenarios/` work — fresh start) → Step 02 (classified as a Dynamic App with a linear onboarding flow; built a 7-page inventory grounded in the PRD/epics/ux-spec files, since the Product Brief alone doesn't enumerate app pages; **user directed removal of the Confidence Score Drill-in page from scope** — reduced from 8 to 7 pages) → Step 03 (traced 3 strategic-context chains, all persona=Priya since Rohan/Kavya features aren't in the MVP's 7-page surface; verified 7/7 page coverage, no repeats) → Step 04 (presented the 3-scenario plan; user approved as-is) → Step 05 (asked user Suggest-vs-Conversation mode for the 8-question dialog; user chose **Suggest mode** — Claude drafts, user reviews; Scenario 01 "Priya's First Honest Morning" drafted for review; **user removed the Confidence Score mention from Q1's transaction statement**; user approved; scenario file written; first page-step (01.1-register) auto-processed and written).
+- **Inputs:** Steps 10 (Product Brief), 11 (Trigger Map) as the skill's declared prerequisites; Step 13 artifacts (`prd.md`, `epics-and-stories.md`) and `planning-artifacts/ux-spec-mvp.md` consulted directly for the page inventory, since the MVP's actual screens (Register/Login/Upload/Transactions/Dashboard/Commitments/Copilot) are defined there, not in the Product Brief (which describes the Phase-2 WhatsApp-first channel, not the Phase-1 web-dashboard MVP surface).
+- **Outputs (so far):** `C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md`; `C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md`.
+- **Key Decisions (Observed):**
+  - **Page inventory reduced from 8 to 7 by user request:** the Confidence Score Drill-in (reached via the Dashboard's score chip, per `ux-spec-mvp.md`) was explicitly deferred out of scope for this scenario pass — can be added back as a scenario later.
+  - **3-scenario plan**, all anchored to Priya (Primary persona) since the MVP's 7-page surface has no Rohan (household/Premium) or Kavya (employer) features:
+    1. ⭐ Priority 1 — **Priya's First Honest Morning** (Register → Statement Upload → Transactions Table → Login → Dashboard) — serves the PRIMARY business goal (anxiety reduction / THE ENGINE).
+    2. 🚀 Priority 2 — **Priya Protects What Matters** (Commitments Management) — serves the preparedness/Confidence-Score ecosystem goal.
+    3. 🚀 Priority 2 — **Priya's Two-Tap Gut-Check** (Copilot Chat) — serves the habit/conversion growth goal; flagged in the outline itself as covering a Day-3 demo-stretch feature per the PRD/epics.
+  - **Scenario 01 narrative structure:** an evening→morning arc (register + upload the night she hears about the app, log back in the next morning for her first Dashboard briefing) — chosen deliberately to mirror the product's real hook ("the AI speaks first every morning") rather than compressing everything into one sitting.
+  - **Dialog mode:** user chose **Suggest mode** over step-by-step Conversation mode for the 8-question scenario dialog, given how much context already exists in the Trigger Map/PRD/epics — a pacing choice, not a workflow deviation (the skill explicitly supports both modes).
+- **Deliverables (so far):** Approved scope/strategic-context/scenario plan (recorded in-conversation, not yet a separate file); Scenario 01 outline + its first page-step spec.
+- **Artifacts Created:** `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md`; `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md`.
+- **Artifacts Updated:** `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Steps 10, 11 (declared skill prerequisites); Step 13's `prd.md`/`epics-and-stories.md` and the standalone `ux-spec-mvp.md` (consulted directly, not declared prerequisites of the skill itself).
+- **Next Recommended BMAD Command:** Continue `/wds-3-scenarios` — outline the remaining steps of Scenario 01 (Statement Upload, Transactions Table, Login, Dashboard), then Scenarios 02–03, then Steps 06–09 (overview index, quality review, design-log update, handover to Phase 4).
+- **Notes / Deviations (flagged directly):**
+  1. **Page inventory sourced outside the skill's declared Step-01 inputs:** `wds-3-scenarios/step-02-analyze-scope.md` expects the page list to come from the Product Brief. This project's Product Brief describes the Phase-2 WhatsApp-first *channel*, not the Phase-1 web-dashboard MVP *surface* the team is actually about to build (per the brief's own "Phase-1 MVP surface note," added 2026-07-08). The agent therefore read `prd.md`/`epics-and-stories.md`/`ux-spec-mvp.md` directly to build a page inventory that matches the real build, rather than one that matches the brief's longer-term channel description. Flagged so future sessions know why the page list references FR-numbers and Reflex pages not named in the brief itself.
+  2. **This entry is intentionally partial** — filed now because the project's Stop-hook (Step 9) detected `_bmad-output/` changes without a `PROJECT-PROGRESS.md` update. Scenarios 02–03 and Steps 06–09 remain outstanding; expect a follow-up update (either amending this Step or a new Step 15) once the phase completes.
+
+---
+
+## Step 15 — Party Mode: UX-Scenario ↔ MVP-Scope Alignment Review + Critical Fixes
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 3 support / Governance — cross-functional review of the Phase-3 UX scenario outlines against the Phase-1 MVP scope (PRD + Epics). Not a new authoring phase.
+**Workflow:** `bmad-party-mode` (session mode — one orchestrator voicing the installed BMAD agent roster; party memory ON, memlog at `_bmad-output/party-mode/memories/installed/.memlog.md`).
+**User Goal:** Answer "are the generated UX scenarios aligned with our MVP scope?", then produce a classified corrections list (Critical / Recommended / Optional), then **apply the Critical corrections only** (explicit user instruction: "fix critical ones") without regenerating the scenarios.
+**BMAD Command:** `/bmad-party-mode` (**Observed** — explicit `<command-name>` invocation this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code, as **Party Mode orchestrator** voicing the installed roster (John/PM, Sally/UX, Murat/Test Architect, Amelia/Dev, Winston/Architect took the active turns).
+- **Role:** Multi-persona adversarial review + surgical corrections editor.
+- **Reason Invoked:** User ran `/bmad-party-mode` and asked whether the three Phase-3 UX scenarios match the MVP scope defined in Steps 12–13.
+- **Input:** `C-UX-Scenarios/00-ux-scenarios.md` + all three scenario files and sub-steps; `planning-artifacts/prd.md` (§2 golden-path-vs-stretch re-cut, FR-1…FR-9); `planning-artifacts/epics-and-stories.md` (E1–E9, Day-1/2/3 plan); `planning-artifacts/safe-to-spend-scenarios.md`, `ux-spec-mvp.md` (spot-checks). Prior party memory read on entry.
+- **Output:** A classified findings list (3 Critical, 2 Recommended, 3 Optional across Scenarios 01/02 + 1 cross-cutting), then the **3 Critical fixes applied to Scenario 01 and the overview index**.
+- **Source:** **Observed** (this session).
+
+### Findings (Observed) — classified
+- **CRITICAL (Scenario 01 — all applied this step):**
+  1. Scenario 01 stamped "scenario success ✓" on **step 01.6 Copilot Chat** — a **capability-7 demo-stretch** feature (PRD §2 re-cut; epics E6 = "Day-3 stretch, if cut the MVP still passes"). The flagship must-pass scenario completed only on a cuttable feature.
+  2. Steps **01.5 (Insights = cap 8 = E8 stretch)** and **01.6 (Copilot = cap 7 = E6 stretch)** were listed as equal must-do steps with no waterline.
+  3. Scenario 01 reused the term **"golden path"** to include Copilot + Insights, but PRD/epics reserve "golden path" for **capabilities 1–6 only** — the identical term meant opposite scopes across canonical docs.
+- **RECOMMENDED (not applied — carried forward):** (R1) add an explicit Definition-of-Done line to Scenario 01; (R2) disambiguate Scenario 02's `🚀 P2` summary tag (it tracks the **trigger-map business-goal tier**, not build priority — the underlying **E7 Commitments is P1 must-ship**, in the E1–E5+E7+E9 set and protected even in the descope fallback); (adjacent PRD fix) **FR-7 heading "(P0/P1)" contradicts** its own stretch classification — root cause the scenarios inherited.
+- **OPTIONAL (not applied — carried forward):** (O1) flag stretch pages in the Page-Coverage Matrix; (O2) clarify whether "Commitments Management" is a standalone page or a Dashboard section (S5.1 already has a commitment timeline; S7.2 is the add/edit/delete UI); (X1 cross-cutting) all scenarios assume mobile responsive web, but the MVP runs **localhost single-user** and `ux-spec-mvp.md` is silent on responsive — reconcile the device framing or scope responsive explicitly.
+- **Verdict on Scenario 02:** fundamentally **aligned, no Critical issues** (Login = cap 1; manual Commitments add = E7/S7.2; Safe-to-Spend recalculation = S7.2 AC).
+
+### Corrections Applied (Observed)
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md`: (a) Q1 transaction — reserved "golden path" for the must-ship core, marked the Insights/Copilot continuation a "demo-stretch tail (non-gating)"; (b) Q7 Best Outcome — split into a **golden-path terminus (pass/fail)** = Safe-to-Spend understood, plus a **stretch upside (non-gating, Day-3 only)**; (c) Q8 Shortest Path — moved the ✓ to **step 4 (Dashboard / Safe-to-Spend understood)**, relabelled steps 5–6 as a stretch tail; (d) Scenario-Steps table — 01.4 now the "golden-path terminus — scenario success ✓", 01.5/01.6 tagged *(stretch)* / "demo-stretch", ✓ removed from 01.6.
+- `C-UX-Scenarios/00-ux-scenarios.md`: Scenario 01 summary block — Pages annotated with *(golden-path terminus)* / *(stretch)*; User-Value and Business-Value rewritten to name the pass/fail point and the stretch tail.
+- **Scope discipline:** only the 3 Critical items were applied; scenarios were **corrected surgically, not regenerated**. Recommended/Optional items above remain open.
+
+### Notes / Discrepancies flagged (Observed)
+1. **Step 14 is now stale.** It records only Scenario 01 + `01.1-register` as written, but the on-disk Phase-3 output has since grown to the full set — `00-ux-scenarios.md`, Scenario 01 with sub-steps 01.1–01.6, Scenario 02 (+ `02.1-login`, `02.2-commitments-management`), and Scenario 03 (+ `03.1-copilot-chat`). This later Phase-3 authoring was never given its own tracker Step (a governance gap — the same "relied on memory" failure Step 9 tried to close). A proper Phase-3-completion Step should be filed; this Step 15 documents the party review, not the full scenario authoring history.
+2. The **revised flow** (registration auto-authenticates; no separate morning-login; Insights promoted to its own page; Scenario 03 repurposed to a habitual return-visit) differs from the evening→morning arc Step 14 described — see `00-ux-scenarios.md` "Notes on the Revised Flow".
+
+### Execution Summary
+- **Artifacts Updated:** `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md`; `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md`; `_bmad-output/party-mode/memories/installed/.memlog.md` (party memory); `PROJECT-PROGRESS.md` (this entry).
+- **Artifacts Created:** None.
+- **Dependencies:** Steps 13 (PRD/epics = the scope of record) and 14 (the scenarios reviewed).
+- **Next Recommended BMAD Command:** File a Phase-3-completion Step for Scenarios 01–03 (close the Step 14 gap); optionally apply the Recommended items (R1/R2 + the FR-7 PRD tag) and decide the cross-cutting device-framing question (X1); then continue `/wds-3-scenarios` Steps 06–09 (overview/quality-review/design-log/handover) or proceed to Phase 4 UX Design.
+
+---
+
+## Step 16 — Scope Decision: AI Insights + Copilot promoted to must-ship (retires the demo-stretch cut-line)
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Scope governance — MVP scope decision applied across scenarios + PRD + epics.
+**Workflow:** `bmad-party-mode` (continuation of Step 15's session).
+**User Goal:** Lock the final MVP flow — **Register → Auto Login → Upload Statement → Transactions Table → Dashboard → AI Insights & Recommendations → AI Copilot** — and update all necessary files to it.
+**BMAD Command:** `/bmad-party-mode` (same session as Step 15).
+**Trigger:** User (provided the 7-step flow as "the final flow for the MVP").
+
+### Decision (Observed)
+- The user supplied the 7-step flow as final. Because that flow includes **AI Insights (cap 8)** and **AI Copilot (cap 7)** — which Steps 12–15 all classified as **Day-3 demo-stretch** — the orchestrator surfaced the fork via `AskUserQuestion` (keep-as-stretch vs promote-to-must-ship) rather than guessing. **User chose: "Promote to must-ship."**
+- **Consequence:** the golden-path-vs-stretch cut-line for E6/E8 is **retired**. The committed MVP is now the full flow (capabilities 1–8, each explained). This **supersedes Step 15's Critical fixes C1/C2** (which had labeled 01.5/01.6 as stretch and moved the scenario-success marker off the Copilot) — those labels were reverted. Step 15's C3 (terminology) is now moot: "golden path" legitimately spans all seven steps again.
+- **Delivery-risk flagged to user before applying:** committing all eight capabilities in a 3-day solo build removes the earlier stretch safety-margin; accepted by the user.
+
+### Edits Applied (Observed)
+- **Scenarios (reverted Step-15 stretch labeling):** `C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md` (Q1, Q7, Q8, Scenario-Steps table — back to a single committed golden path with success at 01.6 Copilot); `C-UX-Scenarios/00-ux-scenarios.md` (Scenario 01 summary block — stretch annotations removed).
+- **PRD** `planning-artifacts/prd.md` §2: replaced "Demo scope: golden path vs. stretch" with "MVP scope: the committed golden path (final flow, all steps must-ship)"; names the 7-step flow, promotes caps 7–8, keeps the honesty-spine rule + a delivery-risk note. (FR-7 "(P0/P1)" and FR-8 "(P1/P2)" headings now consistent with must-ship — the earlier FR-7 P0/P1-vs-stretch contradiction is resolved *by* this scope change; §8 success metrics already treated all 9 caps as acceptance.)
+- **Epics** `planning-artifacts/epics-and-stories.md`: Day-3 plan row (E6+E8 = must-ship); "MVP scope (final)" note (E1–E9 committed); E6 header → "P0/P1, Day 3 — must-ship"; E8 header → "P1, Day 3 — must-ship"; scope-guard cut order + **Never-cut** list updated so E6 Copilot core (S6.1–S6.2) and ≥1 E8 detector (S8.1) are protected (trim polish/extra detectors, never the committed features).
+
+### Notes (Observed)
+- All "stretch/STRETCH/demo-stretch" language for E6/E8 was grep-verified as removed from the scenarios, PRD, and epics after the edits (0 matches).
+- Scenario 02 (Commitments) untouched — it was never stretch. Scenario 03 (Two-Tap Gut-Check, pure Copilot) needed no revert (its file carried no stretch label; only the tracker's Step 14 prose had described it as stretch-covering — now superseded by this decision).
+- **Still open (unchanged by this step):** the Step 14 staleness (a Phase-3-completion Step still owed); the Recommended/Optional items R1/R2/O1/O2 and the cross-cutting device-framing question X1 from Step 15.
+
+### Execution Summary
+- **Artifacts Updated:** `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md`; `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md`; `_bmad-output/planning-artifacts/prd.md`; `_bmad-output/planning-artifacts/epics-and-stories.md`; `_bmad-output/party-mode/memories/installed/.memlog.md`; `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Step 15 (whose C1/C2 this supersedes), Steps 13–14 (the scope + scenarios changed).
+- **Next Recommended BMAD Command:** re-plan the 3-day build against the expanded committed scope (Copilot + Insights now non-optional) before development starts; file the owed Phase-3-completion Step; then continue `/wds-3-scenarios` Steps 06–09 or proceed to Phase 4 UX Design.
+
+---
+
 # Summary Tables
 
 ## Timeline
@@ -624,6 +747,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 11 | Phase 2: Trigger Mapping (WDS) | `/wds-2-trigger-mapping` (Observed) | Saga | `B-Trigger-Map/**` (7 files), Dream session log |
 | 12 | Technical Research (complete) | `/bmad-technical-research` (Observed) | ALPHA | technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md |
 | 13 | Requirements + Backlog (build handoff) | None (direct instruction) | Claude Code (build-handoff author) | prd.md, epics-and-stories.md |
+| 14 | Phase 3: UX Scenarios (WDS) — IN PROGRESS | `/wds-3-scenarios` (Observed) | Claude Code (UX Scenario Facilitator) | C-UX-Scenarios/01-priyas-first-honest-morning/** (partial) |
+| 15 | Phase 3 support / Governance — Party-Mode scenario↔scope alignment review + Critical fixes | `/bmad-party-mode` (Observed) | Claude Code (Party Mode orchestrator) | Updated `C-UX-Scenarios/01-priyas-first-honest-morning/01-...md` + `00-ux-scenarios.md` |
+| 16 | Scope decision — AI Insights + Copilot promoted to must-ship (retires demo-stretch) | `/bmad-party-mode` (Observed) | Claude Code (Party Mode orchestrator) | Reverted Step-15 stretch labels; updated `prd.md` §2 + `epics-and-stories.md` (E6/E8 must-ship) |
 
 ## Commands Used
 
@@ -640,6 +766,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/wds-1-project-brief` (Observed) | 1 |
 | `/wds-2-trigger-mapping` (Observed) | 1 |
 | `/bmad-technical-research` (Observed) | 1 |
+| `/wds-3-scenarios` (Observed) | 1 |
+| `/bmad-party-mode` (Observed) | 1 (session spanning Steps 15–16) |
 
 ## Agent Usage
 
@@ -650,6 +778,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Unknown (Step 1 setup) | 1 |
 | Claude Code (Process Historian) | 2 |
 | Claude Code (build-handoff author) | 1 |
+| Claude Code (UX Scenario Facilitator) | 1 |
+| Claude Code (Party Mode orchestrator) | 1 |
 | Saga | 2 |
 
 ## Skill Usage
@@ -665,6 +795,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `wds-1-project-brief` | 1 |
 | `wds-2-trigger-mapping` | 1 |
 | `bmad-technical-research` | 1 |
+| `wds-3-scenarios` | 1 |
 
 ## Agent → Skill Mapping
 
@@ -675,6 +806,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Saga | `wds-1-project-brief`, `wds-2-trigger-mapping` |
 | Claude Code (Process Historian) | None (document/config maintenance only) |
 | Claude Code (build-handoff author) | None (direct authoring — `prd.md`, `epics-and-stories.md`) |
+| Claude Code (UX Scenario Facilitator) | `wds-3-scenarios` |
 
 ## Artifacts
 
@@ -704,8 +836,12 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/B-Trigger-Map/handover-to-ux.md` | Step 11 (wrap) | — |
 | `_bmad-output/_progress/agent-experiences/2026-07-07-trigger-map-D.md` | Step 11 | — |
 | `_bmad-output/planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md` | Step 12 | Step 12 (Reflex revision, same session) |
-| `_bmad-output/planning-artifacts/prd.md` | Step 13 | — |
-| `_bmad-output/planning-artifacts/epics-and-stories.md` | Step 13 | — |
+| `_bmad-output/planning-artifacts/prd.md` | Step 13 | Step 16 (§2 — Insights+Copilot promoted to must-ship) |
+| `_bmad-output/planning-artifacts/epics-and-stories.md` | Step 13 | Step 16 (E6/E8 must-ship; cut-line retired) |
+| `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md` | Step 14 | Step 15 (Critical fixes) → Step 16 (reverted — all steps now must-ship) |
+| `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md` | Step 14 | — |
+| `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` | Step 14 (untracked) | Step 15 (Critical fixes) → Step 16 (stretch labels reverted) |
+| `_bmad-output/party-mode/memories/installed/.memlog.md` | (party mode) | Steps 15–16 (alignment audit + scope-promotion outcomes) |
 
 ## Corrections & Rework Log
 
@@ -713,6 +849,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 |---|---|---|---|---|
 | Step 1 | Step 6 | Claude Code (Process Historian) | Prior tracker claimed a `design-artifacts/` directory (A–E stage folders) was created; it does not exist anywhere in the repository | Corrected |
 | Step 4 (innovation-strategy) | Step 10 (applied within `project-brief.md`, not by editing Step 4's source file) | Saga | Steps 7/8 both flagged that the innovation strategy's competitor list (Walnut), D30 retention target (≥40%), and paid-conversion target (≥5%) were outdated or optimistic against external benchmarks; corrections had been recommended since Step 8 but not applied to any downstream document until now | Corrected (in the new Product Brief only — `innovation-strategy-2026-07-07.md` itself remains unedited) |
+| Step 14 (Scenario 01 + overview) | Step 15 (Party Mode) | Claude Code (Party Mode orchestrator) | Scenario 01 marked "scenario success ✓" on demo-stretch Copilot (cap 7) and reused "golden path" to include stretch caps 7–8, contradicting the PRD/epics scope re-cut (golden path = caps 1–6). 3 Critical scope-labeling fixes applied surgically; Recommended/Optional items (incl. the FR-7 P0/P1 vs stretch contradiction) left open | **Superseded by Step 16** — owner promoted caps 7–8 to must-ship, so C1/C2 were reverted; the underlying contradiction is now resolved by expanding scope |
+| Step 15 (stretch labels) + Steps 12–14 (stretch cut-line) | Step 16 (Party Mode) | Claude Code (Party Mode orchestrator) | Owner decision (AskUserQuestion) promoted AI Insights + Copilot from demo-stretch to committed must-ship; reverted Step-15 labels and rewrote PRD §2 + epics (E6/E8) to retire the cut-line | Corrected (scope expanded; FR-7 P0/P1-vs-stretch contradiction resolved) |
 
 ## Open Reconciliation Item
 
@@ -738,11 +876,13 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    PRD (lean MVP, scoped to the 9-bullet MVP + Reflex tech research)   — Step 13
 [DONE]    Architecture                (of record = the Step 12 technical research doc; not separately duplicated)
 [DONE]    Epics & Stories list        (E1-E9, mapped to the 3-day plan)   — Step 13
+[PARTIAL] Step 14 — Phase 3: UX Scenarios (WDS)   (on-disk: Scenarios 01-03 outlined w/ sub-steps + 00 overview; skill Steps 06-09 pending; Step 14 tracker entry is stale — a Phase-3-completion Step still needs filing)  <-- action needed
+[DONE]    Step 15 — Party Mode scenario↔scope alignment review   (3 Critical fixes applied — later superseded by Step 16's scope decision)
+[DONE]    Step 16 — Scope decision: AI Insights + Copilot promoted to must-ship   (final MVP flow = all 7 steps; stretch cut-line retired across scenarios + PRD + epics; no stretch safety-margin left on the 3-day build)  <-- re-plan build scope
 [TODO]    Development (3-day MVP build)   — start with S2.3 statement-parser validation, then bmad-quick-dev / bmad-create-story
-[TODO]    Phase 3: UX Scenarios       (optional for a 3-day MVP; deferred)
 ```
 
-**Current phase:** **Build handoff complete — ready for development.** Step 12 (Technical Research) selected a Reflex/Python local stack for the re-scoped 3-day MVP (deterministic Safe-to-Spend/Confidence engines + LLM narration; Claude `claude-opus-4-8`), and Step 13 turned it into a lean MVP **PRD** (`planning-artifacts/prd.md`, FR-1…FR-9 with acceptance criteria) and an **Epics & Stories** backlog (`planning-artifacts/epics-and-stories.md`, E1–E9 mapped to the 3-day plan). The immediate next action is **development**: validate statement parsing against real bank statements (story S2.3), then build via `bmad-quick-dev` / `bmad-create-story`. Standing items still open from earlier phases are unchanged — see the list below.
+**Current phase:** **Phase 3: UX Scenarios in progress.** Step 12 (Technical Research) selected a Reflex/Python local stack for the re-scoped 3-day MVP (deterministic Safe-to-Spend/Confidence engines + LLM narration; Claude `claude-opus-4-8`), and Step 13 turned it into a lean MVP **PRD** (`planning-artifacts/prd.md`, FR-1…FR-9 with acceptance criteria) and an **Epics & Stories** backlog (`planning-artifacts/epics-and-stories.md`, E1–E9 mapped to the 3-day plan). Step 14 (`/wds-3-scenarios`) is now translating that backlog into UX scenario outlines: scope analysis, strategic-context chains, and a 3-scenario plan are approved; Scenario 01 ("Priya's First Honest Morning") is fully outlined with its first page step (Register) written. Remaining: outline Scenario 01's remaining 4 steps, Scenarios 02–03, then the overview index / quality review / design-log update / Phase 4 handover (Steps 06–09 of the skill). Standing items still open from earlier phases are unchanged — see the list below.
 
 ---
 
@@ -752,14 +892,14 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 13 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 10 (Step 13 used no command — direct authoring) |
-| Distinct agents | 5 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author], Saga) |
-| Distinct skills | 9 |
+| Steps recorded | 16 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 12 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session) |
+| Distinct agents | 6 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator], Saga) |
+| Distinct skills | 11 |
 | Deliverables (complete) | 9 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md) |
-| Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 18 |
-| Corrections logged | 2 |
+| Deliverables (partial) | 3 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md, C-UX-Scenarios/** [Phase 3, in progress]) |
+| Artifact groups tracked | 20 |
+| Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 
 ---

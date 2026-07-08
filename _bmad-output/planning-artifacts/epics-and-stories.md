@@ -14,9 +14,9 @@
 |---|---|---|
 | **Day 1** | E1 Foundation & Auth · E2 Ingestion · E3 Categorization (Tier 1) | Upload your own statement → see categorized transactions in a table |
 | **Day 2** | E3 (Tier 2) · E4 Financial Engine · E5 Dashboard & Briefing · E7 Commitments | Dashboard shows Safe-to-Spend + Confidence Score, each explained |
-| **Day 3** | E9 Hardening (must) · **E6 Copilot + E8 Insights = stretch** | Sign up → upload → dashboard → briefing (golden path). Stretch: ask Copilot 3 questions; 1 insight |
+| **Day 3** | E9 Hardening (must) · **E6 Copilot + E8 Insights (must-ship)** | Full flow end-to-end: sign up → upload → transactions → dashboard → briefing → insight → Copilot Q&A |
 
-**Golden path vs. stretch (2026-07-08):** the must-ship MVP is **E1–E5 + E7 + E9** (capabilities 1–6, each explained). **E6 (Copilot) and E8 (Insights) are demo-stretch** — build on Day 3 only if the S4.2 engine gate is green and time remains; if cut, the MVP still passes. Never fake the Copilot's numbers to save time (cut it instead).
+**MVP scope (2026-07-08, final):** the committed MVP is the full flow **E1–E9** (capabilities 1–8, each explained). Per the project owner's decision, **E6 (Copilot) and E8 (Insights) are must-ship, not stretch** — the Day-3 cut-line for them is retired. Committing all of it in 3 solo days removes the earlier safety-margin: if the schedule slips, trim via the **Scope-guard cut order** below (polish/quality first; the engine + honesty spine — S4.1–S4.4, S6.2 — is never cut), do not drop a committed capability. Never fake the Copilot's numbers to save time (cut polish, never the honesty spine).
 
 **Reflex go/no-go — Day 2, noon:** if `rx.State` reactivity / the app skeleton is still fighting you at midday Day 2, invoke the pre-agreed **Streamlit escape hatch** (the framework-agnostic `services/` layer makes the swap cheap). Don't discover this on Day 3.
 
@@ -86,8 +86,8 @@
 - **S5.3 (S, P1)** Briefing follows Observation → Evidence → Explanation → Action.
   - AC: structure visible in output.
 
-## E6 — AI Copilot (**Day 3 STRETCH**) → FR-7
-**Goal:** conversational Q&A that reasons over real data and never invents numbers. *(Demo-stretch: build only if the S4.2 engine gate is green and time remains. If cut, the golden-path MVP still passes. Never fake the numbers to ship it.)*
+## E6 — AI Copilot (**P0/P1, Day 3 — must-ship**) → FR-7
+**Goal:** conversational Q&A that reasons over real data and never invents numbers. *(Committed MVP scope as of 2026-07-08 — no longer demo-stretch. Never fake the numbers to ship it; if behind, trim polish per the cut order, never the read-only-tool spine.)*
 
 - **S6.1 (L)** Chat page + async `CopilotState` handler that `yield`s Claude's streamed tokens into the chat UI.
   - AC: responses stream live; history persists in `chat_messages`.
@@ -104,8 +104,8 @@
 - **S7.2 (S)** Add/edit/delete commitment UI (name, amount, due-day, criticality).
   - AC: manual commitments feed Safe-to-Spend correctly.
 
-## E8 — Proactive Insights (**Day 3 STRETCH**) → FR-8
-**Goal:** named behavioral patterns, honestly framed. *(Demo-stretch. For MVP, ship **1** strong detector, not five — zombie-subscriptions or post-payday spike reads best in a demo.)*
+## E8 — Proactive Insights (**P1, Day 3 — must-ship**) → FR-8
+**Goal:** named behavioral patterns, honestly framed. *(Committed MVP scope as of 2026-07-08 — no longer demo-stretch. Ship **≥1** strong detector for MVP — zombie-subscriptions or post-payday spike reads best in a demo; scale to ≥3 if time.)*
 
 - **S8.1 (L→M)** Deterministic pandas detectors (post-payday spike · death-by-small-purchases · zombie subscriptions · weekend/weekday pace · upcoming-commitment collision), each emitting an evidence pack. **MVP target: 1 detector; scale to ≥3 only if time.**
   - AC: at least 1 insight fires on a realistic statement with its evidence.
@@ -129,12 +129,12 @@
 
 ## Scope-guard cut order (if behind)
 1. S8.3 → S6.3 → S5.3 (P2/P1 polish)
-2. Insight detectors 5 → 3 (S8.1)
+2. Insight detectors 5 → 3 → 1 (S8.1; keep **≥1** — the insights feature itself is must-ship)
 3. S7.1 (keep manual commitment entry S7.2; drop auto-detect)
 4. S2.6 (drop LLM PDF fallback; support CSV + 1–2 known banks)
 5. 2FA/password-reset (never in scope for MVP)
 
-**Never cut:** S4.1–S4.4 (the engine + its tests) and S6.2 (read-only tools) — they are the honesty/safety spine.
+**Never cut:** S4.1–S4.4 (the engine + its tests) and S6.2 (read-only tools) — the honesty/safety spine — plus, per the 2026-07-08 scope decision, the committed **E6 Copilot core (S6.1–S6.2)** and **≥1 E8 insight detector (S8.1)**. Trim polish and extra detectors, never these committed features.
 
 ---
 
