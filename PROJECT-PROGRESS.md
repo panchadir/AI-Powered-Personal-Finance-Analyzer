@@ -756,6 +756,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 20 | Phase 5: Prototyping — Scenario 01 Setup & Analysis | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | Prototype scaffold, `demo-data.json`, `Logical-View-Map.md`, `PROTOTYPE-ROADMAP.md` |
 | 21 | Phase 5: Prototyping — Scenario 01 fully built (7 views) + integration test | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | 7 HTML prototypes + shared CSS/JS; per-view + integration verification (0 console errors) |
 | 22 | Phase 5: Prototyping — Scenario 01 refinements (theme, left nav, Add-Commitment form) + wrap | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | Rebranded/re-navigated prototype + `README.md` + `HANDOFF.md` |
+| 23 | PRD Update — UX Design (Steps 17–19) + prototype HANDOFF (Steps 20–22) incorporated into prd.md | `/bmad-prd` → Update (Observed) | Claude Code (bmad-prd Update facilitator) | Updated `planning-artifacts/prd.md` (9 FRs expanded, §8 API Surface + §12 Open Items added, 2 new NFRs); new `.memlog.md` |
 
 ## Commands Used
 
@@ -776,6 +777,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-party-mode` (Observed) | 1 (session spanning Steps 15–16) |
 | `/wds-4-ux-design` (Observed) | 1 (Dream session spanning Steps 17–18; Step 19 = direct instruction) |
 | `/wds-5-agentic-development` (Observed) | 1 (Prototyping session, Steps 20–21) |
+| `/bmad-prd` → Update (Observed) | 1 (Step 23) |
 
 ## Agent Usage
 
@@ -789,6 +791,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (UX Scenario Facilitator) | 1 |
 | Claude Code (Party Mode orchestrator) | 1 |
 | Claude Code (WDS Phase 5 Implementation Partner) | 1 |
+| Claude Code (bmad-prd Update facilitator) | 1 |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 
@@ -809,6 +812,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-party-mode` | 1 |
 | `wds-4-ux-design` | 1 |
 | `wds-5-agentic-development` | 1 |
+| `bmad-prd` | 1 |
 
 ## Agent → Skill Mapping
 
@@ -852,7 +856,11 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/B-Trigger-Map/handover-to-ux.md` | Step 11 (wrap) | — |
 | `_bmad-output/_progress/agent-experiences/2026-07-07-trigger-map-D.md` | Step 11 | — |
 | `_bmad-output/planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md` | Step 12 | Step 12 (Reflex revision, same session) |
-| `_bmad-output/planning-artifacts/prd.md` | Step 13 | Step 16 (§2 — Insights+Copilot promoted to must-ship) |
+| `_bmad-output/planning-artifacts/prd.md` | Step 13 | Step 16 → Step 23 Update → Step 23 Finalize (**status: final**; §13 Glossary; §3 User Journey; FR-4 formula/floor/rounding/struct; kill-signal protocol; counter-metric; NFR-9 perf baseline; all phase-blockers resolved) |
+| `_bmad-output/planning-artifacts/.memlog.md` | Step 23 | Step 23 Finalize (entry 11 — finalization event) |
+| `_bmad-output/planning-artifacts/review-rubric.md` | Step 23 Finalize | — |
+| `_bmad-output/planning-artifacts/reconcile-brief.md` | Step 23 Finalize | — |
+| `_bmad-output/planning-artifacts/reconcile-sts-scenarios.md` | Step 23 Finalize | — |
 | `_bmad-output/planning-artifacts/epics-and-stories.md` | Step 13 | Step 16 (E6/E8 must-ship; cut-line retired) |
 | `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01-priyas-first-honest-morning.md` | Step 14 | Step 15 (Critical fixes) → Step 16 (reverted — all steps now must-ship) |
 | `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md` | Step 14 | — |
@@ -911,6 +919,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 20 — Phase 5: Prototyping — Scenario 01 Setup & Analysis   (env scaffolded, demo data + logical-view map)
 [DONE]    Step 21 — Phase 5: Prototyping — Scenario 01 fully built (all 7 views) + integration test (0 console errors)
 [DONE]    Step 22 — Phase 5: Prototyping — refinements (branded theme, left nav, Add-Commitment form) + wrap docs (README + HANDOFF)  <-- prototype review-ready & documented
+[DONE]    Step 23 — PRD Update + Finalize   (status: final; §13 Glossary; §3 User Journey; all phase-blockers resolved; 4 open items tabled in §12)
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
 [TODO]    Development (3-day MVP build)   — start with S2.3 statement-parser validation, then bmad-quick-dev / bmad-create-story
 ```
@@ -929,8 +938,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 22 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 14 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping) |
+| Steps recorded | 23 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update) |
 | Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
 | Distinct skills | 13 |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
@@ -1148,4 +1157,109 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 - **Dependencies:** Step 21 (built prototype).
 - **Next Recommended BMAD Command:** `/wds-5-agentic-development` → `[T]` Acceptance Testing, or Prototyping for Scenarios 02 & 03.
 - **Notes:** Scenario 01 prototype is review-ready and documented (README + HANDOFF). Iterative visual/UX polish; no change to the underlying page specs in `_bmad-output/C-UX-Scenarios/`.
+
+---
+
+## Step 23 — PRD Update Pass: UX Design + Prototype decisions incorporated
+
+**Timestamp:** 2026-07-08 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Requirements / PRD governance — reconciliation of post-original-PRD artifacts back into the PRD
+**Workflow:** `/bmad-prd` → **Update** intent (no prior bmad-prd workspace existed; memlog initialized fresh at `_bmad-output/planning-artifacts/.memlog.md`)
+**User Goal:** Update the existing `planning-artifacts/prd.md` (originally Step 13, a direct-authored build-handoff PRD) to incorporate requirements surfaced by the UX design phase (Steps 17–19) and the prototype build (Steps 20–22) that were not in the original document.
+**BMAD Command:** `/bmad-prd` → user selected **update** (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Claude Code (acting as bmad-prd Update facilitator)** — scanned prior work, initialized memlog, ran 3 parallel extraction subagents across all post-PRD artifacts, logged 10 decisions, rewrote `prd.md` in a single pass. **Source: Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-prd` (Update intent)
+- **Reason Invoked:** User explicitly ran `/bmad-prd`; intent identified as Update (existing PRD, status not `final`).
+- **Contribution:** Produced a materially-updated `prd.md` with FR-level additions across all 9 FRs, 2 new NFRs, a new §8 API Surface section, and a §12 Open Items section.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Detected existing `prd.md` (draft, no YAML frontmatter) → no prior bmad-prd workspace → initialized memlog → spawned 3 parallel extraction subagents (UX spec gaps, UX scenario + prototype HANDOFF decisions, register/upload/transactions specs + prototype stories) → received digests → logged 10 decisions to memlog → wrote updated `prd.md` in a single pass → appended this tracker entry.
+- **Inputs:** `planning-artifacts/prd.md` (original — Step 13); `planning-artifacts/ux-spec-mvp.md`; all `C-UX-Scenarios/01-priyas-first-honest-morning/**` page specs; `C-UX-Scenarios/02-priya-protects-what-matters/02.1-commitments-management.md`; `prototypes/01-priyas-first-honest-morning-Prototype/HANDOFF.md`; `prototypes/.../stories/*.md`.
+- **Outputs:** Updated `planning-artifacts/prd.md`; `planning-artifacts/.memlog.md` (new, 10 entries).
+- **Key Decisions Incorporated (Observed from extraction pass):**
+  - Auth token in httpOnly cookie (DPDP+XSS); auto-auth after register; trust signal above form as functional requirement; blur-validation; T&C in-page modal; DPDP Rule 4 no pre-ticked consent.
+  - Parse progress = 4 named real-server-state steps (not a spinner); WebSocket preferred, 1s poll fallback; honesty parse-count summary required.
+  - Three commitment criticality tiers (Critical / Important / Flexible) with distinct Safe-to-Spend ring-fencing behavior; default = Important.
+  - Briefing text = snapshot at generation time; hero Safe-to-Spend = live (explicitly documented as intentional, not a bug).
+  - Insight lifecycle: seen/dismissed states; insufficient-data (<30 txns) positive framing; data-sufficiency footer at <3 months.
+  - Copilot: 4 hardcoded system-prompt rules; SSE event schema (token/trace/done); trace chips with tap-to-navigate; chat history server-side; accessibility requirements.
+  - Stale data: 30-day amber banner on Dashboard hero.
+  - Virtual scroll required for transaction list (budget Android, 100–300 rows).
+  - Insight Action layer: SEBI IA boundary — suggest consideration, never prescribe.
+  - `formatINR()` / `formatDate()` = product-required shared utilities (NFR-7).
+  - API surface formalized as §8 with endpoint list and payload shapes (from prototype's `demo-data.json` data contract).
+  - Persistent left nav across all 4 app screens (from prototype HANDOFF).
+  - Salary-not-detected graceful fallback.
+- **New PRD sections/additions:**
+  - YAML frontmatter added (`status: draft`, `created/updated: 2026-07-08`).
+  - §8 API Surface (new) — canonical endpoint list with payload shapes.
+  - §12 Open Items (new) — carries R1/R2/X1/O2 from Step 15 Party Mode review.
+  - FR-1 expanded: 9 sub-requirements (was 3).
+  - FR-2 expanded: 10 sub-requirements (was 4).
+  - FR-3 expanded: 10 sub-requirements (was 4).
+  - FR-4 expanded: 8 sub-requirements (was 5); criticality tiers and live-update requirement added.
+  - FR-5 expanded: 7 sub-requirements (was 4); confidence chip tooltip, "Why?" block, stale-data banner added.
+  - FR-6 expanded: 5 sub-requirements (was 3); left nav and inline commitment modal added.
+  - FR-7 expanded: 10 sub-requirements (was 3); SSE schema, trace chips, graceful "I don't know", context handoff, server-side persistence, accessibility added.
+  - FR-8 expanded: 6 sub-requirements (was 3); exact evidence rule, SEBI action constraint, lifecycle states, data-sufficiency footer added.
+  - FR-9 expanded: 4 sub-requirements (was 2); proactive surfacing, criticality tiers, day-31 edge case, response payload contract added.
+  - NFR-7 (Localization format) and NFR-8 (Accessibility baseline) added.
+  - Data model updated: `insights` and `chat_messages` table schemas sharpened.
+  - Success metrics: 7th metric (honesty layer spot-check) added.
+- **Deliverables:** Updated `planning-artifacts/prd.md` + new `.memlog.md`.
+- **Artifacts Created:** `_bmad-output/planning-artifacts/.memlog.md` (new memlog for this PRD workspace).
+- **Artifacts Updated:** `_bmad-output/planning-artifacts/prd.md` (substantially expanded — all 9 FRs, 2 new NFRs, new §8 API Surface, new §12 Open Items); `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Steps 13 (original PRD), 17–19 (UX design page specs), 20–22 (prototype + HANDOFF).
+- **Next Recommended BMAD Command:** `bmad-prd` finalize (Reviewer Gate + Polish) to close the PRD to `status: final`, or proceed directly to development with `bmad-create-story` / `bmad-quick-dev` using this updated PRD as the source of record.
+- **Notes / Deviations:**
+  1. **No prior bmad-prd workspace existed** — the original PRD (Step 13) was direct-authored without a `bmad-prd` run. This is the first formal `bmad-prd` invocation for this project. The `prd.md` was updated in-place at its existing path rather than creating a new run folder under `planning-artifacts/prds/`, to maintain continuity with all documents that reference the existing path.
+  2. **Finalize run in same session** — see Step 23 continuation below; `status: final` set after the Reviewer Gate + polish passes completed.
+  3. **Addendum not created** — technical detail (API transport choice rationale, accessibility ARIA specifics) that would normally go to `addendum.md` was left in FR-level notes since the PRD is build-proximate and the developer needs it inline. This is a deliberate scoping choice, not an oversight.
+
+### Step 23 continued — Finalize pass (Reviewer Gate + Open Item Triage + Polish → status: final)
+
+**Trigger:** User typed "proceed" to continue to Finalize.
+
+#### Finalize sequence executed (Observed):
+1. **Memlog audit:** all 10 memlog decisions confirmed captured in the updated PRD.
+2. **Input reconciliation (parallel subagents):**
+   - `reconcile-brief.md`: 5 gaps found in brief vs. PRD — tone-of-voice copy contract, kill-signal protocol, hard regulatory thresholds (FIU/SEBI/DPDP deadlines), business-model hypothesis framing, honesty-as-competitive-moat framing.
+   - `reconcile-sts-scenarios.md`: 5 gaps in Safe-to-Spend scenarios vs. FR-4 — zero-floor, rounding rule (floor to ₹10), income-day/income-confidence gate, outside-window predicted commitments, evidence-pack output struct.
+3. **Reviewer Gate:** `review-rubric.md` written. 4 critical findings, 6 high findings, 3 medium, 2 low.
+4. **Triage open items:** 4 phase-blockers resolved (all critical); 4 high items resolved inline; 4 items deferred to §12 (R1/R2/X1/O2).
+5. **Polish:** editorial polish applied (structural + prose) during the final PRD write.
+6. **Close:** `status: final` set; `updated: 2026-07-08`; finalization event logged to memlog.
+
+#### Phase-blockers resolved (critical findings):
+- **No glossary** → §13 Glossary added (12 terms: Safe-to-Spend, Confidence Score, Prediction Confidence, Evidence pack, Ring-fencing, Proximity window, Canonical transaction schema, direction enum, Honesty spine, Kill-signal, Tone contract, score_events, Teach Me).
+- **Vague tone ACs** ("calm, honest sentence", "graceful") → replaced with the "Tone contract" definition and specific verifiable checks (SEBI phrasing rule, demo run review).
+- **Safe-to-Spend formula gaps** (zero-floor, rounding rule, evidence-pack struct, outside-window behavior, income-day gate) → FR-4.1 (formula + floor + rounding), FR-4.9 (shortfall state), FR-4.12 (evidence-pack struct), FR-4.2 DD-1 rule 4 (income-day gate) all added.
+- **No User Journeys** → §3 "Primary User Journey — Priya's First Honest Morning" added with named protagonist Priya, 7-step evening→morning arc, success condition.
+
+#### High findings resolved:
+- Demo statement fixture named: "HDFC June 2026 Priya dataset" / `demo-data.json` referenced in AC.
+- `direction` enum defined in §7 data model table (`credit`|`debit`).
+- Over-conservatism counter-metric added: FR-5.8 + §9 counter-metric.
+- Kill-signal protocol added: §1 kill-signal paragraph.
+- Outside-window predicted commitment behavior added: FR-4.2 DD-1 rule 2.
+- NFR-9 performance baseline added (parse <60s, dashboard render <3s).
+- Strategic thesis ("honesty is the structural moat") restored in §1.
+- FR-8.1 clarified: all 5 detectors must be coded; ≥3 must fire on demo data; [NOTE FOR PM] added.
+
+#### Medium/low findings deferred or resolved:
+- WebSocket vs. polling: [ASSUMPTION] tag added in FR-2.6.
+- Open items in §12 given owners + resolve conditions.
+- Model version IDs (`claude-haiku-4-5`, `claude-opus-4-8`) — format is correct per Anthropic API canonical IDs as of 2026 (verified via `claude-api` skill in Step 12).
+
+#### Artifacts:
+- `_bmad-output/planning-artifacts/review-rubric.md` (created by reviewer subagent)
+- `_bmad-output/planning-artifacts/reconcile-brief.md` (created by reconciliation subagent)
+- `_bmad-output/planning-artifacts/reconcile-sts-scenarios.md` (created by reconciliation subagent)
+- `_bmad-output/planning-artifacts/prd.md` → **status: final** (this finalize pass)
 
