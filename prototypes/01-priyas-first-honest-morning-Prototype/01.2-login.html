@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01.2 Setting up — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+  <!-- =====================================================================
+       01.2 LOGIN — Auto-authentication transition (not a task)
+       ===================================================================== -->
+  <main class="autologin">
+
+    <!-- In-progress / success block -->
+    <section id="autologin-confirmation" class="autologin-block">
+      <div id="autologin-confirmation-logo" class="logo-mark" aria-hidden="true">₹</div>
+      <h2 id="autologin-confirmation-headline" class="autologin-headline" aria-live="assertive">
+        <span class="autologin-check" aria-hidden="true">✓</span> Account created!
+      </h2>
+      <p id="autologin-confirmation-submessage" class="autologin-sub">Let's upload your first statement.</p>
+      <div id="autologin-confirmation-progress" class="spinner spinner--lg"
+           role="progressbar" aria-label="Setting up your account"></div>
+      <a href="01.3-statement-upload.html" id="autologin-manual-fallback" class="link hidden"
+         style="font-size:var(--text-sm);">Taking too long? Continue manually</a>
+    </section>
+
+    <!-- Error — token failure (hidden unless ?fail=1) -->
+    <section id="autologin-error" class="error-card hidden" role="alert">
+      <p>Something went wrong setting up your account.</p>
+      <a href="01.2-login.html" class="btn btn--primary" style="text-decoration:none;">Try logging in</a>
+    </section>
+
+  </main>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 01.2 Login (auto-auth transition) loaded');
+    var params = new URLSearchParams(location.search);
+
+    if (params.get('fail') === '1') {
+      // Error — token failure state
+      document.getElementById('autologin-confirmation').classList.add('hidden');
+      document.getElementById('autologin-error').classList.remove('hidden');
+      console.warn('⚠️ Auth token failure (simulated) — showing manual fallback');
+      return;
+    }
+
+    // Read demo auth (set by Register). Tolerant if missing.
+    try {
+      var auth = JSON.parse(sessionStorage.getItem('demoAuth') || 'null');
+      if (auth) console.log('🔐 Demo session established for', auth.email);
+    } catch (e) {}
+
+    // Surface a manual fallback if the redirect somehow stalls (safety, spec: 3s).
+    var fallbackTimer = setTimeout(function () {
+      document.getElementById('autologin-manual-fallback').classList.remove('hidden');
+    }, 3000);
+
+    // Auto-advance to Statement Upload (~1.6s — long enough to reassure, short enough to feel instant).
+    setTimeout(function () {
+      clearTimeout(fallbackTimer);
+      window.location.href = '01.3-statement-upload.html';
+    }, 1600);
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01.7 AI Copilot — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+  <!-- Persistent left navigation -->
+  <nav class="side-nav" id="side-nav-slot" aria-label="Primary"></nav>
+
+  <div class="copilot-page has-sidenav">
+    <!-- Section: Top Nav -->
+    <div id="copilot-topnav" class="topnav">
+      <button id="copilot-topnav-back" class="back-link">← Insights</button>
+      <span id="copilot-topnav-title" class="topnav-title">AI Copilot</span>
+    </div>
+
+    <!-- Section: Chat Thread -->
+    <div id="copilot-thread" class="copilot-thread" role="log" aria-live="polite">
+      <!-- Welcome card (first-visit) -->
+      <div id="copilot-thread-welcome" class="welcome-card">
+        <h2 id="copilot-thread-welcome-headline">Ask me anything about your finances</h2>
+        <p id="copilot-thread-welcome-body">I only use your actual data — I'll never make up numbers or give you generic advice. If I'm not sure, I'll say so.</p>
+        <div id="copilot-thread-welcome-chips" class="chip-suggest"></div>
+      </div>
+    </div>
+
+    <!-- Section: Input Bar -->
+    <div id="copilot-input-bar" class="copilot-input-bar">
+      <textarea id="copilot-input-bar-field" rows="1" placeholder="Ask anything about your finances…"
+                aria-label="Message to AI Copilot" autocomplete="off"></textarea>
+      <button id="copilot-input-bar-send" class="send-btn" aria-label="Send message" aria-disabled="true" disabled>➤</button>
+    </div>
+
+  </div>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 01.7 Copilot Chat loaded');
+
+    var thread = document.getElementById('copilot-thread');
+    var welcome = document.getElementById('copilot-thread-welcome');
+    var field = document.getElementById('copilot-input-bar-field');
+    var sendBtn = document.getElementById('copilot-input-bar-send');
+    var chipsWrap = document.getElementById('copilot-thread-welcome-chips');
+    var DEMO = null;
+    var msgCount = 0;
+    var busy = false;
+
+    var params = new URLSearchParams(location.search);
+    var preInsight = params.get('insight');
+    var preMessage = params.get('pre');
+
+    // Back link target depends on entry
+    document.getElementById('copilot-topnav-back').addEventListener('click', function () {
+      goTo(preInsight ? '01.6-ai-insights-recommendations.html' : '01.5-dashboard.html');
+    });
+    if (!preInsight) document.getElementById('copilot-topnav-back').textContent = '← Dashboard';
+
+    // ---- Answer engine (grounded in demo data; honest fallback) ----
+    function answerFor(msg) {
+      var m = msg.toLowerCase();
+      var d = DEMO;
+      var samples = (d && d.copilot_samples) || [];
+      function trace(arr) { return (arr || []).concat(['Confidence: ' + (d ? d.confidence.level : 'Medium')]); }
+
+      if (/afford|dinner|weekend|can i spend|₹2,?000/.test(m)) {
+        var s = samples[0];
+        return { text: s.answer, trace: trace(s.data_trace), verdict: s.verdict };
+      }
+      if (/food|dining|eat|groceries/.test(m)) {
+        var s2 = samples[1];
+        return { text: s2.answer, trace: trace(s2.data_trace) };
+      }
+      if (/bill|emi|upcoming|due|loan/.test(m)) {
+        var s3 = samples[2];
+        return { text: s3.answer, trace: trace(s3.data_trace) };
+      }
+      if (/subscription|netflix|spotify|streaming/.test(m)) {
+        return { text: "You have two streaming subscriptions: Netflix ₹649 (6 Jun) and Spotify ₹119 (20 Jun) — ₹768/month combined. I can't tell whether you're using both, only that they're recurring.",
+                 trace: trace(['Netflix ₹649', 'Spotify ₹119', 'Combined ₹768/mo']) };
+      }
+      if (/how am i doing|on track|overall|am i ok|okay/.test(m)) {
+        return { text: "Based on your June statement, you're on track. Your Safe-to-Spend today is ₹2,840, your 3 EMIs (₹18,000) are already set aside, and your biggest spend was food at ₹7,200. I only have one month of data, so my confidence is Medium.",
+                 trace: trace(['Safe-to-Spend: ₹2,840', 'EMIs ring-fenced: ₹18,000']) };
+      }
+      if (/biggest|most|where.*money|spend/.test(m)) {
+        return { text: "Your biggest spending category in June was food at ₹7,200 (about 28% of your tracked spend), followed by your EMIs at ₹18,000 which are committed.",
+                 trace: trace(['Food: ₹7,200', 'EMIs: ₹18,000']) };
+      }
+      // Honest fallback — no invented numbers
+      return { text: "I can only answer from the statement you've uploaded, and I don't have enough in it to answer that confidently yet. If you upload another month, I'll be able to say more.",
+               trace: null };
+    }
+
+    // ---- Render helpers ----
+    function addUser(text) {
+      hideWelcome();
+      msgCount++;
+      var el = document.createElement('div');
+      el.className = 'msg msg--user';
+      el.id = 'copilot-thread-user-msg-' + msgCount;
+      el.textContent = text;
+      thread.appendChild(el);
+      scrollDown();
+    }
+
+    function hideWelcome() { if (welcome && !welcome.classList.contains('hidden')) welcome.classList.add('hidden'); }
+    function scrollDown() { thread.scrollTop = thread.scrollHeight; }
+
+    async function addBot(answer) {
+      msgCount++;
+      var bubble = document.createElement('div');
+      bubble.className = 'msg msg--bot';
+      bubble.id = 'copilot-thread-copilot-msg-' + msgCount;
+      // thinking dots
+      bubble.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+      thread.appendChild(bubble);
+      scrollDown();
+      await wait(600);
+
+      // stream tokens (word by word)
+      var textEl = document.createElement('span');
+      textEl.className = 'msg-text';
+      bubble.innerHTML = '';
+      bubble.appendChild(textEl);
+      var cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      bubble.appendChild(cursor);
+
+      var words = answer.text.split(' ');
+      for (var i = 0; i < words.length; i++) {
+        textEl.textContent += (i ? ' ' : '') + words[i];
+        scrollDown();
+        await wait(38);
+      }
+      cursor.remove();
+
+      // data trace chips
+      if (answer.trace && answer.trace.length) {
+        var row = document.createElement('div');
+        row.className = 'trace-row';
+        row.id = bubble.id + '-trace';
+        row.innerHTML = '<span class="trace-label">Based on:</span>' + answer.trace.map(function (t, idx) {
+          return '<button class="trace-chip" data-idx="' + idx + '">' + t + '</button>';
+        }).join('');
+        bubble.appendChild(row);
+        // first chip navigates to transactions (transparency -> data view)
+        Array.prototype.forEach.call(row.querySelectorAll('.trace-chip'), function (c) {
+          c.addEventListener('click', function () { goTo('01.4-transactions-table.html'); });
+        });
+      }
+      scrollDown();
+    }
+
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    async function send(text) {
+      if (busy) return;
+      text = (text || field.value).trim();
+      if (!text) return;
+      busy = true;
+      field.value = ''; autoSize(); updateSend();
+      addUser(text);
+      var ans = answerFor(text);
+      await addBot(ans);
+      busy = false; updateSend();
+      window.__lastAnswer = ans;
+    }
+
+    // ---- Input wiring ----
+    function updateSend() {
+      var empty = field.value.trim().length === 0 || busy;
+      sendBtn.disabled = empty;
+      sendBtn.setAttribute('aria-disabled', String(empty));
+    }
+    function autoSize() { field.style.height = 'auto'; field.style.height = Math.min(field.scrollHeight, 96) + 'px'; }
+    field.addEventListener('input', function () { autoSize(); updateSend(); });
+    field.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    sendBtn.addEventListener('click', function () { send(); });
+
+    // ---- Suggestion chips ----
+    function renderChips(extra) {
+      var chips = ['How am I doing?', "What's my biggest spend?", 'Am I on track this month?'];
+      if (extra) chips.push(extra);
+      chipsWrap.innerHTML = chips.map(function (c, i) {
+        return '<button class="chip" id="copilot-thread-welcome-chip-' + (i + 1) + '">' + c + '</button>';
+      }).join('');
+      Array.prototype.forEach.call(chipsWrap.querySelectorAll('.chip'), function (btn) {
+        btn.addEventListener('click', function () { send(btn.textContent); });
+      });
+    }
+
+    // ---- Context chip (from Insights) ----
+    function addContextChip(patternName) {
+      var chip = document.createElement('div');
+      chip.className = 'context-chip';
+      chip.id = 'copilot-thread-context-chip';
+      chip.innerHTML = 'Talking about: ' + patternName + ' <button aria-label="Clear context">✕</button>';
+      thread.insertBefore(chip, welcome.nextSibling);
+      chip.querySelector('button').addEventListener('click', function () {
+        chip.remove(); field.value = ''; autoSize(); updateSend();
+      });
+    }
+
+    // ---- Boot ----
+    loadDemoData().then(function (demo) {
+      DEMO = demo;
+      var extraChip = null;
+      if (preInsight) {
+        var ins = demo.insights.filter(function (x) { return x.id === preInsight; })[0];
+        if (ins) {
+          addContextChip(ins.pattern_name);
+          extraChip = ins.copilot_prompt;
+          if (preMessage) { field.value = preMessage; autoSize(); updateSend(); }
+        }
+      }
+      renderChips(extraChip);
+    }).catch(function (e) { console.error('copilot load failed', e); renderChips(null); });
+
+    renderSideNav('copilot');
+
+    // expose for verification
+    window.__send = send;
+    window.__threadState = function () {
+      return {
+        userMsgs: thread.querySelectorAll('.msg--user').length,
+        botMsgs: thread.querySelectorAll('.msg--bot').length,
+        traces: thread.querySelectorAll('.trace-row').length,
+        welcomeHidden: welcome.classList.contains('hidden')
+      };
+    };
+  })();
+  </script>
+</body>
+</html>

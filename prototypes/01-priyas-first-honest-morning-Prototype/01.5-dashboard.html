@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01.5 Dashboard — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+  <!-- Section: Left Side Navigation -->
+  <nav class="side-nav" id="side-nav-slot" aria-label="Primary"></nav>
+
+  <main class="dash dash--sidenav">
+
+    <!-- Section: Top Nav Bar -->
+    <div id="dashboard-topnav" class="dash-topnav">
+      <span id="dashboard-topnav-greeting" class="dash-greeting">Good evening, Priya</span>
+      <button id="dashboard-topnav-avatar" class="dash-avatar" aria-label="Profile and settings">PS</button>
+    </div>
+
+    <!-- Section: Safe-to-Spend Hero Card -->
+    <section id="dashboard-hero" class="hero-card">
+      <p id="dashboard-hero-label" class="hero-label">Safe to spend today</p>
+      <p id="dashboard-hero-today-amount" class="hero-amount" aria-label="Safe to spend today">₹0</p>
+      <p id="dashboard-hero-freshness" class="hero-freshness">Based on your statement from —</p>
+
+      <hr class="hero-sep">
+
+      <div id="dashboard-hero-after-salary" class="hero-after">
+        <span id="dashboard-hero-after-salary-label" class="hero-after-label">After your salary lands</span>
+        <span id="dashboard-hero-after-salary-amount" class="hero-after-amount">₹0</span>
+      </div>
+
+      <div id="dashboard-hero-confidence" class="hero-conf">
+        <span id="dashboard-hero-confidence-label" class="hero-conf-label">Confidence</span>
+        <button id="dashboard-hero-confidence-chip" class="conf-chip conf-chip--medium"
+                aria-label="Confidence: Medium — tap for explanation">Medium</button>
+        <div id="dashboard-hero-confidence-tooltip" class="conf-tooltip hidden" role="tooltip"></div>
+      </div>
+
+      <div class="hero-why">
+        <button id="dashboard-hero-why" class="hero-why-trigger" aria-expanded="false" aria-controls="dashboard-hero-why-content">Why ₹0?</button>
+        <p id="dashboard-hero-why-content" class="hero-why-content hidden"></p>
+      </div>
+    </section>
+
+    <!-- Section: Morning Briefing -->
+    <section id="dashboard-briefing" class="briefing-card">
+      <p id="dashboard-briefing-text" class="briefing-text"></p>
+      <button id="dashboard-briefing-insights-cta" class="btn btn--primary" onclick="goTo('01.6-ai-insights-recommendations.html')">See my insights →</button>
+    </section>
+
+    <!-- Section: Spending Breakdown (below fold) -->
+    <section id="dashboard-spending-chart" class="dash-section">
+      <h2 id="dashboard-spending-chart-headline">Where your money went</h2>
+      <div class="donut-wrap">
+        <div id="dashboard-spending-chart-donut" class="donut" role="img" aria-label="Spending by category"></div>
+        <ul id="donut-legend" class="donut-legend"></ul>
+      </div>
+    </section>
+
+    <!-- Section: Commitments Timeline (below fold) -->
+    <section id="dashboard-commitments" class="dash-section">
+      <h2 id="dashboard-commitments-headline">Upcoming commitments</h2>
+      <ul id="dashboard-commitments-list" class="timeline"></ul>
+      <a href="#" id="dashboard-commitments-add" class="link add-commitment" onclick="event.preventDefault()">+ Add a commitment</a>
+    </section>
+
+  </main>
+
+  <!-- Add Commitment modal form -->
+  <div id="add-commitment-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="acm-title">
+    <div class="modal">
+      <h3 id="acm-title" style="margin:0 0 var(--space-xs);">Add a commitment</h3>
+      <p class="text-muted" style="font-size:var(--text-sm); margin:0 0 var(--space-md);">
+        Protect money for an upcoming bill or EMI — your Safe-to-Spend updates instantly.
+      </p>
+      <form id="acm-form" novalidate>
+        <div class="field">
+          <label for="acm-name">What's it for?</label>
+          <input id="acm-name" type="text" placeholder="e.g. Rent" autocomplete="off">
+          <span class="error" id="acm-name-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label for="acm-amount">Amount (₹)</label>
+          <input id="acm-amount" type="number" inputmode="numeric" min="1" placeholder="0">
+          <span class="error" id="acm-amount-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label for="acm-date">When is it due?</label>
+          <input id="acm-date" type="date">
+          <span class="error" id="acm-date-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label>How important is it?</label>
+          <div class="chip-group chip--wrap" id="acm-criticality">
+            <button type="button" class="chip" data-crit="Critical">Critical</button>
+            <button type="button" class="chip is-active" data-crit="Important">Important</button>
+            <button type="button" class="chip" data-crit="Flexible">Flexible</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:var(--space-sm); margin-top:var(--space-lg);">
+          <button type="button" class="btn btn--secondary" id="acm-cancel" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn btn--primary" id="acm-save" style="flex:1;">Protect this money</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="dashboard-toast" class="toast hidden" role="status"></div>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 01.5 Dashboard loaded');
+
+    // ---- shared state ----
+    var commits = [];        // current commitments (sorted)
+    var baseToday = 0;       // Safe-to-Spend today from the statement (before user-added commitments)
+    var addedTotal = 0;      // sum of commitments the user has added this session
+    var baseWhy = '';        // original "why" reasoning
+    var todayEl, whyBtn, whyContent, toastTimer;
+
+    function greeting() {
+      var h = new Date().getHours();
+      if (h < 12) return 'Good morning, Priya';
+      if (h < 17) return 'Good afternoon, Priya';
+      return 'Good evening, Priya';
+    }
+    document.getElementById('dashboard-topnav-greeting').textContent = greeting();
+
+    function showToast(msg) {
+      var t = document.getElementById('dashboard-toast');
+      t.textContent = msg; t.classList.remove('hidden');
+      clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 3500);
+    }
+
+    function currentToday() { return Math.max(0, baseToday - addedTotal); }
+
+    function renderCommitments() {
+      commits.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      document.getElementById('dashboard-commitments-list').innerHTML = commits.map(function (c) {
+        var added = c.userAdded ? ' <span class="tl-tag">new</span>' : '';
+        return '<li><span class="tl-date">' + c.date_label + '</span>' +
+               '<span class="tl-name">' + c.name + added + '</span>' +
+               '<span class="tl-amt">' + formatINR(c.amount) + '</span></li>';
+      }).join('');
+    }
+
+    // Live Safe-to-Spend update — the "protection payoff" moment
+    function updateSafeToSpend() {
+      var t = currentToday();
+      todayEl.textContent = formatINR(t);
+      todayEl.setAttribute('aria-label', 'Safe to spend today: ' + formatINR(t));
+      whyBtn.textContent = 'Why ' + formatINR(t) + '?';
+      if (addedTotal > 0) {
+        whyContent.textContent = baseWhy + ' You then protected ' + formatINR(addedTotal) +
+          ' more for commitments you added, leaving ' + formatINR(t) + '.';
+      } else {
+        whyContent.textContent = baseWhy;
+      }
+    }
+
+    loadDemoData().then(function (demo) {
+      var sts = demo.safe_to_spend, conf = demo.confidence, s = demo.statement;
+      baseToday = sts.today;
+      baseWhy = sts.why_today;
+
+      todayEl = document.getElementById('dashboard-hero-today-amount');
+      whyBtn = document.getElementById('dashboard-hero-why');
+      whyContent = document.getElementById('dashboard-hero-why-content');
+
+      // Hero
+      todayEl.textContent = formatINR(sts.today);
+      todayEl.setAttribute('aria-label', 'Safe to spend today: ' + formatINR(sts.today));
+      document.getElementById('dashboard-hero-freshness').textContent = 'Based on your statement from ' + formatDate(s.statement_date);
+      document.getElementById('dashboard-hero-after-salary-amount').textContent = formatINR(sts.after_salary);
+
+      // Confidence chip
+      var chip = document.getElementById('dashboard-hero-confidence-chip');
+      chip.textContent = conf.level;
+      chip.className = 'conf-chip conf-chip--' + conf.level.toLowerCase();
+      chip.setAttribute('aria-label', 'Confidence: ' + conf.level + ' — tap for explanation');
+      var tip = document.getElementById('dashboard-hero-confidence-tooltip');
+      tip.textContent = conf.tooltip;
+      chip.addEventListener('click', function () { tip.classList.toggle('hidden'); });
+
+      // Why expander
+      whyBtn.textContent = 'Why ' + formatINR(sts.today) + '?';
+      whyContent.textContent = sts.why_today;
+      whyBtn.addEventListener('click', function () {
+        var open = whyContent.classList.toggle('hidden') === false;
+        whyBtn.setAttribute('aria-expanded', String(open));
+      });
+
+      // Briefing
+      document.getElementById('dashboard-briefing-text').textContent = demo.briefing.text;
+
+      // Donut chart
+      var cats = demo.spending_by_category;
+      var total = cats.reduce(function (a, c) { return a + c.amount; }, 0);
+      var acc = 0; var stops = [];
+      cats.forEach(function (c) {
+        var start = (acc / total) * 360;
+        acc += c.amount;
+        var end = (acc / total) * 360;
+        stops.push(c.color + ' ' + start.toFixed(1) + 'deg ' + end.toFixed(1) + 'deg');
+      });
+      document.getElementById('dashboard-spending-chart-donut').style.background = 'conic-gradient(' + stops.join(', ') + ')';
+      document.getElementById('donut-legend').innerHTML = cats.map(function (c) {
+        var pct = Math.round((c.amount / total) * 100);
+        return '<li><span class="legend-swatch" style="background:' + c.color + '"></span>' +
+               '<span>' + c.category + '</span><span class="legend-amt">' + formatINR(c.amount) + ' · ' + pct + '%</span></li>';
+      }).join('');
+
+      // Commitments timeline (real commitments with an amount)
+      commits = demo.commitments.filter(function (c) { return c.amount > 0; })
+        .map(function (c) { return { name: c.name, amount: c.amount, date: c.date, date_label: c.date_label }; });
+      renderCommitments();
+
+      window.__dashLoaded = true;
+    }).catch(function (e) { console.error('dashboard load failed', e); });
+
+    // ---------- Add Commitment form ----------
+    var modal = document.getElementById('add-commitment-modal');
+    var form = document.getElementById('acm-form');
+    var fName = document.getElementById('acm-name');
+    var fAmount = document.getElementById('acm-amount');
+    var fDate = document.getElementById('acm-date');
+    var criticality = 'Important';
+
+    function openModal() {
+      form.reset(); criticality = 'Important';
+      Array.prototype.forEach.call(document.querySelectorAll('#acm-criticality .chip'), function (c) {
+        c.classList.toggle('is-active', c.getAttribute('data-crit') === 'Important');
+      });
+      ['name', 'amount', 'date'].forEach(function (k) { document.getElementById('acm-' + k + '-error').textContent = ''; });
+      modal.classList.remove('hidden');
+      setTimeout(function () { fName.focus(); }, 30);
+    }
+    function closeModal() { modal.classList.add('hidden'); }
+
+    document.getElementById('dashboard-commitments-add').addEventListener('click', function (e) {
+      e.preventDefault(); openModal();
+    });
+    document.getElementById('acm-cancel').addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+    // criticality chips
+    Array.prototype.forEach.call(document.querySelectorAll('#acm-criticality .chip'), function (chip) {
+      chip.addEventListener('click', function () {
+        criticality = chip.getAttribute('data-crit');
+        Array.prototype.forEach.call(document.querySelectorAll('#acm-criticality .chip'), function (c) {
+          c.classList.toggle('is-active', c === chip);
+        });
+      });
+    });
+
+    function fmtDateLabel(iso) { return formatDate(iso, 'short'); }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = fName.value.trim();
+      var amount = parseInt(fAmount.value, 10);
+      var date = fDate.value;
+      var ok = true;
+      document.getElementById('acm-name-error').textContent = name ? '' : (ok = false, 'Give it a name');
+      document.getElementById('acm-amount-error').textContent = (amount > 0) ? '' : (ok = false, 'Enter an amount above ₹0');
+      document.getElementById('acm-date-error').textContent = date ? '' : (ok = false, 'Pick a date');
+      if (!ok) return;
+
+      commits.push({ name: name, amount: amount, date: date, date_label: fmtDateLabel(date), criticality: criticality, userAdded: true });
+      addedTotal += amount;
+      renderCommitments();
+      updateSafeToSpend();
+      closeModal();
+      showToast('Protected ' + formatINR(amount) + ' for ' + name + ' — Safe-to-Spend updated');
+      console.log('➕ Commitment added:', name, amount, criticality, '→ Safe-to-Spend now', formatINR(currentToday()));
+    });
+
+    // Left side nav
+    renderSideNav('dashboard');
+
+    // expose for verification
+    window.__addCommit = function (name, amount, date) {
+      fName.value = name; fAmount.value = amount; fDate.value = date;
+      form.dispatchEvent(new Event('submit'));
+    };
+    window.__dashState = function () { return { commits: commits.length, addedTotal: addedTotal, today: currentToday() }; };
+  })();
+  </script>
+</body>
+</html>

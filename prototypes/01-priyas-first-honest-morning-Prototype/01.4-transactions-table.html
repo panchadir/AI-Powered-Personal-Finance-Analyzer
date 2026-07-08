@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01.4 Your transactions — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+  <!-- Persistent left navigation -->
+  <nav class="side-nav" id="side-nav-slot" aria-label="Primary"></nav>
+
+  <main class="page--flow has-sidenav">
+    <!-- Section: Page Header -->
+    <div id="txn-header">
+      <div class="txn-header-row">
+        <h1 id="txn-header-headline" class="flow-headline">Your transactions</h1>
+        <button id="txn-dashboard-cta" class="pill-btn" onclick="goTo('01.5-dashboard.html')">
+          See my Dashboard <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div id="txn-header-needs-review" class="banner" role="status">
+        <span class="dot" aria-hidden="true"></span>
+        <span><strong id="txn-needs-count">3</strong> transactions need your help — we weren't sure how to categorise them</span>
+      </div>
+    </div>
+
+    <!-- Section: Filter Chips -->
+    <div id="txn-filters">
+      <div id="txn-filters-chips" class="chip-group chip--wrap" role="tablist" aria-label="Filter transactions"></div>
+    </div>
+
+    <!-- Section: Transaction List -->
+    <ul id="txn-list" class="txn-list" role="list"></ul>
+  </main>
+
+  <div id="txn-toast" class="toast hidden" role="status"></div>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 01.4 Transactions Table loaded');
+    renderSideNav('transactions');
+
+    var ICONS = {
+      'Income': '💰', 'Food & Dining': '🍽️', 'EMIs': '🏦', 'Bills & Utilities': '💡',
+      'Transport': '🚌', 'Subscriptions': '🔁', 'Shopping': '🛍️', 'Entertainment': '🎬',
+      'Other': '•', 'Uncategorized': '❓'
+    };
+    var ALL_CATEGORIES = ['Food & Dining','Transport','Bills & Utilities','Subscriptions','Shopping','Entertainment','EMIs','Income','Other'];
+
+    var txns = [];
+    var activeFilter = 'All';
+    var listEl = document.getElementById('txn-list');
+    var chipsEl = document.getElementById('txn-filters-chips');
+    var banner = document.getElementById('txn-header-needs-review');
+    var toast = document.getElementById('txn-toast');
+    var openRowId = null;
+    var toastTimer;
+
+    function showToast(msg) {
+      toast.textContent = msg; toast.classList.remove('hidden');
+      clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.add('hidden'); }, 3000);
+    }
+
+    function needsReviewCount() { return txns.filter(function (t) { return t.confidence === 'needs_review'; }).length; }
+
+    function distinctCategories() {
+      var seen = {}; var out = [];
+      txns.forEach(function (t) { var c = displayCategory(t); if (!seen[c] && c !== 'Uncategorized') { seen[c] = 1; out.push(c); } });
+      return out;
+    }
+    function displayCategory(t) { return t.confidence === 'needs_review' ? 'Uncategorized' : t.category; }
+
+    function badgeFor(t) {
+      if (t.confidence === 'needs_review') return { cls: 'txn-badge--review', txt: '?', aria: 'Needs review' };
+      if (t.confidence === 'ai') return { cls: 'txn-badge--ai', txt: 'AI', aria: 'AI-categorised' };
+      return { cls: 'txn-badge--none', txt: '', aria: '' };
+    }
+
+    function renderChips() {
+      var chips = ['All'];
+      var nr = needsReviewCount();
+      if (nr > 0) chips.push('Needs review (' + nr + ')');
+      distinctCategories().forEach(function (c) { chips.push(c); });
+      chipsEl.innerHTML = chips.map(function (c) {
+        var key = c.indexOf('Needs review') === 0 ? 'Needs review' : c;
+        var active = (activeFilter === key) ? ' is-active' : '';
+        return '<button class="chip' + active + '" role="tab" data-filter="' + key + '">' + c + '</button>';
+      }).join('');
+      Array.prototype.forEach.call(chipsEl.querySelectorAll('.chip'), function (btn) {
+        btn.addEventListener('click', function () { activeFilter = btn.getAttribute('data-filter'); openRowId = null; render(); });
+      });
+    }
+
+    function visibleTxns() {
+      if (activeFilter === 'All') return txns;
+      if (activeFilter === 'Needs review') return txns.filter(function (t) { return t.confidence === 'needs_review'; });
+      return txns.filter(function (t) { return displayCategory(t) === activeFilter; });
+    }
+
+    function render() {
+      renderChips();
+      banner.style.display = needsReviewCount() > 0 ? '' : 'none';
+      document.getElementById('txn-needs-count').textContent = needsReviewCount();
+
+      var rows = visibleTxns();
+      listEl.innerHTML = '';
+      rows.forEach(function (t) {
+        var cat = displayCategory(t);
+        var b = badgeFor(t);
+        var li = document.createElement('li');
+        li.setAttribute('role', 'listitem');
+
+        var row = document.createElement('button');
+        row.className = 'txn-row';
+        row.id = 'txn-list-row-' + t.id;
+        row.setAttribute('aria-expanded', openRowId === t.id ? 'true' : 'false');
+        var credit = t.type === 'credit';
+        row.innerHTML =
+          '<span class="txn-icon" aria-hidden="true">' + (ICONS[cat] || '•') + '</span>' +
+          '<span class="txn-meta">' +
+            '<span class="txn-merchant">' + t.merchant + '</span>' +
+            '<span class="txn-cat-date">' + cat + ' · ' + formatDate(t.date, 'short') + '</span>' +
+          '</span>' +
+          '<span class="txn-amount ' + (credit ? 'is-credit' : '') + '">' + (credit ? '+' : '') + formatINR(Math.abs(t.amount)) + '</span>' +
+          '<span class="txn-badge ' + b.cls + '" ' + (b.aria ? 'aria-label="' + b.aria + '"' : 'aria-hidden="true"') + '>' + b.txt + '</span>';
+        row.addEventListener('click', function () { toggleRow(t.id); });
+        li.appendChild(row);
+
+        if (openRowId === t.id) li.appendChild(buildTeachMe(t));
+        listEl.appendChild(li);
+      });
+    }
+
+    function toggleRow(id) { openRowId = (openRowId === id) ? null : id; render(); }
+
+    function buildTeachMe(t) {
+      var panel = document.createElement('div');
+      panel.className = 'teach-me';
+      panel.id = 'txn-teach-me';
+      var current = t.confidence === 'needs_review' ? (t.guess || '') : t.category;
+      var chipsHtml = ALL_CATEGORIES.map(function (c) {
+        return '<button class="chip' + (c === current ? ' is-active' : '') + '" data-cat="' + c + '" aria-pressed="' + (c === current) + '">' + c + '</button>';
+      }).join('');
+      panel.innerHTML =
+        '<p class="teach-me-label" id="txn-teach-me-label">What\'s this actually for?</p>' +
+        '<div class="chip-group chip--wrap" id="txn-teach-me-category-selector">' + chipsHtml + '</div>' +
+        '<div class="toggle-row" id="txn-teach-me-reapply">' +
+          '<span>Apply this to all "' + t.merchant + '" transactions?</span>' +
+          '<label class="switch"><input type="checkbox" id="reapply-toggle" checked><span class="track"></span></label>' +
+        '</div>' +
+        '<button class="btn btn--secondary" id="txn-teach-me-save">Got it — save this</button>';
+
+      var selected = current;
+      Array.prototype.forEach.call(panel.querySelectorAll('[data-cat]'), function (chip) {
+        chip.addEventListener('click', function () {
+          selected = chip.getAttribute('data-cat');
+          Array.prototype.forEach.call(panel.querySelectorAll('[data-cat]'), function (c) {
+            var on = c === chip; c.classList.toggle('is-active', on); c.setAttribute('aria-pressed', on);
+          });
+        });
+      });
+      panel.querySelector('#txn-teach-me-save').addEventListener('click', function () {
+        if (!selected) return showToast('Pick a category first');
+        var reapply = panel.querySelector('#reapply-toggle').checked;
+        saveCorrection(t, selected, reapply);
+      });
+      return panel;
+    }
+
+    function saveCorrection(t, category, reapply) {
+      // Apply to this transaction
+      t.category = category; t.confidence = 'confident'; delete t.guess;
+      var updated = 1;
+      if (reapply) {
+        txns.forEach(function (o) {
+          if (o.id !== t.id && o.merchant === t.merchant) { o.category = category; o.confidence = 'confident'; delete o.guess; updated++; }
+        });
+      }
+      openRowId = null;
+      render();
+      // flash the corrected row
+      var row = document.getElementById('txn-list-row-' + t.id);
+      if (row) { row.classList.add('flash'); }
+      showToast('Saved — updated ' + updated + (updated === 1 ? ' transaction' : ' transactions'));
+      console.log('✏️ Correction saved:', t.merchant, '->', category, '(reapply:', reapply + ', updated:', updated + ')');
+    }
+
+    // Load and render
+    loadDemoData().then(function (demo) {
+      txns = JSON.parse(JSON.stringify(demo.transactions)); // clone so corrections are local
+      render();
+    }).catch(function () {
+      listEl.innerHTML = '<li class="text-muted">Could not load transactions (serve over http).</li>';
+    });
+
+    // expose for verification
+    window.__txnState = function () { return { needsReview: needsReviewCount(), visible: visibleTxns().length, total: txns.length, activeFilter: activeFilter }; };
+    window.__openRow = function (id) { toggleRow(id); };
+  })();
+  </script>
+</body>
+</html>

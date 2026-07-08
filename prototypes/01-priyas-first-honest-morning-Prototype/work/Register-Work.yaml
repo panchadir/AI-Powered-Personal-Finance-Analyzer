@@ -1,0 +1,131 @@
+# Work File — V1 Register (01.1)
+# WDS Phase 5 Prototyping — Step 3 output (section breakdown plan)
+# Story files are created just-in-time per section (Step 4b), NOT here.
+
+metadata:
+  view: Register
+  page_number: "01.1"
+  scenario: "01 - Priya's First Honest Morning"
+  spec: "_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md"
+  output_html: "01.1-register.html"
+  visibility: Public
+  device_compatibility: fully-responsive   # 375px -> 1920px
+  test_viewports: [375, 393, 1280]
+  design_fidelity: gray-model
+  language: en
+
+dependencies:
+  organisms:
+    - register-header
+    - register-trust
+    - register-form
+    - register-existing-user
+    - register-legal
+  special_features:
+    - inline-form-validation
+    - password-show-hide-toggle
+    - auto-auth-redirect-to-01.2
+    - dpdp-legal-modal
+
+object_ids:
+  - register-header
+  - register-header-logo
+  - register-header-app-name
+  - register-trust
+  - register-trust-headline
+  - register-trust-subline
+  - register-form
+  - register-form-email
+  - register-form-password
+  - register-form-confirm-password
+  - register-form-cta
+  - register-existing-user
+  - register-existing-user-link
+  - register-legal
+  - register-legal-text
+
+states:
+  - default
+  - typing            # inline validation on blur
+  - loading           # CTA spinner, fields disabled
+  - error-validation  # inline field errors
+  - error-email-taken # inline error on email field
+  - error-network     # toast
+  - success           # redirect to 01.2 (auto-authentication)
+
+validation_rules:
+  email:
+    - { rule: required, message: "Please enter your email address" }
+    - { rule: format, message: "That doesn't look like a valid email" }
+    - { rule: not-registered, message: "This email is already registered. Log in instead?" }
+  password:
+    - { rule: required, message: "Please create a password" }
+    - { rule: min-8, message: "Password must be at least 8 characters" }
+  confirm_password:
+    - { rule: required, message: "Please confirm your password" }
+    - { rule: matches, message: "Passwords don't match" }
+
+api_mock:
+  register:
+    endpoint: /auth/register
+    method: POST
+    payload: { email, password }
+    response_success: { userId, token }
+    note: "Prototype mock — no real backend. Sets a demo auth flag then redirects to 01.2-login.html. Email 'taken@example.com' simulates the email-taken error path."
+
+sections:
+  - id: 1
+    name: "Shared infra + Page shell + Header"
+    objects: [register-header, register-header-logo, register-header-app-name]
+    also_creates:
+      - shared/styles.css   # Gray Model tokens: grayscale palette, spacing scale, type scale, responsive breakpoints (768/1024/1280)
+      - shared/format.js    # currency (INR) + date formatting
+      - shared/data.js      # loads data/demo-data.json
+      - shared/nav.js       # linear routing + bottom nav (used by later authenticated views)
+    estimate_min: 20
+    status: done
+    completed: 2026-07-08
+    notes: "Built dependency-free (custom styles.css, no Tailwind CDN). Verified via headless Chrome + CDP: all assets 200, format helpers exact, no h-overflow @390px, card centered, desktop clean. Approved by ALPHA."
+  - id: 2
+    name: "Trust Signal"
+    objects: [register-trust, register-trust-headline, register-trust-subline]
+    estimate_min: 5
+    status: done
+    completed: 2026-07-08
+  - id: 3
+    name: "Registration Form fields"
+    objects: [register-form, register-form-email, register-form-password, register-form-confirm-password, register-form-cta]
+    notes: "Password show/hide eye toggle; full-width mobile CTA."
+    estimate_min: 15
+    status: done
+    completed: 2026-07-08
+  - id: 4
+    name: "Validation + form states"
+    objects: [register-form]
+    states: [typing, loading, error-validation, error-email-taken, error-network]
+    notes: "All 7 validation rules; blur + submit validation; aria-describedby error links; loading spinner."
+    estimate_min: 20
+    status: done
+    completed: 2026-07-08
+  - id: 5
+    name: "Existing-user link + Legal footnote"
+    objects: [register-existing-user, register-existing-user-link, register-legal, register-legal-text]
+    notes: "DPDP legal text; T&C/Privacy open in-page modal (not new tab). /login link -> placeholder."
+    estimate_min: 10
+    status: done
+    completed: 2026-07-08
+  - id: 6
+    name: "Submit flow + auto-auth redirect + verify"
+    objects: [register-form-cta]
+    states: [success]
+    notes: "Mock POST -> set demo auth -> redirect to 01.2-login.html. Responsive verify at 375 + 1280."
+    estimate_min: 10
+    status: done
+    completed: 2026-07-08
+
+total_estimate_min: 80
+
+honesty_layer_notes:
+  - "Trust headline/subline are the honesty hook — must be verbatim from spec."
+  - "Legal footnote: no pre-ticked consent (DPDP Rule 4)."
+  - "Auth token conceptually httpOnly cookie (spec); prototype simulates with a demo flag only."
