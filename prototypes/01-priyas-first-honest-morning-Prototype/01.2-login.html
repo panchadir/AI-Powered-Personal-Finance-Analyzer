@@ -3,69 +3,203 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>01.2 Setting up — AI Financial Copilot</title>
+  <title>Log in — AI Financial Copilot</title>
   <link rel="stylesheet" href="shared/styles.css">
 </head>
 <body>
   <!-- =====================================================================
-       01.2 LOGIN — Auto-authentication transition (not a task)
+       01.2 LOGIN — application landing page (existing-user authentication)
        ===================================================================== -->
-  <main class="autologin">
+  <main class="page page--auth">
+    <div class="auth-card">
 
-    <!-- In-progress / success block -->
-    <section id="autologin-confirmation" class="autologin-block">
-      <div id="autologin-confirmation-logo" class="logo-mark" aria-hidden="true">₹</div>
-      <h2 id="autologin-confirmation-headline" class="autologin-headline" aria-live="assertive">
-        <span class="autologin-check" aria-hidden="true">✓</span> Account created!
-      </h2>
-      <p id="autologin-confirmation-submessage" class="autologin-sub">Let's upload your first statement.</p>
-      <div id="autologin-confirmation-progress" class="spinner spinner--lg"
-           role="progressbar" aria-label="Setting up your account"></div>
-      <a href="01.3-statement-upload.html" id="autologin-manual-fallback" class="link hidden"
-         style="font-size:var(--text-sm);">Taking too long? Continue manually</a>
-    </section>
+      <header class="register-header">
+        <div class="logo-mark" aria-hidden="true">₹</div>
+        <h1 class="app-name">AI Financial Copilot</h1>
+      </header>
 
-    <!-- Error — token failure (hidden unless ?fail=1) -->
-    <section id="autologin-error" class="error-card hidden" role="alert">
-      <p>Something went wrong setting up your account.</p>
-      <a href="01.2-login.html" class="btn btn--primary" style="text-decoration:none;">Try logging in</a>
-    </section>
+      <section class="register-trust">
+        <h2 class="trust-headline">Welcome back.</h2>
+        <p class="trust-subline">Log in to see your honest financial picture.</p>
+      </section>
 
+      <!-- Form-level error (invalid credentials / server) -->
+      <div id="login-form-error" class="upload-error hidden" role="alert" style="margin-bottom:var(--space-md);"></div>
+
+      <form id="login-form" class="register-form" novalidate>
+        <div class="field">
+          <label for="login-email">Email address</label>
+          <div class="input-wrap">
+            <input id="login-email" name="email" type="email" inputmode="email" autocomplete="email"
+                   placeholder="you@example.com" aria-describedby="login-email-error">
+          </div>
+          <span class="error" id="login-email-error" role="alert"></span>
+        </div>
+
+        <div class="field">
+          <label for="login-password">Password</label>
+          <div class="input-wrap">
+            <input id="login-password" name="password" type="password" autocomplete="current-password"
+                   placeholder="Your password" aria-describedby="login-password-error">
+            <button type="button" class="pw-toggle" data-target="login-password" aria-label="Show password">Show</button>
+          </div>
+          <span class="error" id="login-password-error" role="alert"></span>
+        </div>
+
+        <div class="login-row">
+          <a href="#" id="login-forgot" class="link">Forgot password?</a>
+        </div>
+
+        <button type="submit" id="login-cta" class="btn btn--primary">
+          <span class="btn-label">Log in</span>
+          <span class="spinner hidden" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <!-- Register navigation -->
+      <div class="register-existing-user">
+        <span class="text-muted">New here? </span>
+        <a href="01.1-register.html" id="login-register-link" class="link">Register User</a>
+      </div>
+
+      <p class="register-legal">
+        <span class="text-muted">Demo account — email <strong>priya@example.com</strong>, password <strong>priya123</strong></span>
+      </p>
+
+    </div>
   </main>
 
-  <script src="shared/format.js"></script>
-  <script src="shared/data.js"></script>
-  <script src="shared/nav.js"></script>
+  <!-- Forgot-password modal -->
+  <div id="forgot-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+    <div class="modal">
+      <h3 id="forgot-title" style="margin:0 0 var(--space-xs);">Reset your password</h3>
+      <p class="text-muted" style="font-size:var(--text-sm); margin:0 0 var(--space-md);">
+        In production we'd email you a secure reset link. For this demo, set a new password directly.
+      </p>
+      <form id="forgot-form" novalidate>
+        <div class="field">
+          <label for="forgot-email">Account email</label>
+          <input id="forgot-email" type="email" inputmode="email" placeholder="you@example.com">
+          <span class="error" id="forgot-email-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label for="forgot-password">New password</label>
+          <input id="forgot-password" type="password" placeholder="8+ characters">
+          <span class="error" id="forgot-password-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label for="forgot-confirm">Confirm new password</label>
+          <input id="forgot-confirm" type="password" placeholder="Repeat new password">
+          <span class="error" id="forgot-confirm-error" role="alert"></span>
+        </div>
+        <div style="display:flex; gap:var(--space-sm); margin-top:var(--space-lg);">
+          <button type="button" class="btn btn--secondary" id="forgot-cancel" style="flex:1;">Cancel</button>
+          <button type="submit" class="btn btn--primary" id="forgot-save" style="flex:1;">Update password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="login-toast" class="toast hidden" role="status"></div>
+
+  <script src="shared/auth.js"></script>
   <script>
   (function () {
     'use strict';
-    console.log('📄 01.2 Login (auto-auth transition) loaded');
-    var params = new URLSearchParams(location.search);
+    console.log('📄 01.2 Login (landing) loaded');
 
-    if (params.get('fail') === '1') {
-      // Error — token failure state
-      document.getElementById('autologin-confirmation').classList.add('hidden');
-      document.getElementById('autologin-error').classList.remove('hidden');
-      console.warn('⚠️ Auth token failure (simulated) — showing manual fallback');
-      return;
+    // Already authenticated? Skip login, maintain session.
+    if (Auth.redirectIfAuthed()) return;
+
+    var form = document.getElementById('login-form');
+    var email = document.getElementById('login-email');
+    var password = document.getElementById('login-password');
+    var cta = document.getElementById('login-cta');
+    var formError = document.getElementById('login-form-error');
+    var toast = document.getElementById('login-toast');
+    var toastTimer;
+
+    function showToast(m) { toast.textContent = m; toast.classList.remove('hidden'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.add('hidden'); }, 3500); }
+    function setFieldErr(id, msg) { document.getElementById(id + '-error').textContent = msg || ''; document.getElementById(id).classList.toggle('has-error', !!msg); }
+    function showFormError(msg) { formError.textContent = msg; formError.classList.remove('hidden'); }
+    function clearFormError() { formError.classList.add('hidden'); formError.textContent = ''; }
+
+    // password show/hide
+    Array.prototype.forEach.call(document.querySelectorAll('.pw-toggle'), function (btn) {
+      btn.addEventListener('click', function () {
+        var i = document.getElementById(btn.getAttribute('data-target'));
+        var show = i.type === 'password'; i.type = show ? 'text' : 'password';
+        btn.textContent = show ? 'Hide' : 'Show';
+      });
+    });
+
+    // client-side validation
+    function validate() {
+      var ok = true;
+      var e = email.value.trim(), p = password.value;
+      if (!e) { setFieldErr('login-email', 'Please enter your email'); ok = false; }
+      else if (!Auth.EMAIL_RE.test(e)) { setFieldErr('login-email', "That doesn't look like a valid email"); ok = false; }
+      else setFieldErr('login-email', '');
+      if (!p) { setFieldErr('login-password', 'Please enter your password'); ok = false; } else setFieldErr('login-password', '');
+      return ok;
+    }
+    [email, password].forEach(function (f) { f.addEventListener('input', function () { setFieldErr(f.id, ''); clearFormError(); }); });
+
+    function setLoading(on) {
+      cta.disabled = on;
+      cta.querySelector('.btn-label').classList.toggle('hidden', on);
+      cta.querySelector('.spinner').classList.toggle('hidden', !on);
     }
 
-    // Read demo auth (set by Register). Tolerant if missing.
-    try {
-      var auth = JSON.parse(sessionStorage.getItem('demoAuth') || 'null');
-      if (auth) console.log('🔐 Demo session established for', auth.email);
-    } catch (e) {}
+    form.addEventListener('submit', function (e) {
+      e.preventDefault(); clearFormError();
+      if (!validate()) return;
+      setLoading(true);
+      Auth.login({ email: email.value, password: password.value }).then(function (user) {
+        console.log('🔐 Logged in as', user.email);
+        window.location.replace(Auth.HOME_PAGE);   // → Statement Upload
+      }).catch(function (err) {
+        setLoading(false);
+        showFormError(err.message || 'Login failed. Please try again.');
+      });
+    });
 
-    // Surface a manual fallback if the redirect somehow stalls (safety, spec: 3s).
-    var fallbackTimer = setTimeout(function () {
-      document.getElementById('autologin-manual-fallback').classList.remove('hidden');
-    }, 3000);
+    // ---- Forgot password modal ----
+    var modal = document.getElementById('forgot-modal');
+    var fForm = document.getElementById('forgot-form');
+    var fEmail = document.getElementById('forgot-email');
+    var fPw = document.getElementById('forgot-password');
+    var fConfirm = document.getElementById('forgot-confirm');
 
-    // Auto-advance to Statement Upload (~1.6s — long enough to reassure, short enough to feel instant).
-    setTimeout(function () {
-      clearTimeout(fallbackTimer);
-      window.location.href = '01.3-statement-upload.html';
-    }, 1600);
+    document.getElementById('login-forgot').addEventListener('click', function (e) {
+      e.preventDefault(); fForm.reset();
+      ['email', 'password', 'confirm'].forEach(function (k) { document.getElementById('forgot-' + k + '-error').textContent = ''; });
+      fEmail.value = email.value.trim();
+      modal.classList.remove('hidden'); setTimeout(function () { fEmail.focus(); }, 30);
+    });
+    document.getElementById('forgot-cancel').addEventListener('click', function () { modal.classList.add('hidden'); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.add('hidden'); });
+
+    fForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var ok = true;
+      ['email', 'password', 'confirm'].forEach(function (k) { document.getElementById('forgot-' + k + '-error').textContent = ''; });
+      if (!fEmail.value.trim()) { document.getElementById('forgot-email-error').textContent = 'Enter your account email'; ok = false; }
+      if (fPw.value.length < 8) { document.getElementById('forgot-password-error').textContent = 'At least 8 characters'; ok = false; }
+      if (fConfirm.value !== fPw.value) { document.getElementById('forgot-confirm-error').textContent = "Passwords don't match"; ok = false; }
+      if (!ok) return;
+      Auth.resetPassword({ email: fEmail.value, newPassword: fPw.value }).then(function () {
+        modal.classList.add('hidden');
+        showToast('Password updated — please log in with your new password.');
+        email.value = fEmail.value.trim(); password.value = '';
+      }).catch(function (err) {
+        var f = err.field === 'newPassword' ? 'password' : (err.field || 'email');
+        document.getElementById('forgot-' + f + '-error').textContent = err.message;
+      });
+    });
+
+    // verification hooks
+    window.__login = function (e, p) { email.value = e; password.value = p; form.dispatchEvent(new Event('submit')); };
   })();
   </script>
 </body>

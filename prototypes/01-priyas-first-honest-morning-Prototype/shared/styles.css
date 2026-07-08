@@ -457,9 +457,11 @@ a { color: inherit; }
 }
 .side-nav__tab {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 10px 4px; background: none; border: none;
+  padding: 10px 4px; background: none; border: none; cursor: pointer;
   font-size: 10px; color: var(--muted); line-height: 1.15; text-align: center;
+  transition: background .12s ease, color .12s ease;
 }
+.side-nav__tab:not(.is-active):hover { color: var(--ink); background: var(--gray-100); }
 .side-nav__tab .ico { font-size: 18px; }
 .side-nav__tab.is-active { color: var(--primary); font-weight: 600; background: var(--primary-tint); }
 .dash--sidenav { margin-left: 76px; padding-bottom: var(--space-xl); }
@@ -580,6 +582,52 @@ a { color: inherit; }
   display: inline-flex; align-items: center; justify-content: center;
 }
 .send-btn:disabled { opacity: .4; }
+
+/* ---- Auth: login row, success state, error banner ---- */
+.login-row { display: flex; justify-content: flex-end; margin: calc(-1 * var(--space-xs)) 0 var(--space-md); }
+.login-row .link { font-size: var(--text-sm); }
+
+.register-success { text-align: center; padding: var(--space-md) 0 var(--space-sm); }
+.success-check {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: var(--success-tint); color: var(--success);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: 700; margin: 0 auto var(--space-md);
+}
+.register-success-headline { margin: 0 0 var(--space-xs); font-size: var(--text-xl); }
+.register-success-sub { font-size: var(--text-sm); margin: 0 auto var(--space-lg); max-width: 34ch; }
+.register-success .btn--primary { display: inline-block; width: auto; padding-left: var(--space-xl); padding-right: var(--space-xl); }
+
+.upload-error {
+  background: var(--danger-bg); border: 1px solid var(--danger-line); color: var(--danger);
+  border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md); font-size: var(--text-sm);
+}
+
+/* Logout pinned to the bottom of the left rail — same brand interaction as the nav tabs */
+.side-nav__logout {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  padding-top: 12px; padding-bottom: 16px;
+}
+.side-nav__logout { cursor: pointer; }
+/* higher specificity so it wins over the generic .side-nav__tab:hover rule */
+.side-nav__tab.side-nav__logout:hover { color: #fff; background: var(--primary); }   /* solid teal — high contrast, like the primary buttons */
+.side-nav__logout .ico { font-size: 16px; }
+@media (min-width: 768px) {
+  .side-nav__logout { margin: auto var(--space-sm) 0; border-radius: var(--radius-sm); }  /* inset + rounded like the tabs */
+}
+
+/* Header logout button (Upload page) — secondary-button style, solid teal on hover */
+.logout-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--gray-400); border-radius: 999px;
+  padding: 7px 16px; font-size: var(--text-sm); font-weight: 600; color: var(--ink);
+  cursor: pointer; transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.logout-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+.logout-btn .ico { font-size: 14px; line-height: 1; }
 
 /* ---- Auto-auth transition page (01.2 Login) ---- */
 .autologin {

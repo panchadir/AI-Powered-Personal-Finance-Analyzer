@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>01.7 AI Copilot — AI Financial Copilot</title>
   <link rel="stylesheet" href="shared/styles.css">
+  <script>
+  (function () {
+    function ok() { try { var s = JSON.parse(sessionStorage.getItem('afc_session') || 'null'); return !!(s && s.email && (!s.exp || Date.now() < s.exp)); } catch (e) { return false; } }
+    if (!ok()) location.replace('01.2-login.html');
+    window.addEventListener('pageshow', function () { if (!ok()) location.replace('01.2-login.html'); });
+  })();
+  </script>
 </head>
 <body>
   <!-- Persistent left navigation -->
@@ -38,6 +45,7 @@
 
   <script src="shared/format.js"></script>
   <script src="shared/data.js"></script>
+  <script src="shared/auth.js"></script>
   <script src="shared/nav.js"></script>
   <script>
   (function () {

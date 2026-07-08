@@ -272,6 +272,47 @@
 
 ---
 
+### 2026-07-08 — Phase 5: Prototyping — Authentication Flow Rework + Upload Validation
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Requested by:** ALPHA (detailed spec with acceptance criteria)
+
+**Implemented (all client-side simulation — no backend — verified 24/24 via CDP, zero console errors):**
+1. **Login-first flow** — new `index.html` entry → Login. `01.2-login.html` rewritten from the auto-auth transition into the real **Login landing page** (email/password, "Register User", "Forgot password?"). Auto-login removed.
+2. **Register rework** (`01.1`) — client + simulated server-side validation, **unique-email** check, and a **"Registration successful → Return to Login"** success state. No session created on register (manual login required).
+3. **Mock auth backend** (`shared/auth.js`) — `localStorage` user "DB" (seeded `priya@example.com`/`priya123`), `sessionStorage` session (60-min TTL), register/login/resetPassword/logout, `requireAuth`/`redirectIfAuthed` guards.
+4. **Session management + protected routes** — inline `<head>` guard on Upload, Transactions, Dashboard, Insights, Copilot (blocks direct-URL/unauthenticated access → Login) + `Auth.requireAuth()`.
+5. **Logout** — left-nav footer (app screens) + Upload header; clears session → Login; post-logout access blocked.
+6. **Forgot Password** — reset workflow (demo sets a new password; production would email a signed link).
+7. **Statement upload validation** (`01.3`) — **PDF + CSV only**; extension + MIME + empty + size (10 MB) + content-sniff (PDF `%PDF-` header, CSV text/columns) + simulated server-validate; friendly errors for invalid type / empty / corrupted / unsupported format / parse failure / server / network.
+
+**Docs updated:** `README.md` (flow, demo creds, Authentication section), `HANDOFF.md` (auth + file-validation deltas, production auth-security notes).
+
+**Note:** This is a faithful *client-side simulation*; a production backend must hash passwords, use httpOnly session cookies, and re-validate everything server-side (documented in HANDOFF.md).
+
+**Next:** [T] Acceptance Testing against the auth acceptance criteria, and/or prototype Scenarios 02 & 03.
+
+---
+
+### 2026-07-08 — Phase 5: Prototyping — Logout UI/UX Polish
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Requested by:** ALPHA
+**Scope:** CSS-only refinement of the logout controls added in the auth rework (no logic change).
+
+**Changes (verified via CDP hover screenshots, zero console errors):**
+- **Sidebar logout** (all 4 app screens) — footer action with a top divider, inset/rounded like the nav tabs; hover is now **solid teal + white text/icon** (matches the primary buttons), fixing a washed-out teal-on-tint hover and a CSS specificity conflict where a generic nav-tab hover was overriding it.
+- **Upload header logout** — upgraded from plain muted text to a **secondary-style pill button** (⏻ Log out) that also hovers to solid teal + white.
+- Added pointer cursor + neutral hover to the nav tabs for consistent button feel.
+
+**Rationale:** align the logout with the app's established design language (brand teal, primary/secondary button styles) so it reads as a clear, high-contrast action rather than a faint/inconsistent element.
+
+**Files:** `shared/styles.css` (logout + nav-tab hover), `01.3-statement-upload.html` (header logout markup). Prototype-only; no page-spec changes.
+
+**Next:** [T] Acceptance Testing, and/or prototype Scenarios 02 & 03.
+
+---
+
 ## Key Decisions
 
 | Date | Decision | Phase | By |
@@ -293,6 +334,8 @@
 | 2026-07-08 | Prototype fidelity upgraded Gray Model → branded teal theme (tokens in `shared/styles.css`) | Phase 5: Prototyping | Claude Code + ALPHA |
 | 2026-07-08 | Persistent left nav on all authenticated app screens; nav = Transactions · Dashboard · Insights · Copilot Chat (the "Commitments" slot repurposed to Insights → `01.6`, since the Commitments page is unbuilt Scenario 02) | Phase 5: Prototyping | Claude Code + ALPHA |
 | 2026-07-08 | Dashboard "+ Add a commitment" realized as an inline modal form that updates Safe-to-Spend live — brings Scenario-02's "protection payoff" moment onto the Dashboard prototype | Phase 5: Prototyping | Claude Code + ALPHA |
+| 2026-07-08 | Auth reworked to login-first: `index.html`→Login landing; register no longer auto-logs in (success → "Return to Login"); mock auth backend in `shared/auth.js` (localStorage DB + sessionStorage session); protected routes guarded; logout added | Phase 5: Prototyping | Claude Code + ALPHA |
+| 2026-07-08 | Statement upload accepts PDF **and CSV** (was PDF-only) with full client-side validation (type/MIME/size/empty/corrupt/format) + friendly errors; server must re-validate in production | Phase 5: Prototyping | Claude Code + ALPHA |
 
 ---
 

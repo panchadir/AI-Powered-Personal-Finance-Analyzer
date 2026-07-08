@@ -5,14 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>01.3 Upload your statement — AI Financial Copilot</title>
   <link rel="stylesheet" href="shared/styles.css">
+  <!-- Route guard: block unauthenticated / direct-URL access before render -->
+  <script>
+  (function () {
+    function ok() { try { var s = JSON.parse(sessionStorage.getItem('afc_session') || 'null'); return !!(s && s.email && (!s.exp || Date.now() < s.exp)); } catch (e) { return false; } }
+    if (!ok()) location.replace('01.2-login.html');
+    window.addEventListener('pageshow', function () { if (!ok()) location.replace('01.2-login.html'); });
+  })();
+  </script>
 </head>
 <body>
   <main class="page--flow">
 
-    <!-- Section: Progress Header -->
+    <!-- Section: Header (brand + logout) -->
     <div id="upload-header" class="flow-topbar">
-      <button id="upload-header-back" class="back-link" onclick="goTo('01.1-register.html')">← Back</button>
       <span id="upload-header-step" class="step-indicator">Step 1 of 3</span>
+      <button id="upload-logout" class="logout-btn" onclick="Auth.logout()">
+        <span class="ico" aria-hidden="true">⏻</span> Log out
+      </button>
     </div>
 
     <!-- Section: Instruction Block -->
@@ -25,13 +35,14 @@
 
     <!-- Section: Upload Zone (default) -->
     <div id="upload-zone" class="upload-zone" role="button" tabindex="0"
-         aria-label="Upload a PDF bank statement">
+         aria-label="Upload a PDF or CSV bank statement">
       <div class="cloud" aria-hidden="true">☁︎</div>
-      <p id="upload-zone-default" class="zone-label">Tap to choose a PDF — or drop it here</p>
+      <p id="upload-zone-default" class="zone-label">Tap to choose a PDF or CSV — or drop it here</p>
     </div>
-    <p id="upload-zone-hint" class="upload-zone-hint">PDF · Max 10 MB · We support most Indian banks</p>
+    <p id="upload-zone-hint" class="upload-zone-hint">PDF or CSV · Max 10 MB · We support most Indian banks</p>
+    <div id="upload-error" class="upload-error hidden" role="alert"></div>
     <a href="#" id="upload-sample" class="link upload-sample">Use a sample statement (demo)</a>
-    <input type="file" id="upload-file-input" accept="application/pdf" class="hidden">
+    <input type="file" id="upload-file-input" accept=".pdf,.csv,application/pdf,text/csv" class="hidden">
 
     <!-- Section: Parsing Progress (hidden until file selected) -->
     <div id="upload-progress" class="progress-card hidden">
@@ -67,12 +78,14 @@
   <!-- Toast -->
   <div id="upload-toast" class="toast hidden" role="status"></div>
 
+  <script src="shared/auth.js"></script>
   <script src="shared/format.js"></script>
   <script src="shared/data.js"></script>
   <script src="shared/nav.js"></script>
   <script>
   (function () {
     'use strict';
+    Auth.requireAuth();               // enforce auth (belt-and-braces with the head guard)
     console.log('📄 01.3 Statement Upload loaded');
 
     var zone = document.getElementById('upload-zone');
@@ -95,26 +108,92 @@
     zone.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
     });
+    var DEFAULT_LABEL = 'Tap to choose a PDF or CSV — or drop it here';
     zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.classList.add('is-hover'); zone.querySelector('.zone-label').textContent = 'Drop it here!'; });
-    zone.addEventListener('dragleave', function () { zone.classList.remove('is-hover'); zone.querySelector('.zone-label').textContent = 'Tap to choose a PDF — or drop it here'; });
+    zone.addEventListener('dragleave', function () { zone.classList.remove('is-hover'); zone.querySelector('.zone-label').textContent = DEFAULT_LABEL; });
     zone.addEventListener('drop', function (e) {
-      e.preventDefault(); zone.classList.remove('is-hover');
-      var f = e.dataTransfer.files[0];
-      handleFile(f);
+      e.preventDefault(); zone.classList.remove('is-hover'); zone.querySelector('.zone-label').textContent = DEFAULT_LABEL;
+      handleFile(e.dataTransfer.files[0]);
     });
     fileInput.addEventListener('change', function () { handleFile(fileInput.files[0]); });
-    sample.addEventListener('click', function (e) { e.preventDefault(); startParse(null); });
+    sample.addEventListener('click', function (e) { e.preventDefault(); clearError(); startParse(null); });
+
+    // ---- Error region ----
+    var errorEl = document.getElementById('upload-error');
+    function showError(msg) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
+    function clearError() { errorEl.classList.add('hidden'); errorEl.textContent = ''; }
+
+    // ---- File validation (PDF / CSV only) ----
+    var ALLOWED_EXT = ['pdf', 'csv'];
+    var ALLOWED_MIME = ['application/pdf', 'text/csv', 'application/csv', 'application/vnd.ms-excel', 'text/plain', ''];
+    var MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+
+    function extOf(name) { var p = (name || '').toLowerCase().split('.'); return p.length > 1 ? p.pop() : ''; }
+
+    // Client-side validation: extension, MIME, empty, size, then content sniff (corruption / real format).
+    function validateFile(f) {
+      return new Promise(function (resolve, reject) {
+        if (!f) return reject({ message: 'No file selected. Please choose a statement to upload.' });
+        var ext = extOf(f.name);
+        if (ALLOWED_EXT.indexOf(ext) === -1) {
+          return reject({ message: 'Unsupported file type “.' + (ext || '?') + '”. Please upload a PDF (.pdf) or CSV (.csv) statement.' });
+        }
+        if (f.type && ALLOWED_MIME.indexOf(f.type) === -1) {
+          return reject({ message: 'This file doesn’t look like a genuine ' + ext.toUpperCase() + ' (its type is “' + f.type + '”). Please upload a real PDF or CSV.' });
+        }
+        if (f.size === 0) return reject({ message: 'That file is empty. Please upload a statement that contains transactions.' });
+        if (f.size > MAX_SIZE) return reject({ message: 'That file is too large (max 10 MB). Try exporting a single month.' });
+
+        var reader = new FileReader();
+        reader.onerror = function () { reject({ message: 'We couldn’t read that file — it may be corrupted. Try re-downloading it.' }); };
+        reader.onload = function () {
+          var buf = new Uint8Array(reader.result || []);
+          if (!buf.length) return reject({ message: 'That file is empty. Please upload a statement that contains transactions.' });
+          if (ext === 'pdf') {
+            var sig = String.fromCharCode(buf[0], buf[1], buf[2], buf[3], buf[4]);
+            if (sig !== '%PDF-') return reject({ message: 'This PDF appears to be corrupted or isn’t a real PDF. Try re-downloading your statement.' });
+          } else { // csv
+            var nulls = 0, limit = Math.min(buf.length, 1024), text = '';
+            for (var i = 0; i < limit; i++) { if (buf[i] === 0) nulls++; text += String.fromCharCode(buf[i]); }
+            if (nulls > 0) return reject({ message: 'This CSV appears to be corrupted or isn’t plain text. Please export a fresh CSV from your bank.' });
+            if (text.indexOf(',') === -1 && text.indexOf('\n') === -1) return reject({ message: 'We couldn’t find any columns in this CSV. Please upload a bank statement export.' });
+          }
+          resolve(f);
+        };
+        reader.readAsArrayBuffer(f.slice(0, 4096)); // sniff first 4 KB
+      });
+    }
+
+    // Simulated server-side validation (a real backend re-checks type + parses).
+    function serverValidate(f) {
+      return new Promise(function (resolve, reject) {
+        setTimeout(function () {
+          var n = (f.name || '').toLowerCase();
+          if (n.indexOf('unsupported') > -1) return reject({ message: 'We don’t recognise this statement format yet. Supported: most Indian bank PDF/CSV exports.' });
+          if (n.indexOf('servererror') > -1) return reject({ message: 'Our server had a problem processing your file. Please try again in a moment.' });
+          if (n.indexOf('network') > -1) return reject({ message: 'Network error — we couldn’t reach the server. Check your connection and try again.' });
+          resolve(f);
+        }, 550);
+      });
+    }
 
     function handleFile(f) {
-      if (!f) return;
-      if (f.type && f.type !== 'application/pdf') { return showToast("Please upload a PDF — we can't read that file type"); }
-      if (f.size && f.size > 10 * 1024 * 1024) { return showToast('That file is too large. Max 10 MB — try exporting a single month'); }
-      startParse(f);
+      clearError();
+      validateFile(f)
+        .then(function (valid) { return serverValidate(valid); })
+        .then(function (valid) { startParse(valid); })
+        .catch(function (err) { showError(err.message || 'Upload failed. Please try again.'); });
     }
 
     var STEPS = ['read', 'identify', 'rules', 'ai'];
 
     async function startParse(file) {
+      // Simulated parsing failure (valid file that we can't extract transactions from)
+      if (file && /parsefail/i.test(file.name)) {
+        showError('We couldn’t parse this statement. The file opened but we couldn’t extract any transactions — it may be an unusual or scanned format.');
+        return;
+      }
+      clearError();
       var demo = await loadDemoData().catch(function () { return null; });
       var s = (demo && demo.statement) || { filename: 'statement.pdf', transactions_total: 24, parsed_by_rules: 18, parsed_by_ai: 3, transactions_need_review: 3 };
 
@@ -160,6 +239,8 @@
 
     // expose for verification
     window.__startParse = startParse;
+    window.__handleFile = handleFile;
+    window.__uploadError = function () { return errorEl.classList.contains('hidden') ? '' : errorEl.textContent; };
   })();
   </script>
 </body>

@@ -916,6 +916,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 24 | Architecture Spine — 14 ADs distilled from technical research + PRD | `/bmad-architecture` (Observed) | Claude Code (Architecture facilitator) | `ARCHITECTURE-SPINE.md` (14 ADs, status: final) |
 | 25 | PRD + Architecture Validation Gap-Fill — rubric walk + cross-document consistency audit + 17 fixes | `/bmad-validate-prd` → `bmad-prd` Validate (Observed) | 2 parallel subagents (rubric-walker, consistency-checker) | `review-rubric.md`, `consistency-report.md`, `validation-report.md`; 5 documents patched |
 | 26 | Generate Project Context — agent-facing rules file distilled from spine; hardened via Party Mode (4 Seams) + Advanced Elicitation (6 Guards) | `/bmad-generate-project-context` (Observed); invoked `/bmad-party-mode` + `/bmad-advanced-elicitation` | Claude Code (Project Context facilitator); Code Review Crew (party) | `_bmad-output/project-context.md` (40 rules, status: complete) |
+| 27 | Phase 5: Prototyping — Auth flow rework (login-first, guards, logout, forgot-pw, unique email) + PDF/CSV upload validation + logout UI polish | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | `shared/auth.js`, `index.html`, login/register/upload rework, brand-consistent logout; 24/24 CDP checks |
 
 ## Commands Used
 
@@ -1098,6 +1099,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 24 — Architecture Spine   (14 ADs distilled; status: final; build substrate for E1–E9)
 [DONE]    Step 25 — PRD + Architecture Validation Gap-Fill   (rubric-walker + cross-doc consistency; 17 fixes across 5 docs; 12 scenarios; 3 reports written; 5 carry-forwards flagged for build start)
 [DONE]    Step 26 — Generate Project Context   (`_bmad-output/project-context.md`; 40 agent-facing rules; hardened via Party Mode [4 Seams] + Advanced Elicitation [6 Guards]; status: complete — build-ready agent rules file)
+[DONE]    Step 27 — Phase 5: Prototyping — auth flow rework (login-first, route guards, logout, forgot-pw, unique email) + PDF/CSV upload validation + logout UI polish (24/24 CDP checks)  <-- authenticated prototype, brand-consistent
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
 [TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) add machine-assertable ACs for FR-5/FR-6/FR-7/FR-8 carry-forwards (DC-1/DC-2/DC-3); (3) validate CSV/PDF parser on real bank statements (S2.3). Then bmad-quick-dev / bmad-create-story.
 ```
@@ -1116,7 +1118,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 26 |
+| Steps recorded | 27 |
 | Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update) |
 | Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
 | Distinct skills | 15 (+`bmad-generate-project-context`, +`bmad-advanced-elicitation` at Step 26; `bmad-party-mode` already counted at Steps 15–16) |
@@ -1500,5 +1502,40 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
   2. **project-context.md not found** — persistent facts file does not exist yet (`{project-root}/**/project-context.md` glob returned no matches); the spine was built directly from the finalized planning artifacts instead. No impact on the spine's completeness.
   3. **Two [ASSUMPTION] tags remain** — statementsparser HDFC coverage and Reflex WebSocket availability — both explicitly flagged for Day-1-hour-1 validation in the spine's Stack table and Deferred section.
   4. **Spine only deliverable** — user confirmed the spine alone (no deck, no solution-design doc) as the output. The build is proximate; a terse build reference was the right form.
+
+---
+
+## Step 27 — Phase 5: Prototyping — Auth Flow Rework + Upload Validation + Logout Polish
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 5 — Agentic Development (Prototyping activity, feature rework + refinement)
+**Workflow:** WDS Phase 5 Prototyping — authentication/access-control rework, PDF/CSV upload validation, and logout UI polish (a sequence of change requests from ALPHA)
+**BMAD Command:** Continuation of `/wds-5-agentic-development` `[P]` Prototyping
+**Trigger:** User (ALPHA)
+**Numbering note:** This prototype work was performed after Step 22 (wrap) but is filed at Step 27 because the tracker was independently advanced to Step 26 by parallel doc-governance passes (Step 23 PRD Update, Step 24 Architecture Spine, Step 25 Validation, Step 26 Generate Project Context) that superseded an earlier interim entry. Both underlying design-log entries (Auth Flow Rework; Logout UI/UX Polish, dated 2026-07-08) are preserved in `_bmad-output/_progress/00-design-log.md`.
+
+### Agent Log
+- **Claude Code (WDS Phase 5 Implementation Partner)** — implemented the auth rework + upload validation + logout polish as a client-side simulation and verified end-to-end. **Source: Observed.**
+
+### Skill Log
+- `wds-5-agentic-development` (WDS Phase 5 skill) — prototyping feature rework + refinement. **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** `shared/auth.js` (mock backend) → login landing (`01.2`) → register rework (`01.1`) → upload guard + PDF/CSV validation (`01.3`) → route guards + nav Logout on the 4 app screens → `index.html` entry → logout UI polish (align to brand teal) → CDP verification → docs.
+- **Inputs:** The Step-22 prototype; ALPHA's auth/upload spec + acceptance criteria; follow-up logout-styling requests.
+- **Outputs:** Login-first authenticated prototype with route guards, logout, forgot-password, unique-email registration, PDF/CSV upload validation, and brand-consistent logout controls.
+- **Verification:** Full flow via headless Chrome + CDP — **24/24 auth+validation checks pass, zero console errors** (index→login redirect; protected-route guards; seeded login→upload + session; 8 file-validation cases; logout→login + post-logout guard; duplicate-email rejected; register success with NO auto-login; forgot-password reset then login). Logout hover states re-verified via CDP screenshots (solid teal + white, matches primary buttons).
+- **Key Decisions:** Login-first flow (`index.html`→Login); register never auto-logs in (success → "Return to Login"); auth **simulated** client-side (`localStorage` DB, `sessionStorage` session w/ 60-min TTL, mocked server-side validation) since there is no backend; upload accepts **PDF and CSV** with layered client-side validation + simulated server-validate; route protection via inline `<head>` guard + `Auth.requireAuth()`; logout styled to the app's design system (solid-teal hover like the primary buttons).
+- **Deliverables:** Reworked auth flow + upload validation + polished logout; updated README/HANDOFF.
+- **Artifacts Created:**
+  - `prototypes/01-.../shared/auth.js` — mock auth backend + session + guards
+  - `prototypes/01-.../index.html` — app entry → Login
+- **Artifacts Updated:**
+  - `prototypes/01-.../01.2-login.html` (login landing), `01.1-register.html` (server/unique-email validation + success state, no auto-login), `01.3-statement-upload.html` (guard, logout, PDF/CSV validation), `01.4/01.5/01.6/01.7` (head guard + auth.js + nav Logout), `shared/nav.js` (Logout item), `shared/styles.css` (auth/login/success/error + logout + nav-tab hover styles)
+  - `prototypes/01-.../README.md`, `HANDOFF.md` (auth + validation docs)
+  - `_bmad-output/_progress/00-design-log.md` (2 entries: auth rework + logout polish)
+- **Dependencies:** Step 22 (polished prototype).
+- **Next Recommended BMAD Command:** `/wds-5-agentic-development` → `[T]` Acceptance Testing (auth acceptance criteria), or Prototyping for Scenarios 02 & 03.
+- **Notes:** Faithful client-side *simulation* of auth/session/validation — a production backend must hash passwords, use httpOnly session cookies, and re-validate server-side (documented in HANDOFF.md).
 
 

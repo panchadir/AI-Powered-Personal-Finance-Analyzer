@@ -83,6 +83,16 @@
         </span>
       </p>
 
+      <!-- Registration success (shown after successful registration; no auto-login) -->
+      <section id="register-success" class="register-success hidden" role="status" aria-live="assertive">
+        <div class="success-check" aria-hidden="true">✓</div>
+        <h2 class="register-success-headline">Registration successful!</h2>
+        <p class="text-muted register-success-sub">
+          Your account has been created. For your security, please log in to continue.
+        </p>
+        <a href="01.2-login.html" id="register-return-login" class="btn btn--primary" style="text-decoration:none;">Return to Login</a>
+      </section>
+
     </div>
   </main>
 
@@ -99,9 +109,7 @@
   <div id="register-toast" class="toast hidden" role="status"></div>
 
   <!-- Shared scripts -->
-  <script src="shared/format.js"></script>
-  <script src="shared/data.js"></script>
-  <script src="shared/nav.js"></script>
+  <script src="shared/auth.js"></script>
   <script>
   /* Page: 01.1 Register — Sections 2-6 logic */
   (function () {
@@ -188,41 +196,34 @@
       toastTimer = setTimeout(function () { toast.classList.add('hidden'); }, 3500);
     }
 
-    // ---- Mock register (Section 6) ----
-    function mockRegister(email) {
-      return new Promise(function (resolve, reject) {
-        setTimeout(function () {
-          if (email === 'taken@example.com') return reject({ code: 'email-taken' });
-          if (email === 'network@example.com') return reject({ code: 'network' });
-          resolve({ userId: 'demo-' + Date.now(), token: 'demo-token' });
-        }, 700);
-      });
-    }
-
+    // ---- Registration via mock auth backend (unique email + server-side validation) ----
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!validateAll()) return;
+      if (!validateAll()) return;                    // client-side validation first
       var email = fields.email.value.trim();
       setLoading(true);
-      mockRegister(email).then(function (res) {
-        console.log('✅ Registered:', res);
-        // Simulate auth (spec: httpOnly cookie; prototype uses sessionStorage demo flag)
-        sessionStorage.setItem('demoAuth', JSON.stringify({ email: email, ts: Date.now() }));
-        window.location.href = '01.2-login.html';
+      Auth.register({ email: email, password: fields.password.value }).then(function (res) {
+        console.log('✅ Registered:', res.email, '(no auto-login — user must log in)');
+        // Show the success state; DO NOT create a session or auto-advance.
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('register-trust').classList.add('hidden');
+        document.getElementById('register-existing-user').classList.add('hidden');
+        document.getElementById('register-legal').classList.add('hidden');
+        document.getElementById('register-success').classList.remove('hidden');
       }).catch(function (err) {
         setLoading(false);
-        if (err.code === 'email-taken') {
-          setError('email', 'This email is already registered. Log in instead?');
+        if (err.field && fields[err.field]) {
+          setError(err.field, err.message);          // e.g. duplicate email
         } else {
-          showToast('Something went wrong. Please try again.');
+          showToast(err.message || 'Something went wrong. Please try again.');
         }
       });
     });
 
-    // ---- Existing-user link (out of scenario scope) ----
+    // ---- Existing-user link → Login page ----
     document.getElementById('register-existing-user-link').addEventListener('click', function (e) {
       e.preventDefault();
-      showToast('Returning-user login is a separate page (out of this prototype scenario).');
+      window.location.href = '01.2-login.html';
     });
 
     // ---- Legal modal (Section 5) ----

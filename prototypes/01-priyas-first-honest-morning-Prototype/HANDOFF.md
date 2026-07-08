@@ -15,7 +15,10 @@ Read this before acceptance testing or production development. The prototype fai
 | **Dashboard "+ Add a commitment"** | Links to `/commitments` (Scenario 02) | Opens an **inline modal form** (name / amount / date / criticality) that adds to the timeline and **updates Safe-to-Spend live** | Scenario-02 page not built; realizes that scenario's key "protection payoff" moment on the Dashboard |
 | **Parse counts** | Illustrative "214 / 187 / 24 / 3" | Derived from the 24-txn demo array: **24 total, 18 rules, 3 AI, 3 need-help** | Keeps Upload → Transactions internally consistent |
 | **Copilot streaming** | SSE token stream from server | Client-side **simulated** word-by-word streaming | No backend in the prototype |
-| **Auth / cookie** | Token in httpOnly cookie | `sessionStorage` demo flag | No backend |
+| **Auth flow** | Register auto-authenticated (01.2 was an auto-login transition) | **Login-first**: `index.html`→Login; register → success → *Return to Login* (no auto-login); manual login → Upload | Requested rework — matches a standard secure flow |
+| **Auth backend** | httpOnly cookie + server DB | **Simulated** in `shared/auth.js`: `localStorage` "DB" (`afc_users`), `sessionStorage` "session" (`afc_session`, 60-min TTL), server-side validation mocked with latency; passwords in plaintext (demo only) | No backend in the prototype |
+| **Route protection** | Server session / middleware | Inline `<head>` guard on every protected page + `Auth.requireAuth()`; unauthenticated/direct-URL access → Login | Client-side simulation of access control |
+| **Statement file validation** | Server-side type/size/parse | Client-side **extension + MIME + empty + size (10 MB) + content-sniff** (PDF `%PDF-` header, CSV text/columns) + a simulated server-validate pass; PDF **and CSV** accepted | Section-2 requirement; server must re-validate |
 
 ## Known cosmetic gap (open)
 
@@ -31,7 +34,11 @@ Read this before acceptance testing or production development. The prototype fai
 ## For production development
 
 - **Data contract:** `data/demo-data.json` mirrors the shape the real APIs should return (`safe_to_spend`, `confidence`, `spending_by_category`, `commitments`, `transactions`, `insights`, `copilot_samples`). Use it as the reference payload.
-- **APIs to implement** (from the specs): `POST /auth/register`, `POST /statements/upload` + parse status (SSE/poll), `GET /statements/{id}/transactions`, `PATCH /transactions/{id}/categorise`, `GET /dashboard`, `GET /insights`, `POST /copilot/chat` (SSE).
+- **APIs to implement** (from the specs + auth rework):
+  - `POST /auth/register` (unique-email + password policy, **no session on success**), `POST /auth/login` (credential check → session cookie), `POST /auth/logout`, `POST /auth/forgot-password` (email a signed reset link) + `POST /auth/reset-password`, `GET /auth/session`.
+  - `POST /statements/upload` — **re-validate server-side**: allowed types PDF/CSV, size cap, empty/corrupt detection, MIME sniffing, reject malicious uploads; then parse (SSE/poll status). Return friendly errors for unsupported-format / parse-failure / server errors.
+  - `GET /statements/{id}/transactions`, `PATCH /transactions/{id}/categorise`, `GET /dashboard`, `GET /insights`, `POST /copilot/chat` (SSE).
+- **Auth security (production):** hash passwords (bcrypt/argon2), httpOnly+Secure+SameSite session cookies, server-enforced route auth (middleware), rate-limit login/reset, generic "incorrect email or password" to avoid user enumeration, signed time-limited reset tokens. The prototype's `auth.js` mirrors the *shape* of these calls but enforces nothing securely.
 - **Honesty constraints are load-bearing**, not cosmetic — enforce the observation-framing + no-invented-numbers + information-not-advice rules in the LLM system prompts (Insights generation, Copilot, briefing text).
 - **Safe-to-Spend + Confidence** must be computed by deterministic engines server-side (see Step 12 technical research), with the LLM only narrating.
 
