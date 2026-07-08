@@ -9,14 +9,20 @@ Interactive, responsive, **branded** prototype of the AI Financial Copilot golde
 ```bash
 cd prototypes/01-priyas-first-honest-morning-Prototype
 python -m http.server 8000
-# open http://localhost:8000/01.1-register.html
+# open http://localhost:8000/          (index.html → redirects to the Login page)
 ```
 
 > Pages must be served over **http** (they `fetch` `data/demo-data.json`; `file://` will fail).
-> Live Server (VS Code) on port 5500 also works: `http://127.0.0.1:5500/prototypes/01-priyas-first-honest-morning-Prototype/01.1-register.html`
+> Live Server (VS Code) on port 5500 also works: open the folder root (`…/01-priyas-first-honest-morning-Prototype/`).
 
-**Golden path:** Register → Login (auto) → Upload → Transactions → Dashboard → Insights → Copilot.
-Demo login shortcuts: on Register, submit any valid email/8+char password (matching confirm). `taken@example.com` triggers the "email already registered" path; `network@example.com` triggers the network-error toast.
+**App entry point:** `index.html` → **Login** (the app always starts at Login).
+
+**Existing-user path:** Login → Upload → Transactions → Dashboard → Insights → Copilot.
+**New-user path:** Login → *Register User* → Register → *Registration successful* → *Return to Login* → Login → Upload → …
+
+**Demo account (seeded):** email **`priya@example.com`**, password **`priya123`**.
+Register any new unique email + 8-char password to create another account (stored in `localStorage`). A second registration of the same email is rejected as a duplicate.
+Upload validation test hooks: name a file `unsupported.*` / `servererror.*` / `network.*` / `parsefail.*` to exercise those error paths.
 
 ---
 
@@ -24,9 +30,10 @@ Demo login shortcuts: on Register, submit any valid email/8+char password (match
 
 | # | File | What it shows |
 |---|------|---------------|
-| 01.1 | `01.1-register.html` | Registration form, 7 validation rules, show/hide password, legal modal, auto-auth redirect |
-| 01.2 | `01.2-login.html` | Auto-authentication transition ("Account created!") + auto-advance; `?fail=1` = error fallback |
-| 01.3 | `01.3-statement-upload.html` | Transparent parse progress — "18 by rules · 3 by AI · **3 need your help**" |
+| — | `index.html` | App entry — redirects to Login |
+| 01.2 | `01.2-login.html` | **Login landing page** — email/password auth, "Register User", "Forgot password?" (reset modal), redirects authed users to Upload |
+| 01.1 | `01.1-register.html` | Registration form, client + server validation, unique-email check, **"Registration successful → Return to Login"** (no auto-login) |
+| 01.3 | `01.3-statement-upload.html` | **PDF/CSV validation** (type/MIME/size/empty/corrupted + server checks) with friendly errors; transparent parse progress — "18 by rules · 3 by AI · **3 need your help**" |
 | 01.4 | `01.4-transactions-table.html` | 24 transactions, wrapping filter chips, inline **Teach Me** correction, Dashboard CTA |
 | 01.5 | `01.5-dashboard.html` | Safe-to-Spend hero, confidence chip + tooltip, "Why?" expander, donut, commitments + **Add-commitment form** |
 | 01.6 | `01.6-ai-insights-recommendations.html` | Observation→Evidence→Explanation→Action insight cards, dismiss, Ask-Copilot handoff |
@@ -44,13 +51,15 @@ Pre-app onboarding screens (Register / Login / Upload) have **no nav**. The four
 ├── README.md                 ← you are here
 ├── HANDOFF.md                ← how the prototype extends/diverges from the specs (read before dev)
 ├── PROTOTYPE-ROADMAP.md      ← setup decisions + build status
+├── index.html                ← app entry → redirects to Login
 ├── 01.1 … 01.7 *.html        ← the 7 pages
 ├── data/demo-data.json       ← single source of truth (Priya dataset)
 ├── shared/
 │   ├── styles.css            ← branded theme — retheme everything from :root tokens
+│   ├── auth.js               ← MOCK auth backend + session/route guards (see Authentication)
 │   ├── format.js             ← formatINR(), formatDate()
 │   ├── data.js               ← loadDemoData()
-│   └── nav.js                ← renderSideNav() / renderBottomNav() + routing
+│   └── nav.js                ← renderSideNav() (+ Logout) / renderBottomNav() + routing
 ├── work/                     ← Logical-View-Map.md, Register-Work.yaml
 ├── stories/                  ← per-section build stories
 └── assets/                   ← verification screenshots
@@ -76,12 +85,24 @@ Pre-app onboarding screens (Register / Login / Upload) have **no nav**. The four
 
 ---
 
+## Authentication & access control (simulated)
+
+`shared/auth.js` **simulates a backend** so the whole flow is clickable with no server:
+- **"Database"** = `localStorage` (`afc_users`); **"session"** = `sessionStorage` (`afc_session`, 60-min TTL); **"server-side validation"** = checks run inside async calls with latency.
+- **Login-first:** `index.html` and every protected page route to Login unless a valid session exists.
+- **Protected routes:** Upload, Transactions, Dashboard, Insights, Copilot — guarded by an inline `<head>` check (blocks direct-URL access) **and** `Auth.requireAuth()`.
+- **Register:** unique-email + server-side validation; on success shows "Return to Login" — **no auto-login**.
+- **Forgot password:** reset flow on the Login page (demo sets a new password directly; production would email a signed link).
+- **Logout:** in the left-nav footer (app screens) and the Upload header — clears the session and returns to Login.
+
+> ⚠️ Passwords are stored in plain text in `localStorage` for the demo **only**. A real backend must hash them and enforce every rule server-side. See `HANDOFF.md`.
+
 ## Verification
 
 Every screen was verified with headless Chrome + DevTools Protocol (functional assertions + screenshots), and the full golden path passes an end-to-end integration test — **zero console errors**, no horizontal overflow. See `assets/` for screenshots.
 
 ## Not in scope (yet)
 
-- Real backend / auth / statement parsing (all mocked from `data/demo-data.json`)
+- **Real backend** — auth/session/validation are simulated client-side (`localStorage`/`sessionStorage`); statement parsing is mocked from `data/demo-data.json`. No real server, hashing, or DB.
 - Scenario 02 (Commitments Management page) and Scenario 03 (Copilot return-visit) — not built
-- Persistence: added commitments live only in the current session (in memory)
+- Persistence: added commitments live only in the current session (in memory); registered users persist in `localStorage` per browser

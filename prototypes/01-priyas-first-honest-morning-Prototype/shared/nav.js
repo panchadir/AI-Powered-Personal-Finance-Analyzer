@@ -59,13 +59,17 @@ function renderSideNav(activeTab) {
     { key: 'insights',     label: 'Insights',     icon: '💡', page: '01.6-ai-insights-recommendations.html' },
     { key: 'copilot',      label: 'Copilot Chat', icon: '💬', page: '01.7-copilot-chat.html' }
   ];
-  slot.innerHTML = tabs.map(function (t) {
+  var items = tabs.map(function (t) {
     var active = t.key === activeTab;
     return '<button class="side-nav__tab' + (active ? ' is-active' : '') + '"' +
       (active ? ' aria-current="page"' : '') + ' onclick="goTo(\'' + t.page + '\')">' +
       '<span class="ico" aria-hidden="true">' + t.icon + '</span>' +
       '<span class="label">' + t.label + '</span></button>';
   }).join('');
+  // Logout pinned to the bottom of the rail
+  items += '<button class="side-nav__tab side-nav__logout" onclick="Auth.logout()">' +
+    '<span class="ico" aria-hidden="true">⏻</span><span class="label">Log out</span></button>';
+  slot.innerHTML = items;
 }
 
 window.goNext = goNext;
