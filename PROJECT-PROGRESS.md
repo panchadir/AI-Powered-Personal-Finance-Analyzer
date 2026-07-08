@@ -750,6 +750,12 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 14 | Phase 3: UX Scenarios (WDS) — IN PROGRESS | `/wds-3-scenarios` (Observed) | Claude Code (UX Scenario Facilitator) | C-UX-Scenarios/01-priyas-first-honest-morning/** (partial) |
 | 15 | Phase 3 support / Governance — Party-Mode scenario↔scope alignment review + Critical fixes | `/bmad-party-mode` (Observed) | Claude Code (Party Mode orchestrator) | Updated `C-UX-Scenarios/01-priyas-first-honest-morning/01-...md` + `00-ux-scenarios.md` |
 | 16 | Scope decision — AI Insights + Copilot promoted to must-ship (retires demo-stretch) | `/bmad-party-mode` (Observed) | Claude Code (Party Mode orchestrator) | Reverted Step-15 stretch labels; updated `prd.md` §2 + `epics-and-stories.md` (E6/E8 must-ship) |
+| 17 | Phase 4: UX Design — Scenario 01 (Dream Mode) | `/wds-4-ux-design` `[D]` (Observed) | Freya | 6 Scenario 01 page specs (later renumbered) |
+| 18 | Phase 4: UX Design — Scenarios 02 & 03 (Dream Mode) | `/wds-4-ux-design` continuation (Observed) | Freya | 3 page specs (Login, Commitments, Copilot 03.1) |
+| 19 | Phase 4: Scenario Restructure — Login moved to Scenario 01 | None (direct instruction) | Freya | Restructured tree; rewritten `01.2-login.md`; all cross-refs |
+| 20 | Phase 5: Prototyping — Scenario 01 Setup & Analysis | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | Prototype scaffold, `demo-data.json`, `Logical-View-Map.md`, `PROTOTYPE-ROADMAP.md` |
+| 21 | Phase 5: Prototyping — Scenario 01 fully built (7 views) + integration test | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | 7 HTML prototypes + shared CSS/JS; per-view + integration verification (0 console errors) |
+| 22 | Phase 5: Prototyping — Scenario 01 refinements (theme, left nav, Add-Commitment form) + wrap | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | Rebranded/re-navigated prototype + `README.md` + `HANDOFF.md` |
 
 ## Commands Used
 
@@ -768,6 +774,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-technical-research` (Observed) | 1 |
 | `/wds-3-scenarios` (Observed) | 1 |
 | `/bmad-party-mode` (Observed) | 1 (session spanning Steps 15–16) |
+| `/wds-4-ux-design` (Observed) | 1 (Dream session spanning Steps 17–18; Step 19 = direct instruction) |
+| `/wds-5-agentic-development` (Observed) | 1 (Prototyping session, Steps 20–21) |
 
 ## Agent Usage
 
@@ -780,6 +788,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (build-handoff author) | 1 |
 | Claude Code (UX Scenario Facilitator) | 1 |
 | Claude Code (Party Mode orchestrator) | 1 |
+| Claude Code (WDS Phase 5 Implementation Partner) | 1 |
+| Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 
 ## Skill Usage
@@ -796,6 +806,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `wds-2-trigger-mapping` | 1 |
 | `bmad-technical-research` | 1 |
 | `wds-3-scenarios` | 1 |
+| `bmad-party-mode` | 1 |
+| `wds-4-ux-design` | 1 |
+| `wds-5-agentic-development` | 1 |
 
 ## Agent → Skill Mapping
 
@@ -807,6 +820,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (Process Historian) | None (document/config maintenance only) |
 | Claude Code (build-handoff author) | None (direct authoring — `prd.md`, `epics-and-stories.md`) |
 | Claude Code (UX Scenario Facilitator) | `wds-3-scenarios` |
+| Claude Code (Party Mode orchestrator) | `bmad-party-mode` |
+| Freya (WDS Phase 4 UX Designer) | `wds-4-ux-design` (Steps 17–18; Step 19 = direct file restructure, no skill) |
+| Claude Code (WDS Phase 5 Implementation Partner) | `wds-5-agentic-development` |
 
 ## Artifacts
 
@@ -842,6 +858,16 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md` | Step 14 | — |
 | `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` | Step 14 (untracked) | Step 15 (Critical fixes) → Step 16 (stretch labels reverted) |
 | `_bmad-output/party-mode/memories/installed/.memlog.md` | (party mode) | Steps 15–16 (alignment audit + scope-promotion outcomes) |
+| `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/**` (7 page specs) | Steps 17 & 19 | Step 19 (renumbered/rewritten) |
+| `_bmad-output/C-UX-Scenarios/02-priya-protects-what-matters/**`, `03-priyas-two-tap-gut-check/**` | Step 18 | Step 19 (renumbered) |
+| `prototypes/01-priyas-first-honest-morning-Prototype/PROTOTYPE-ROADMAP.md` | Step 20 | — |
+| `prototypes/01-priyas-first-honest-morning-Prototype/data/demo-data.json` | Step 20 | — |
+| `prototypes/01-priyas-first-honest-morning-Prototype/work/Logical-View-Map.md` | Step 20 | — |
+| `prototypes/01-.../01.1-register.html` … `01.7-copilot-chat.html` (7 pages) | Step 21 | — |
+| `prototypes/01-.../shared/{styles.css,format.js,data.js,nav.js}` | Step 21 | Step 21 (CSS grew per view; 2 visual fixes) |
+| `prototypes/01-.../work/Register-Work.yaml` + `stories/*.md` | Step 21 | — |
+| `prototypes/01-.../PROTOTYPE-ROADMAP.md` | Step 20 | Step 21 (all 7 views ✅ Built) |
+| `prototypes/01-.../data/demo-data.json` | Step 20 | Step 21 (statement counts + insights O→E→E→A structure) |
 
 ## Corrections & Rework Log
 
@@ -879,10 +905,21 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [PARTIAL] Step 14 — Phase 3: UX Scenarios (WDS)   (on-disk: Scenarios 01-03 outlined w/ sub-steps + 00 overview; skill Steps 06-09 pending; Step 14 tracker entry is stale — a Phase-3-completion Step still needs filing)  <-- action needed
 [DONE]    Step 15 — Party Mode scenario↔scope alignment review   (3 Critical fixes applied — later superseded by Step 16's scope decision)
 [DONE]    Step 16 — Scope decision: AI Insights + Copilot promoted to must-ship   (final MVP flow = all 7 steps; stretch cut-line retired across scenarios + PRD + epics; no stretch safety-margin left on the 3-day build)  <-- re-plan build scope
+[DONE]    Step 17 — Phase 4: UX Design — Scenario 01 (Dream Mode, Freya)   (6 page specs, later renumbered)
+[DONE]    Step 18 — Phase 4: UX Design — Scenarios 02 & 03 (Dream Mode, Freya)   (all 9 unique pages specified)
+[DONE]    Step 19 — Phase 4: Scenario Restructure — Login moved to Scenario 01 as auto-auth transition   (Scenario 01 now 7 steps)
+[DONE]    Step 20 — Phase 5: Prototyping — Scenario 01 Setup & Analysis   (env scaffolded, demo data + logical-view map)
+[DONE]    Step 21 — Phase 5: Prototyping — Scenario 01 fully built (all 7 views) + integration test (0 console errors)
+[DONE]    Step 22 — Phase 5: Prototyping — refinements (branded theme, left nav, Add-Commitment form) + wrap docs (README + HANDOFF)  <-- prototype review-ready & documented
+[TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
 [TODO]    Development (3-day MVP build)   — start with S2.3 statement-parser validation, then bmad-quick-dev / bmad-create-story
 ```
 
-**Current phase:** **Phase 3: UX Scenarios in progress.** Step 12 (Technical Research) selected a Reflex/Python local stack for the re-scoped 3-day MVP (deterministic Safe-to-Spend/Confidence engines + LLM narration; Claude `claude-opus-4-8`), and Step 13 turned it into a lean MVP **PRD** (`planning-artifacts/prd.md`, FR-1…FR-9 with acceptance criteria) and an **Epics & Stories** backlog (`planning-artifacts/epics-and-stories.md`, E1–E9 mapped to the 3-day plan). Step 14 (`/wds-3-scenarios`) is now translating that backlog into UX scenario outlines: scope analysis, strategic-context chains, and a 3-scenario plan are approved; Scenario 01 ("Priya's First Honest Morning") is fully outlined with its first page step (Register) written. Remaining: outline Scenario 01's remaining 4 steps, Scenarios 02–03, then the overview index / quality review / design-log update / Phase 4 handover (Steps 06–09 of the skill). Standing items still open from earlier phases are unchanged — see the list below.
+**Current phase (updated Step 21):** **Phase 5: Agentic Development — Scenario 01 prototype complete.** Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
+
+---
+
+**Prior "Current phase" note (Phase 3, retained for continuity):** **Phase 3: UX Scenarios in progress.** Step 12 (Technical Research) selected a Reflex/Python local stack for the re-scoped 3-day MVP (deterministic Safe-to-Spend/Confidence engines + LLM narration; Claude `claude-opus-4-8`), and Step 13 turned it into a lean MVP **PRD** (`planning-artifacts/prd.md`, FR-1…FR-9 with acceptance criteria) and an **Epics & Stories** backlog (`planning-artifacts/epics-and-stories.md`, E1–E9 mapped to the 3-day plan). Step 14 (`/wds-3-scenarios`) is now translating that backlog into UX scenario outlines: scope analysis, strategic-context chains, and a 3-scenario plan are approved; Scenario 01 ("Priya's First Honest Morning") is fully outlined with its first page step (Register) written. Remaining: outline Scenario 01's remaining 4 steps, Scenarios 02–03, then the overview index / quality review / design-log update / Phase 4 handover (Steps 06–09 of the skill). Standing items still open from earlier phases are unchanged — see the list below.
 
 ---
 
@@ -892,10 +929,10 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 19 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 13 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill) |
-| Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator], Saga, Freya [WDS Phase 4 UX Designer]) |
-| Distinct skills | 12 |
+| Steps recorded | 22 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 14 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping) |
+| Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
+| Distinct skills | 13 |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
 | Artifact groups tracked | 21 |
@@ -1004,4 +1041,111 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 - **Dependencies:** Steps 17 & 18 (all page specs).
 - **Next Recommended BMAD Command:** User review of all 9 specs → Phase 5 development (`/bmad-quick-dev`) or Design System extraction.
 - **Notes:** The old `02.1-login/` directory has been removed from the Scenario 02 folder. The returning-user login flow is documented as a standalone page in the technical notes of 01.1-register.md and 02.1-commitments-management.md.
+
+---
+
+## Step 20 — Phase 5: Agentic Development — Prototyping Scenario 01 (Setup & Scenario Analysis)
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 5 — Agentic Development (Prototyping activity)
+**Workflow:** WDS Phase 5 Prototyping — Step 1 (Prototype Setup) + Step 2 (Scenario Analysis / Logical View Identification)
+**User Goal:** Stand up an interactive prototype for Scenario 01 (Priya's First Honest Morning): run the initiation dialog, scaffold the prototype environment with demo data, and produce the logical-view map before building any pages.
+**BMAD Command:** `/wds-5-agentic-development` → selected `[P]` Prototyping → confirmed Scenario 01
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Claude Code (WDS Phase 5 Implementation Partner)** — ran the initiation dialog, created the folder scaffold, authored demo data and the logical-view map. **Source: Observed.**
+
+### Skill Log
+- `wds-5-agentic-development` (WDS Phase 5 skill) — Prototyping sub-workflow (`workflow-prototyping.md`, `steps-p/1` and `steps-p/2`). **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** Initiation dialog (4 setup questions) → folder scaffold + demo-data.json + PROTOTYPE-ROADMAP.md (Step 1) → read all 7 Scenario 01 page specs → Logical-View-Map.md + design-log entry (Step 2) → user confirmed mapping.
+- **Inputs:** All 7 Scenario 01 page specs (01.1–01.7); `_bmad/wds/config.yaml`; `_bmad-output/_progress/00-design-log.md`.
+- **Outputs:** Prototype environment for Scenario 01; internally-consistent Priya demo dataset; confirmed 7-view logical map with build order.
+- **Key Decisions:** Device = Desktop + Mobile (Fully Responsive, 375→1920px); Fidelity = Generic Gray Model (no design system exists yet); Language = English only; Demo data = Priya dataset (HDFC June 2026 statement, ₹2,840 safe-to-spend, Medium confidence, 24 transactions incl. 3 needs-review, 3 EMIs — one consistent story across all 7 pages); 7 distinct logical views 1:1 with steps, no reuse within the scenario, linear build order V1→V7; V7 Copilot Chat is the shared base for Scenario 03's return-visit variant (out of scope here); shared JS/CSS infra (`data.js`/`format.js`/`nav.js`/`styles.css`) to back all views.
+- **Deliverables:** Prototype scaffold + roadmap + demo data + logical-view map (no pages built yet — building begins in Step 3).
+- **Artifacts Created:**
+  - `prototypes/01-priyas-first-honest-morning-Prototype/PROTOTYPE-ROADMAP.md`
+  - `prototypes/01-priyas-first-honest-morning-Prototype/data/demo-data.json`
+  - `prototypes/01-priyas-first-honest-morning-Prototype/work/Logical-View-Map.md`
+  - Folder scaffold: `data/ work/ stories/ shared/ components/ pages/ assets/`
+- **Artifacts Updated:** `_bmad-output/_progress/00-design-log.md` — Phase 5 progress entry added.
+- **Dependencies:** Steps 17–19 (all 9 page specs complete; Scenario 01 restructured to 7 steps).
+- **Next Recommended BMAD Command:** Continue `/wds-5-agentic-development` Prototyping — Step 3 (Logical View Breakdown) → build page-by-page starting with 01.1 Register.
+- **Notes:** No production code yet in the repo; this is the first build-oriented step. Design log reporting point `building` will be appended per page as each view enters implementation.
+
+---
+
+## Step 21 — Phase 5: Prototyping — Scenario 01 Fully Built (all 7 views) + Integration Test
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 5 — Agentic Development (Prototyping activity)
+**Workflow:** WDS Phase 5 Prototyping — Steps 3 (Logical View Breakdown), 4a–4g (section build loop), 5 (Finalization)
+**User Goal:** Build the entire Scenario 01 golden-path prototype (all 7 views), verify each, and integration-test the end-to-end flow.
+**BMAD Command:** Continuation of `/wds-5-agentic-development` `[P]` Prototyping (V1 strict menu-walk; V2–V7 in user-approved "fast mode" — build + self-verify + present per view)
+**Trigger:** User (ALPHA — approved fast mode, then "continue from wherever you stopped")
+
+### Agent Log
+- **Claude Code (WDS Phase 5 Implementation Partner)** — broke each view into sections, authored story files, implemented HTML/CSS/JS, self-verified via headless Chrome + DevTools Protocol, fixed defects, integration-tested. **Source: Observed.**
+
+### Skill Log
+- `wds-5-agentic-development` (WDS Phase 5 skill) — Prototyping sub-workflow (`steps-p/3` through `steps-p/5`). **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** V1 Register (Step 3 → 6 sections via 4a–4g) → V2 Login → V3 Upload → V4 Transactions → V5 Dashboard → V6 Insights → V7 Copilot (fast mode) → Step 5 integration test.
+- **Inputs:** All 7 Scenario 01 page specs; `data/demo-data.json`; `work/Logical-View-Map.md`; shared infra from Step 20.
+- **Outputs:** 7 working, responsive, Gray-Model HTML prototypes + shared CSS/JS; all verified.
+- **Verification:** Headless Chrome + CDP. Per-view functional checks all pass (Register 18/18; Login+Upload 14/14; Transactions 12/12; Dashboard 18/18; Insights+Copilot 23/23). Full golden-path integration test 7/7, zero console errors. Two visual defects found & fixed (transaction merchant/category meta not stacking; Copilot input bar overlapped by fixed bottom nav).
+- **Key Decisions:** Built dependency-free (custom `styles.css`, no Tailwind CDN) for offline/self-contained use; demo `statement` counts reconciled to the 24-transaction array (18 rules/3 AI/3 need-help) so Upload→Transactions stay consistent; demo `insights` rewritten into full Observation→Evidence→Explanation→Action structure grounded in real transactions; Copilot answers via a keyword answer-engine over `copilot_samples` with an honest "not enough data" fallback (no invented numbers); simulated SSE via word-by-word streaming with data-trace chips.
+- **Deliverables:** Complete, clickable Scenario 01 prototype (Register → Copilot).
+- **Artifacts Created:**
+  - `prototypes/01-.../01.1-register.html` … `01.7-copilot-chat.html` (7 pages)
+  - `prototypes/01-.../shared/styles.css`, `format.js`, `data.js`, `nav.js`
+  - `prototypes/01-.../work/Register-Work.yaml`; `stories/*.md` (per-section story files)
+  - `prototypes/01-.../assets/*.png` (verification screenshots)
+- **Artifacts Updated:**
+  - `prototypes/01-.../data/demo-data.json` — statement counts + insights structure
+  - `prototypes/01-.../PROTOTYPE-ROADMAP.md` — all 7 views ✅ Built
+  - `_bmad-output/_progress/00-design-log.md` — Design Loop Status (all 7 → built) + progress entry
+- **Dependencies:** Step 20 (scaffold, demo data, logical-view map).
+- **Next Recommended BMAD Command:** `/wds-5-agentic-development` → `[T]` Acceptance Testing (validate against spec criteria), or Prototyping for Scenarios 02 & 03.
+- **Notes:** First runnable product surface in the repo. Prototype is served locally (`python -m http.server`) — no backend; all data is the demo dataset. The honesty layer (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure, observation tone, "information not advice") is realized in the UI, not just specified.
+
+---
+
+## Step 22 — Phase 5: Prototyping — Scenario 01 Refinements & Wrap
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 5 — Agentic Development (Prototyping activity, post-build refinement)
+**Workflow:** WDS Phase 5 Prototyping — iterative refinement + wrap (interactive review with ALPHA)
+**User Goal:** Polish the Scenario 01 prototype (visual design, navigation, interactions), then wrap with the necessary documentation.
+**BMAD Command:** Continuation of `/wds-5-agentic-development` `[P]` Prototyping (a sequence of change requests + "wrap it and create necessary documents")
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Claude Code (WDS Phase 5 Implementation Partner)** — applied each requested change, self-verified via headless Chrome + CDP, and authored the wrap docs. **Source: Observed.**
+
+### Skill Log
+- `wds-5-agentic-development` (WDS Phase 5 skill) — Prototyping refinement + wrap. **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** Transactions bar fix → branded theme (all 7 pages) → left nav on Dashboard → left nav on all app screens → nav rename/reorder + Transactions Dashboard button → Commitments→Insights nav rename + Add-Commitment modal form → wrap docs.
+- **Inputs:** The Step-21 prototype; the 7 page specs; `data/demo-data.json`.
+- **Outputs:** Rebranded, re-navigated prototype with a working Add-Commitment form; full wrap documentation.
+- **Verification:** Every change verified via CDP (functional assertions + screenshots), zero console errors, no horizontal overflow at 390px/1280px. Notable checks: theme (7/7 pages), left-nav consistency (15/15), nav rename/reorder + Dashboard button (11/11), Insights-nav + Add-Commitment live Safe-to-Spend update (14/14).
+- **Key Decisions:** (1) Fidelity Gray Model → branded teal theme via `:root` tokens; (2) persistent left nav on all 4 app screens; (3) nav = Transactions · Dashboard · Insights · Copilot Chat — the unbuilt "Commitments" slot repurposed to Insights (`01.6`); (4) Dashboard "+ Add a commitment" realized as an inline modal form that updates Safe-to-Spend live (Scenario-02 "protection payoff" moment brought onto the Dashboard); (5) Transactions sticky bar replaced by left nav + a header Dashboard CTA. Open cosmetic gap logged: briefing text vs live hero number after adding a commitment.
+- **Deliverables:** Wrap documentation set.
+- **Artifacts Created:**
+  - `prototypes/01-.../README.md` — run instructions, screen map, structure, honesty layer, scope
+  - `prototypes/01-.../HANDOFF.md` — deltas from specs + production API/data-contract notes
+- **Artifacts Updated:**
+  - `prototypes/01-.../shared/styles.css` (branded theme), `shared/nav.js` (left nav, rename/reorder)
+  - `prototypes/01-.../01.4-…`, `01.5-…`, `01.6-…`, `01.7-…html` (nav, theme, Add-Commitment form)
+  - `prototypes/01-.../data/demo-data.json` (branded donut palette, O→E→E→A insights)
+  - `prototypes/01-.../PROTOTYPE-ROADMAP.md` (fidelity note)
+  - `_bmad-output/_progress/00-design-log.md` (refinement/wrap entry + 3 Key Decisions)
+- **Dependencies:** Step 21 (built prototype).
+- **Next Recommended BMAD Command:** `/wds-5-agentic-development` → `[T]` Acceptance Testing, or Prototyping for Scenarios 02 & 03.
+- **Notes:** Scenario 01 prototype is review-ready and documented (README + HANDOFF). Iterative visual/UX polish; no change to the underlying page specs in `_bmad-output/C-UX-Scenarios/`.
 

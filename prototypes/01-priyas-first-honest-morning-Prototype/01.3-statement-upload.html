@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01.3 Upload your statement — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+  <main class="page--flow">
+
+    <!-- Section: Progress Header -->
+    <div id="upload-header" class="flow-topbar">
+      <button id="upload-header-back" class="back-link" onclick="goTo('01.1-register.html')">← Back</button>
+      <span id="upload-header-step" class="step-indicator">Step 1 of 3</span>
+    </div>
+
+    <!-- Section: Instruction Block -->
+    <div id="upload-instructions">
+      <h1 id="upload-instructions-headline" class="flow-headline">Upload your bank statement</h1>
+      <p id="upload-instructions-subline" class="flow-subline">
+        We'll read your transactions to build your Safe-to-Spend number. Your file never leaves your device unencrypted.
+      </p>
+    </div>
+
+    <!-- Section: Upload Zone (default) -->
+    <div id="upload-zone" class="upload-zone" role="button" tabindex="0"
+         aria-label="Upload a PDF bank statement">
+      <div class="cloud" aria-hidden="true">☁︎</div>
+      <p id="upload-zone-default" class="zone-label">Tap to choose a PDF — or drop it here</p>
+    </div>
+    <p id="upload-zone-hint" class="upload-zone-hint">PDF · Max 10 MB · We support most Indian banks</p>
+    <a href="#" id="upload-sample" class="link upload-sample">Use a sample statement (demo)</a>
+    <input type="file" id="upload-file-input" accept="application/pdf" class="hidden">
+
+    <!-- Section: Parsing Progress (hidden until file selected) -->
+    <div id="upload-progress" class="progress-card hidden">
+      <span id="upload-progress-filename" class="file-chip"><span aria-hidden="true">📄</span> <span class="fname">statement.pdf</span></span>
+      <ul id="upload-progress-steps" class="step-list" aria-live="polite">
+        <li id="upload-progress-steps-read" class="step-row" data-step="read">
+          <span class="step-icon"></span> Reading your PDF <span class="step-count"></span>
+        </li>
+        <li id="upload-progress-steps-identify" class="step-row" data-step="identify">
+          <span class="step-icon"></span> Identifying transactions <span class="step-count"></span>
+        </li>
+        <li id="upload-progress-steps-rules" class="step-row" data-step="rules">
+          <span class="step-icon"></span> Categorising with our rules <span class="step-count"></span>
+        </li>
+        <li id="upload-progress-steps-ai" class="step-row" data-step="ai">
+          <span class="step-icon"></span> AI assist for ambiguous ones <span class="step-count"></span>
+        </li>
+      </ul>
+      <div id="upload-progress-summary" class="parse-summary hidden" aria-live="assertive">
+        <h2 id="upload-progress-summary-headline">Parsed 0 transactions</h2>
+        <p id="upload-progress-summary-detail"></p>
+      </div>
+    </div>
+
+    <!-- Section: Primary CTA -->
+    <div id="upload-cta" style="margin-top:var(--space-lg);">
+      <button id="upload-cta-review" class="btn btn--primary" aria-disabled="true" disabled
+              onclick="goTo('01.4-transactions-table.html')">Review my transactions</button>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="upload-toast" class="toast hidden" role="status"></div>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 01.3 Statement Upload loaded');
+
+    var zone = document.getElementById('upload-zone');
+    var hint = document.getElementById('upload-zone-hint');
+    var sample = document.getElementById('upload-sample');
+    var fileInput = document.getElementById('upload-file-input');
+    var progress = document.getElementById('upload-progress');
+    var summary = document.getElementById('upload-progress-summary');
+    var cta = document.getElementById('upload-cta-review');
+    var toast = document.getElementById('upload-toast');
+    var toastTimer;
+
+    function showToast(msg) {
+      toast.textContent = msg; toast.classList.remove('hidden');
+      clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.add('hidden'); }, 3500);
+    }
+
+    // Drop zone interactions
+    zone.addEventListener('click', function () { fileInput.click(); });
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+    zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.classList.add('is-hover'); zone.querySelector('.zone-label').textContent = 'Drop it here!'; });
+    zone.addEventListener('dragleave', function () { zone.classList.remove('is-hover'); zone.querySelector('.zone-label').textContent = 'Tap to choose a PDF — or drop it here'; });
+    zone.addEventListener('drop', function (e) {
+      e.preventDefault(); zone.classList.remove('is-hover');
+      var f = e.dataTransfer.files[0];
+      handleFile(f);
+    });
+    fileInput.addEventListener('change', function () { handleFile(fileInput.files[0]); });
+    sample.addEventListener('click', function (e) { e.preventDefault(); startParse(null); });
+
+    function handleFile(f) {
+      if (!f) return;
+      if (f.type && f.type !== 'application/pdf') { return showToast("Please upload a PDF — we can't read that file type"); }
+      if (f.size && f.size > 10 * 1024 * 1024) { return showToast('That file is too large. Max 10 MB — try exporting a single month'); }
+      startParse(f);
+    }
+
+    var STEPS = ['read', 'identify', 'rules', 'ai'];
+
+    async function startParse(file) {
+      var demo = await loadDemoData().catch(function () { return null; });
+      var s = (demo && demo.statement) || { filename: 'statement.pdf', transactions_total: 24, parsed_by_rules: 18, parsed_by_ai: 3, transactions_need_review: 3 };
+
+      // Transform zone -> progress view (in place)
+      zone.classList.add('hidden'); hint.classList.add('hidden'); sample.classList.add('hidden');
+      progress.classList.remove('hidden');
+      progress.querySelector('.fname').textContent = (file && file.name) || s.filename;
+
+      var counts = {
+        identify: s.transactions_total + ' transactions found',
+        rules: s.parsed_by_rules + ' categorised by rules',
+        ai: s.parsed_by_ai + ' categorised by AI'
+      };
+
+      // Advance steps sequentially (real-feel, not theatrical: each ~600ms)
+      for (var i = 0; i < STEPS.length; i++) {
+        await runStep(STEPS[i], counts[STEPS[i]] || '');
+      }
+
+      // Summary
+      document.getElementById('upload-progress-summary-headline').textContent = 'Parsed ' + s.transactions_total + ' transactions';
+      document.getElementById('upload-progress-summary-detail').innerHTML =
+        s.parsed_by_rules + ' by rules · ' + s.parsed_by_ai + ' by AI · <strong>' + s.transactions_need_review + ' need your help</strong>';
+      summary.classList.remove('hidden');
+
+      // Enable CTA
+      cta.disabled = false; cta.setAttribute('aria-disabled', 'false');
+      console.log('✅ Parse complete:', s.transactions_total, 'transactions');
+    }
+
+    function runStep(step, countText) {
+      return new Promise(function (resolve) {
+        var row = document.querySelector('[data-step="' + step + '"]');
+        row.classList.add('is-active');
+        setTimeout(function () {
+          row.classList.remove('is-active'); row.classList.add('is-done');
+          row.querySelector('.step-icon').textContent = '✓';
+          if (countText) row.querySelector('.step-count').textContent = countText;
+          resolve();
+        }, 600);
+      });
+    }
+
+    // expose for verification
+    window.__startParse = startParse;
+  })();
+  </script>
+</body>
+</html>

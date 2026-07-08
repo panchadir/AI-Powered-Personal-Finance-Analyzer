@@ -45,6 +45,13 @@
 | 01-priyas-first-honest-morning | 01.7 | Copilot Chat | specified | 2026-07-08 |
 | 02-priya-protects-what-matters | 02.1 | Commitments Management | specified | 2026-07-08 |
 | 03-priyas-two-tap-gut-check | 03.1 | Copilot Chat (return-visit) | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.1 | Register | built | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.2 | Login (auto-authentication) | built | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.3 | Statement Upload | built | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.4 | Transactions Table | built | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.5 | Dashboard | built | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.6 | AI Insights & Recommendations | built | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.7 | Copilot Chat | built | 2026-07-08 |
 
 **Status values:** `discussed` → `wireframed` → `specified` → `explored` → `building` → `built` → `approved` | `removed`
 
@@ -193,6 +200,78 @@
 
 ---
 
+### 2026-07-08 — Phase 5: Prototyping — Scenario 01 Setup & Analysis
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Activity:** [P] Prototyping
+**Scenario:** 01 — Priya's First Honest Morning (7 pages)
+
+**Setup decisions (initiation dialog):**
+- Device: Desktop + Mobile (Fully Responsive, 375→1920px)
+- Fidelity: Generic Gray Model (wireframe) — no design system exists yet
+- Language: English only (no switcher)
+- Demo data: Priya dataset (HDFC June 2026 statement, ₹2,840 safe-to-spend, Medium confidence, 24 transactions incl. 3 needs-review, 3 EMIs) — internally consistent across all 7 pages
+
+**Artifacts Created (in `prototypes/01-priyas-first-honest-morning-Prototype/`):**
+- `PROTOTYPE-ROADMAP.md` — scenario overview + setup decisions + build sequence
+- `data/demo-data.json` — Priya dataset (single source of truth)
+- `work/Logical-View-Map.md` — 7 logical views (1:1 with steps), states, build order, honesty checklist
+- Folder scaffold: `data/ work/ stories/ shared/ components/ pages/ assets/`
+
+**Analysis result:** 7 distinct logical views, linear golden path, no view reuse within the scenario. Build order V1→V7 (01.1 Register → 01.7 Copilot Chat). V7 is the shared base for Scenario 03's return-visit variant (out of scope here).
+
+**Next:** Step 3 — Logical View Breakdown (section-by-section) → build page-by-page starting with 01.1 Register
+
+---
+
+### 2026-07-08 — Phase 5: Prototyping — Scenario 01 Fully Built (all 7 views)
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Activity:** [P] Prototyping — section-by-section build (Step 1 strict for V1, fast mode for V2–V7 at user request)
+**Result:** All 7 golden-path views built, self-verified, and integration-tested.
+
+**Views built (in `prototypes/01-priyas-first-honest-morning-Prototype/`):**
+- `01.1-register.html` — form + validation (7 rules) + auto-auth redirect
+- `01.2-login.html` — auto-authentication transition (confirm + auto-advance + error fallback)
+- `01.3-statement-upload.html` — transparent step-by-step parse (18 by rules · 3 by AI · 3 need help)
+- `01.4-transactions-table.html` — 24 rows, filter chips, inline "Teach Me" correction with re-apply
+- `01.5-dashboard.html` — Safe-to-Spend hero (₹2,840 / ₹8,200), Medium confidence chip + tooltip, "Why?" expander, donut, commitments, bottom nav
+- `01.6-ai-insights-recommendations.html` — O→E→E→A insight cards with exact-data evidence, dismiss, Ask-Copilot handoff
+- `01.7-copilot-chat.html` — simulated token streaming, data-trace chips, honesty contract, pre-populated context from Insights
+
+**Shared infra:** `shared/styles.css` (Gray Model tokens + all component primitives), `format.js`, `data.js`, `nav.js`. Demo data: `data/demo-data.json` (internally consistent across all views).
+
+**Verification:** Headless Chrome + DevTools Protocol. Per-view functional checks all pass (Register 18/18, Login+Upload 14/14, Transactions 12/12, Dashboard 18/18, Insights+Copilot 23/23); full golden-path integration test 7/7 with zero console errors. Two visual bugs found & fixed during verification (transaction meta stacking; Copilot input bar / bottom-nav overlap).
+
+**Honesty layer realized in the UI:** freshness caveats, confidence-as-chip (never raw number), "Why?" reasoning from real data, transparent parse breakdown, exact-data evidence blocks, Copilot data-trace chips + explicit uncertainty ("one month of data → Medium"), observation-not-judgment tone, "information not advice" framing.
+
+**Next:** User review of the running prototype → acceptance testing ([T]) or build Scenarios 02 & 03.
+
+---
+
+### 2026-07-08 — Phase 5: Prototyping — Scenario 01 Refinements & Wrap
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Activity:** [P] Prototyping — post-build iterative refinement (interactive review with ALPHA)
+
+**Refinements applied (all verified via headless Chrome + CDP, zero console errors):**
+1. **Branded visual theme** — upgraded from Gray Model to a calm **teal** fintech identity (color, elevation, pill buttons, designed donut palette). All theming driven from `shared/styles.css :root` tokens, so all 7 pages rethemed at once.
+2. **Left navigation, persistent** across all 4 authenticated app screens (Transactions, Dashboard, Insights, Copilot) — mobile icon rail / desktop labeled sidebar. Register/Login/Upload remain nav-free.
+3. **Transactions** — removed horizontal chip scroll (chips now wrap); redesigned top area; added a "See my Dashboard →" CTA in the header (left nav supersedes the old sticky action bar).
+4. **Nav labels/order** — `Transactions · Dashboard · Insights · Copilot Chat`; "Home"→"Dashboard", "Commitments" slot → "Insights" (points to `01.6`), "Copilot"→"Copilot Chat".
+5. **Dashboard "+ Add a commitment"** — now opens an inline **modal form** (name/amount/date/criticality) that adds to the timeline and **updates Safe-to-Spend live** (the Scenario-02 "protection payoff" moment, realized on the Dashboard).
+
+**Wrap documents created (in `prototypes/01-priyas-first-honest-morning-Prototype/`):**
+- `README.md` — run instructions, screen map, structure, honesty layer, scope
+- `HANDOFF.md` — deltas from the specs + production API/data-contract notes for dev & acceptance testing
+- `PROTOTYPE-ROADMAP.md` — updated (fidelity note, all 7 views ✅ Built)
+
+**Open cosmetic gap:** Dashboard morning-briefing text still cites the original Safe-to-Spend (₹2,840) after a commitment is added (hero updates live to the new value). Flagged in HANDOFF.md for a decision.
+
+**Next:** [T] Acceptance Testing of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03.
+
+---
+
 ## Key Decisions
 
 | Date | Decision | Phase | By |
@@ -211,6 +290,9 @@
 | 2026-07-08 | Page inventory sourced from `prd.md`/`epics-and-stories.md`/`ux-spec-mvp.md` (the Phase-1 web MVP surface), not the Product Brief (which describes the Phase-2 WhatsApp channel) | Phase 3: Scenarios | Claude Code + ALPHA |
 | 2026-07-08 | 8-question scenario dialogs run in Suggest mode (facilitator drafts, user reviews) rather than step-by-step Conversation mode, given rich existing Trigger Map/PRD context | Phase 3: Scenarios | Claude Code + ALPHA |
 | 2026-07-08 | Login moved from Scenario 02 step 02.1 to Scenario 01 step 01.2 — rewritten as auto-authentication transition (no form); returning-user /login is a separate standalone page; Scenario 02 now has 1 step (Commitments Management) | Phase 4: UX Design | Freya + ALPHA |
+| 2026-07-08 | Prototype fidelity upgraded Gray Model → branded teal theme (tokens in `shared/styles.css`) | Phase 5: Prototyping | Claude Code + ALPHA |
+| 2026-07-08 | Persistent left nav on all authenticated app screens; nav = Transactions · Dashboard · Insights · Copilot Chat (the "Commitments" slot repurposed to Insights → `01.6`, since the Commitments page is unbuilt Scenario 02) | Phase 5: Prototyping | Claude Code + ALPHA |
+| 2026-07-08 | Dashboard "+ Add a commitment" realized as an inline modal form that updates Safe-to-Spend live — brings Scenario-02's "protection payoff" moment onto the Dashboard prototype | Phase 5: Prototyping | Claude Code + ALPHA |
 
 ---
 

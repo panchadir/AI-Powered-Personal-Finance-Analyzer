@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01.6 Insights — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+  <!-- Section: Top Nav -->
+  <div id="insights-topnav" class="topnav">
+    <button id="insights-topnav-back" class="back-link" onclick="goTo('01.5-dashboard.html')">← Dashboard</button>
+    <span id="insights-topnav-title" class="topnav-title">Insights</span>
+  </div>
+
+  <!-- Persistent left navigation -->
+  <nav class="side-nav" id="side-nav-slot" aria-label="Primary"></nav>
+
+  <main class="dash has-sidenav">
+    <!-- Section: Page Header -->
+    <div id="insights-header" class="insights-header">
+      <h1 id="insights-header-headline" class="insights-headline">What we noticed</h1>
+      <p id="insights-header-subline" class="insights-subline">These are patterns in your data — not judgments. We share what we see, you decide what to do.</p>
+    </div>
+
+    <!-- Insight cards render here -->
+    <div id="insights-list"></div>
+
+    <!-- Section: Data Sufficiency Footer -->
+    <div id="insights-footer" class="insights-footer">
+      <p id="insights-footer-note">Based on 1 month of data. More months = sharper patterns. Upload another statement to see more.</p>
+    </div>
+  </main>
+
+  <div id="insights-toast" class="toast hidden" role="status"></div>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 01.6 AI Insights loaded');
+    var toast = document.getElementById('insights-toast');
+    var toastTimer;
+    function showToast(msg) { toast.textContent = msg; toast.classList.remove('hidden'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.add('hidden'); }, 3000); }
+
+    loadDemoData().then(function (demo) {
+      var list = document.getElementById('insights-list');
+      list.innerHTML = demo.insights.map(function (ins, i) {
+        var n = i + 1;
+        var evidence = ins.evidence.map(function (e) { return '<li>' + e + '</li>'; }).join('');
+        return '' +
+        '<article id="insights-card-' + n + '" class="insight-card" role="article" aria-labelledby="insights-card-' + n + '-pattern-name">' +
+          '<div id="insights-card-' + n + '-header" class="insight-card-head">' +
+            '<span id="insights-card-' + n + '-icon" class="insight-icon" aria-hidden="true">' + (ins.icon || '💡') + '</span>' +
+            '<h2 id="insights-card-' + n + '-pattern-name" class="insight-name">' + ins.pattern_name + '</h2>' +
+          '</div>' +
+          '<p id="insights-card-' + n + '-observation" class="insight-observation">' + ins.observation + '</p>' +
+          '<div id="insights-card-' + n + '-evidence" class="evidence-block"><ul>' + evidence + '</ul></div>' +
+          '<p id="insights-card-' + n + '-explanation" class="insight-explanation">' + ins.explanation + '</p>' +
+          '<div id="insights-card-' + n + '-action" class="insight-actions">' +
+            '<button class="insight-dismiss" id="insights-card-' + n + '-action-dismiss" aria-label="Dismiss: ' + ins.pattern_name + '">Got it</button>' +
+            '<button class="btn btn--secondary" id="insights-card-' + n + '-action-copilot" ' +
+              'data-prompt="' + (ins.copilot_prompt || '') + '" data-insight="' + ins.id + '">Ask the Copilot about this</button>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+
+      // Ask Copilot -> pass context via query params
+      Array.prototype.forEach.call(list.querySelectorAll('[id$="-action-copilot"]'), function (btn) {
+        btn.addEventListener('click', function () {
+          var q = new URLSearchParams({ insight: btn.getAttribute('data-insight'), pre: btn.getAttribute('data-prompt') });
+          goTo('01.7-copilot-chat.html?' + q.toString());
+        });
+      });
+      // Dismiss -> fade card (do not remove)
+      Array.prototype.forEach.call(list.querySelectorAll('[id$="-action-dismiss"]'), function (btn) {
+        btn.addEventListener('click', function () {
+          var card = btn.closest('.insight-card');
+          var on = card.classList.toggle('is-dismissed');
+          btn.textContent = on ? 'Show again' : 'Got it';
+          showToast(on ? 'Marked as seen' : 'Restored');
+        });
+      });
+
+      window.__insightsCount = demo.insights.length;
+    }).catch(function (e) { console.error('insights load failed', e); });
+
+    renderSideNav('insights');
+  })();
+  </script>
+</body>
+</html>
