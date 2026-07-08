@@ -188,6 +188,8 @@ PREMIUM ~₹499/month (power user / couples)
 
 **Design Implications:** No dashboard on first launch; home screen (or WhatsApp thread) IS the briefing. Radical simplicity — Safe-to-Spend vs. Committed Spend, not multi-category charts.
 
+> **Phase-1 MVP surface note (added 2026-07-08 — reconciles this brief with the 3-day MVP PRD).** The Phase-1 MVP deliberately validates the **engine and the honesty layer** (Safe-to-Spend, Confidence Score, plain-language narration) on a **local single-user web surface with a light dashboard** — *not* the WhatsApp-first, no-dashboard channel described above. This is not a reversal: WhatsApp-first / briefing-as-home-screen remains the **Phase-2 delivery skin**, and the MVP's `services/` engine + narration prompts carry into it unchanged. The MVP's dashboard still obeys the brief's hierarchy — **the number and its plain-language "why" are the hero; charts are supporting evidence, below the fold** (see [`planning-artifacts/ux-spec-mvp.md`](../planning-artifacts/ux-spec-mvp.md)). Read "no dashboard" as a *channel/Phase-2* rule, not an *engine-validation/Phase-1* one.
+
 **Development Implications:** Categorization/parsing pipeline should be a hybrid (MCC/rules + sentence-transformer/NER for common cases, LLM fallback for cold-start/vernacular cases) rather than LLM-for-everything — better cost, latency, and privacy profile; this is now confirmed industry best practice, not a shortcut.
 
 ---
