@@ -892,16 +892,116 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 16 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 12 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session) |
-| Distinct agents | 6 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator], Saga) |
-| Distinct skills | 11 |
-| Deliverables (complete) | 9 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md) |
-| Deliverables (partial) | 3 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md, C-UX-Scenarios/** [Phase 3, in progress]) |
-| Artifact groups tracked | 20 |
+| Steps recorded | 19 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 13 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill) |
+| Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator], Saga, Freya [WDS Phase 4 UX Designer]) |
+| Distinct skills | 12 |
+| Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
+| Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
+| Artifact groups tracked | 21 |
 | Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 
 ---
 
 *This file is append-only from this point forward. Add new Step entries below the line for every future BMAD command, workflow step, or Party Mode interaction, and update all Summary Tables above accordingly.*
+
+---
+
+## Step 17 — Phase 4: UX Design — Scenario 01 (Dream Mode)
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 4 — UX Design
+**Workflow:** WDS Phase 4 UX Design — Dream Mode (autonomous generation)
+**User Goal:** Produce complete WDS page specifications for all Scenario 01 steps (Priya's First Honest Morning golden path) without stopping for per-page approval.
+**BMAD Command:** `/wds-4-ux-design` → selected `[D]` Dream mode
+**Trigger:** User (ALPHA selected Dream mode)
+
+### Agent Log
+- **Freya** (Claude Code, WDS Phase 4 UX Designer persona) — generated all Scenario 01 page specs autonomously. **Source: Observed.**
+
+### Skill Log
+- `wds-4-ux-design` (WDS Phase 4 UX Design skill) — Dream mode workflow. **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** Freya → generated 6 page specs sequentially, user reviewed at end.
+- **Inputs:** Phase 3 scenario outlines (01.1–01.6 stub files); `_bmad/wds/config.yaml`; WDS templates.
+- **Outputs:** 6 complete WDS page specification files (later renumbered — see Step 19).
+- **Key Decisions:** Honesty layer designed explicitly into every page; Confidence Score surfaced only as a named chip (not a raw number); Copilot Chat documented as shared UI for Scenarios 01 & 03; SSE streaming chosen over WebSocket; SEBI boundary enforced at design layer.
+- **Deliverables:** 6 page specs for Scenario 01.
+- **Artifacts Created:** `01.1-register.md`, `01.2-statement-upload.md`, `01.3-transactions-table.md`, `01.4-dashboard.md`, `01.5-ai-insights-recommendations.md`, `01.6-copilot-chat.md` *(all later renumbered in Step 19)*
+- **Artifacts Updated:** `_bmad-output/_progress/00-design-log.md` — Design Loop Status updated; progress log entry added.
+- **Dependencies:** Phase 3 scenario outlines (Step 14).
+- **Next Recommended BMAD Command:** `/wds-4-ux-design` for Scenario 02 (or user review first).
+- **Notes:** Dream mode — user reviews at end, not per page.
+
+---
+
+## Step 18 — Phase 4: UX Design — Scenarios 02 & 03 (Dream Mode, continued)
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 4 — UX Design
+**Workflow:** WDS Phase 4 UX Design — Dream Mode (continuation of Step 17 session)
+**User Goal:** Complete UX Design for Scenarios 02 and 03 without stopping.
+**BMAD Command:** `continue` (within existing `/wds-4-ux-design` Dream mode session)
+**Trigger:** User (ALPHA typed "continue")
+
+### Agent Log
+- **Freya** (Claude Code, WDS Phase 4 UX Designer persona) — generated Scenario 02 (Login + Commitments Management) and Scenario 03 (Copilot Chat return-visit) specs. **Source: Observed.**
+
+### Skill Log
+- `wds-4-ux-design` (WDS Phase 4 UX Design skill) — Dream mode continuation. **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** Freya continued from Step 17, generated 3 more page specs.
+- **Inputs:** Phase 3 Scenario 02 and 03 outlines; completed Scenario 01 specs for cross-reference.
+- **Outputs:** 3 complete WDS page specification files.
+- **Key Decisions:** Login (02.1) prioritised biometric/saved-credential shortcuts for returning user; Commitments Management (02.2) made "protect" language the design standard; Copilot Chat 03.1 specified as delta-from-01.6 to avoid duplication; gut-check mode constrained to ≤ 3 sentences server-side.
+- **Deliverables:** 3 page specs for Scenarios 02 & 03.
+- **Artifacts Created:** `02.1-login.md` *(later moved/rewritten in Step 19)*, `02.2-commitments-management.md` *(later renumbered in Step 19)*, `03.1-copilot-chat.md`
+- **Artifacts Updated:** `_bmad-output/_progress/00-design-log.md` — progress log entry added.
+- **Dependencies:** Step 17 (Scenario 01 specs).
+- **Next Recommended BMAD Command:** User review of all 9 specs → Phase 5 development or Design System extraction.
+- **Notes:** All 9 unique pages now specified. Stop hook triggered — PROJECT-PROGRESS.md update required.
+
+---
+
+## Step 19 — Phase 4: Scenario Restructure — Login Moved from Scenario 02 to Scenario 01
+
+**Timestamp:** 2026-07-08
+**BMAD Phase:** Phase 4 — UX Design (post-generation correction)
+**Workflow:** Manual file restructure + spec rewrites (no skill invoked)
+**User Goal:** Move the Login page from Scenario 02 step 02.1 to Scenario 01 step 01.2 (immediately after Register), rewriting it as an auto-authentication transition page; renumber all subsequent Scenario 01 steps up by one; collapse Scenario 02 to start directly at Commitments Management.
+**BMAD Command:** None — direct user instruction: "can you please re-arrange 2.1 (auto-login) after step 1.1 (Register)"
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Freya** (Claude Code, WDS Phase 4 UX Designer persona) — performed all renames, rewrites, and cross-reference updates. **Source: Observed.**
+
+### Skill Log
+- N/A — no skill invoked; this was a direct file restructure.
+
+### Execution Summary
+- **Agent execution order:** Bash renames → 01.2-login.md rewrite → all cross-reference updates → outline updates → design log update → PROJECT-PROGRESS.md update.
+- **Inputs:** All 9 page specs from Steps 17 & 18; scenario outline files; design log.
+- **Outputs:** Restructured file tree; rewritten 01.2-login.md; updated cross-references in all affected files.
+- **Key Decisions:** 01.2 Login = auto-authentication transition (no user action; confirms account + sets httpOnly cookie + redirects); returning-user /login remains a separate standalone page not numbered in any scenario flow; Scenario 02 now has 1 numbered step (Commitments Management as 02.1).
+- **Deliverables:** No new page specs; all existing specs corrected and cross-referenced.
+- **Artifacts Created:** `01.2-login/01.2-login.md` *(completely new spec — auto-authentication transition)*
+- **Artifacts Updated:**
+  - `01.1-register.md` — Next Step nav updated to 01.2 Login
+  - `01.3-statement-upload.md` *(renamed from 01.2)* — slug, image, Page Number, Previous nav, Entry Point, Related Pages
+  - `01.4-transactions-table.md` *(renamed from 01.3)* — Page Number, Entry Point, Exit Point, Related Pages
+  - `01.5-dashboard.md` *(renamed from 01.4)* — Page Number, Entry Point, Related Pages (02.2→02.1)
+  - `01.6-ai-insights-recommendations.md` *(renamed from 01.5)* — slug, H1, Page Number, all nav/cross-refs
+  - `01.7-copilot-chat.md` *(renamed from 01.6)* — slug, H1, Page Number, all nav/cross-refs
+  - `02.1-commitments-management.md` *(renamed from 02.2)* — slug, H1, Page Number, Previous nav
+  - `03.1-copilot-chat.md` — Shared-with reference updated from 01.6 to 01.7
+  - `01-priyas-first-honest-morning.md` — 7-step Shortest Path; 7-row Scenario Steps table
+  - `02-priya-protects-what-matters.md` — 1-step Shortest Path; 1-row Scenario Steps table
+  - `00-ux-scenarios.md` — Summary table (page counts), scenario descriptions, Page Coverage Matrix, Notes on Revised Flow
+  - `_bmad-output/_progress/00-design-log.md` — Design Loop Status table renumbered; Step 19 progress entry added; Key Decisions entry added
+- **Dependencies:** Steps 17 & 18 (all page specs).
+- **Next Recommended BMAD Command:** User review of all 9 specs → Phase 5 development (`/bmad-quick-dev`) or Design System extraction.
+- **Notes:** The old `02.1-login/` directory has been removed from the Scenario 02 folder. The returning-user login flow is documented as a standalone page in the technical notes of 01.1-register.md and 02.1-commitments-management.md.
+
