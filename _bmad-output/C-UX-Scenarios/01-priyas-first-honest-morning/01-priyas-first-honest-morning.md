@@ -9,7 +9,7 @@
 ## Transaction (Q1)
 
 **What this scenario covers:**
-Register, upload a real bank statement, and move through the full **golden path** — categorized transactions, her first honest Safe-to-Spend briefing and Confidence Score, a proactive insight, and an exploratory first conversation with the Copilot — in one sitting. All seven steps are committed MVP scope.
+Register, auto-authenticate, upload a real bank statement, and move through the full **golden path** — categorized transactions, her first honest Safe-to-Spend briefing and Confidence Score, a proactive insight, and an exploratory first conversation with the Copilot — in one sitting. All seven steps are committed MVP scope.
 
 ---
 
@@ -54,12 +54,13 @@ WoZ comprehension gate hit — Safe-to-Spend understood correctly — plus the a
 
 ## Shortest Path (Q8)
 
-1. **Register** — Priya creates her account (email/username + password); registration auto-authenticates her, no separate login step
-2. **Statement Upload** — she uploads her bank statement PDF and watches honest parsing progress
-3. **Transactions Table** — she reviews her categorized transactions, corrects one merchant via "Teach Me"
-4. **Dashboard** — she sees her first Safe-to-Spend number, Confidence Score, and plain-language briefing, explained
-5. **AI Insights & Recommendations** — she sees a proactive, honestly-framed observation about her spending
-6. **Copilot Chat** — curious, she asks her first question and gets a real, reasoned answer traced to her own data ✓
+1. **Register** — Priya creates her account (email + password)
+2. **Login** — auto-authentication confirmation; account ready, no credential re-entry; auto-redirects to Statement Upload
+3. **Statement Upload** — she uploads her bank statement PDF and watches honest parsing progress
+4. **Transactions Table** — she reviews her categorized transactions, corrects one merchant via "Teach Me"
+5. **Dashboard** — she sees her first Safe-to-Spend number, Confidence Score, and plain-language briefing, explained
+6. **AI Insights & Recommendations** — she sees a proactive, honestly-framed observation about her spending
+7. **Copilot Chat** — curious, she asks her first question and gets a real, reasoned answer traced to her own data ✓
 
 ---
 
@@ -79,12 +80,13 @@ WoZ comprehension gate hit — Safe-to-Spend understood correctly — plus the a
 
 | Step | Folder | Purpose | Exit Action |
 |------|--------|---------|-------------|
-| 01.1 | `01.1-register/` | Create her account (auto-login on success) | Submits registration form |
-| 01.2 | `01.2-statement-upload/` | Upload her bank statement | Uploads PDF, sees honest parsing progress |
-| 01.3 | `01.3-transactions-table/` | Review categorized transactions | Corrects a merchant via "Teach Me" |
-| 01.4 | `01.4-dashboard/` | See her first honest Safe-to-Spend briefing | Views her Insights |
-| 01.5 | `01.5-ai-insights-recommendations/` | See a proactive, honest observation about her spending | Opens the Copilot, curious |
-| 01.6 | `01.6-copilot-chat/` | Ask her first real question and get a reasoned answer | Final — scenario success ✓ |
+| 01.1 | `01.1-register/` | Create her account | Submits registration form → auto-redirect to 01.2 |
+| 01.2 | `01.2-login/` | Auto-authentication confirmation (no user action needed) | Auto-redirects to 01.3 |
+| 01.3 | `01.3-statement-upload/` | Upload her bank statement | Uploads PDF, sees honest parsing progress |
+| 01.4 | `01.4-transactions-table/` | Review categorized transactions | Corrects a merchant via "Teach Me" |
+| 01.5 | `01.5-dashboard/` | See her first honest Safe-to-Spend briefing | Views her Insights |
+| 01.6 | `01.6-ai-insights-recommendations/` | See a proactive, honest observation about her spending | Opens the Copilot, curious |
+| 01.7 | `01.7-copilot-chat/` | Ask her first real question and get a reasoned answer | Final — scenario success ✓ |
 
 **First step** (01.1) includes full entry context (Q3 + Q4 + Q5 + Q6).
 **On-step interactions** (that don't leave the step) are documented as storyboard items within each page spec.

@@ -36,6 +36,15 @@
 
 | Scenario | Step | Page | Status | Updated |
 |----------|------|------|--------|---------|
+| 01-priyas-first-honest-morning | 01.1 | Register | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.2 | Login (auto-authentication) | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.3 | Statement Upload | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.4 | Transactions Table | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.5 | Dashboard | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.6 | AI Insights & Recommendations | specified | 2026-07-08 |
+| 01-priyas-first-honest-morning | 01.7 | Copilot Chat | specified | 2026-07-08 |
+| 02-priya-protects-what-matters | 02.1 | Commitments Management | specified | 2026-07-08 |
+| 03-priyas-two-tap-gut-check | 03.1 | Copilot Chat (return-visit) | specified | 2026-07-08 |
 
 **Status values:** `discussed` → `wireframed` → `specified` → `explored` → `building` → `built` → `approved` | `removed`
 
@@ -116,6 +125,74 @@
 
 ---
 
+### 2026-07-08 — Phase 4: UX Design — Scenario 01 Complete (Dream Mode)
+
+**Agent:** Freya (Claude Code, WDS Phase 4 UX Designer)
+**Mode:** Dream (autonomous generation + user review)
+**Scenario:** 01 — Priya's First Honest Morning (P1, golden path)
+**Pages:** 7 / 7 specified *(originally 6; Login added as 01.2 in post-generation restructure — see Step 19)*
+
+**Artifacts Created:**
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md`
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.2-login/01.2-login.md` *(added in restructure)*
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.3-statement-upload/01.3-statement-upload.md`
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.4-transactions-table/01.4-transactions-table.md`
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.5-dashboard/01.5-dashboard.md`
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.6-ai-insights-recommendations/01.6-ai-insights-recommendations.md`
+- `C-UX-Scenarios/01-priyas-first-honest-morning/01.7-copilot-chat/01.7-copilot-chat.md`
+
+**Summary:** Specified all 6 pages of the golden path in Dream mode. Each page spec follows the WDS template: Page Metadata, Overview, Layout Structure, Spacing, Typography, Page Sections (with Object IDs), Page States, Validation/API/Accessibility, Technical Notes, and Open Questions. Key design decisions across the scenario: (1) The honesty layer is explicitly designed into every touchpoint — freshness caveats on the Dashboard hero, step-by-step transparent parse progress on Upload, `?`/`AI` confidence badges on Transactions, the "Why?" expander on the hero card, exact-data evidence blocks on Insights, and data-trace chips on every Copilot response. (2) The Confidence Score is never surfaced as a raw number — only as a named chip (High/Medium/Low) with a contextual tooltip. (3) Copilot Chat (01.6) is documented as the shared UI for both Scenario 01 (first-touch exploratory) and Scenario 03 (habitual gut-check); the 03.1 spec will document state differences only. (4) The "information not advice" SEBI boundary is enforced at the design layer, not just the prompt layer — action suggestions are framed as "consider" not "do."
+
+**Next:** User review of Scenario 01 specs → Scenario 02 (Priya Protects What Matters) or direct to agentic development
+
+---
+
+### 2026-07-08 — Phase 4: UX Design — Scenarios 02 & 03 Complete (Dream Mode)
+
+**Agent:** Freya (Claude Code, WDS Phase 4 UX Designer)
+**Mode:** Dream (autonomous generation + user review)
+**Scenarios:** 02 — Priya Protects What Matters (2 pages) + 03 — Priya's Two-Tap Gut-Check (1 page)
+**Pages:** 3 / 3 specified
+
+**Artifacts Created:**
+- `C-UX-Scenarios/02-priya-protects-what-matters/02.1-commitments-management/02.1-commitments-management.md` *(originally 02.2; renumbered in restructure — see Step 19)*
+- `C-UX-Scenarios/03-priyas-two-tap-gut-check/03.1-copilot-chat/03.1-copilot-chat.md`
+
+> **Note:** The Login page originally generated as 02.1 was moved to Scenario 01 as 01.2 (auto-authentication transition). See Step 19 for full restructure details.
+
+**Summary:** Commitments Management (02.1, originally 02.2) is the "protection payoff" page — the Safe-to-Spend number updating in real-time as Priya adds a commitment is the designed key UX moment; every label uses "protect" not "save." Criticality selector has 3 levels (Critical/Important/Flexible) with default Important (conservative-by-default). Copilot Chat return-visit (03.1) is specified as a delta from 01.6 — only the differences are documented: gut-check quick-prompt bar, verdict badge (Yes/Stretch/No), brevity-constrained response mode, and decision-focused suggestion chips. The gut-check answer is constrained to ≤ 3 sentences server-side. Honesty constraints apply equally to unfavourable answers (No = factual limit, not a judgment).
+
+**All 9 unique pages across 3 scenarios are now specified.**
+
+**Next:** User review of all specs → Agentic development (Phase 5) or Design System extraction
+
+---
+
+### 2026-07-08 — Phase 4: Scenario Restructure — Login Moved from 02.1 to 01.2
+
+**Agent:** Freya (Claude Code, WDS Phase 4 UX Designer)
+**Requested by:** ALPHA
+**Change:** Moved the Login page from Scenario 02 step 02.1 to Scenario 01 step 01.2 (between Register and Statement Upload), and completely rewrote its purpose.
+
+**Rationale:** The Phase 3 Scenario 02 Login spec was a returning-user login page (email + password + biometric). The original Phase 3 design intent for Scenario 01 was that registration auto-authenticates — there was no explicit Login step. On post-generation review, ALPHA decided this auto-authentication moment should be an explicit, documented transition beat: a page that confirms account creation and sets the auth token before forwarding Priya to Statement Upload. This is a UX clarity decision: Priya deserves to see "Account created!" before being pushed into the next task.
+
+**Files renamed (Scenario 01):**
+- `01.2-statement-upload/` → `01.3-statement-upload/`
+- `01.3-transactions-table/` → `01.4-transactions-table/`
+- `01.4-dashboard/` → `01.5-dashboard/`
+- `01.5-ai-insights-recommendations/` → `01.6-ai-insights-recommendations/`
+- `01.6-copilot-chat/` → `01.7-copilot-chat/`
+
+**Files moved/created (Scenario 02 → Scenario 01):**
+- `02-priya-protects-what-matters/02.1-login/` → `01-priyas-first-honest-morning/01.2-login/` *(completely rewritten as auto-authentication transition)*
+- `02-priya-protects-what-matters/02.2-commitments-management/` → `02-priya-protects-what-matters/02.1-commitments-management/` *(renumbered)*
+
+**Nature of 01.2 Login rewrite:** The returning-user login (email/password form, biometric shortcut, forgot password) was replaced with an auto-authentication transition page — no form, no user action required, just a confirmation beat + progress indicator + auto-redirect to /upload. The returning-user /login page is explicitly noted as a separate, standalone page outside scenario numbering.
+
+**All cross-references updated:** Nav links, scenario outlines, 00-ux-scenarios.md, Design Loop Status table, and internal body text across all 9 page specs.
+
+---
+
 ## Key Decisions
 
 | Date | Decision | Phase | By |
@@ -133,6 +210,7 @@
 | 2026-07-08 | Scenario 03 repurposed from a duplicate first-touch Copilot scenario into a distinct habitual return-visit gut-check; Copilot Chat intentionally documented as two user moments (Scenarios 01 & 03) | Phase 3: Scenarios | Claude Code + ALPHA |
 | 2026-07-08 | Page inventory sourced from `prd.md`/`epics-and-stories.md`/`ux-spec-mvp.md` (the Phase-1 web MVP surface), not the Product Brief (which describes the Phase-2 WhatsApp channel) | Phase 3: Scenarios | Claude Code + ALPHA |
 | 2026-07-08 | 8-question scenario dialogs run in Suggest mode (facilitator drafts, user reviews) rather than step-by-step Conversation mode, given rich existing Trigger Map/PRD context | Phase 3: Scenarios | Claude Code + ALPHA |
+| 2026-07-08 | Login moved from Scenario 02 step 02.1 to Scenario 01 step 01.2 — rewritten as auto-authentication transition (no form); returning-user /login is a separate standalone page; Scenario 02 now has 1 step (Commitments Management) | Phase 4: UX Design | Freya + ALPHA |
 
 ---
 

@@ -38,7 +38,7 @@ Log back in and add a recurring commitment (her electricity bill) so it's correc
 ## Device & Starting Point (Q5 + Q6)
 
 **Device:** Mobile (Android budget device, responsive web browser)
-**Entry:** Returning user, she opens the app that evening specifically to check her upcoming bills, and logs in.
+**Entry:** Returning user, she opens the app that evening specifically to check her upcoming bills. She logs in (returning-user /login, not a numbered scenario step) and navigates directly to Commitments.
 
 ---
 
@@ -54,8 +54,9 @@ Demonstrates the conservative-by-default ring-fencing mechanism working correctl
 
 ## Shortest Path (Q8)
 
-1. **Login** — she logs back into her account
-2. **Commitments Management** — she adds her electricity bill (amount, due-day, criticality) and sees her Safe-to-Spend number update to reflect it, protected ✓
+1. **Commitments Management** — she adds her electricity bill (amount, due-day, criticality) and sees her Safe-to-Spend number update to reflect it, protected ✓
+
+> **Note:** The returning-user Login page is a prerequisite that Priya completes before entering this scenario. Login is documented as a standalone page at `/login` (not a numbered scenario step) since it is a shared, recurring entry point across scenarios — not specific to this journey.
 
 ---
 
@@ -75,8 +76,7 @@ Demonstrates the conservative-by-default ring-fencing mechanism working correctl
 
 | Step | Folder | Purpose | Exit Action |
 |------|--------|---------|-------------|
-| 02.1 | `02.1-login/` | Log back into her account | Submits login form |
-| 02.2 | `02.2-commitments-management/` | Add her electricity bill as a protected commitment | Final — scenario success ✓ |
+| 02.1 | `02.1-commitments-management/` | Add her electricity bill as a protected commitment | Final — scenario success ✓ |
 
 **First step** (02.1) includes full entry context (Q3 + Q4 + Q5 + Q6).
 **On-step interactions** (that don't leave the step) are documented as storyboard items within each page spec.
