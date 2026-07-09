@@ -102,11 +102,11 @@ FR-9.4 (P1): POST /commitments and PATCH /commitments/{id} responses include saf
 ### NonFunctional Requirements
 
 NFR-1: Honesty & safety (hard): no displayed number may cause a missed committed obligation; conservative-by-default; any pipeline failure degrades to a visible, plainly-worded state — never a silent wrong number. LLM must not be in the computation path for Safe-to-Spend or Confidence Score.
-NFR-2: Local & single-user: runs on `reflex run`; no cloud accounts required; data in local SQLite.
+NFR-2: Local & single-user: runs on `reflex run`; no cloud accounts required; data in a local PostgreSQL 16 instance (docker-compose service `db`). SQLite is test-only.
 NFR-3: Separation of computation & narration: all money math is deterministic, unit-tested Python in services/engine/; LLM confined to language in services/narrate/. This boundary is architectural, not stylistic.
 NFR-4: Cost & model routing: total Claude API spend for build + demo cycle < $15. claude-haiku-4-5 for Tier-2 categorization; claude-opus-4-8 (or claude-sonnet-5 as cost lever) for briefing narration and Copilot. Batch API for bulk categorization; prompt caching for system prompts (~90% saving on cached portion).
 NFR-5: Privacy/provenance: data stays local; only transaction text needed for categorization/Q&A sent to Claude API; UI states this boundary. Secrets in .env (git-ignored). Auth token in httpOnly cookie.
-NFR-6: Migratability: business logic in framework-agnostic services/; Reflex State orchestrates only. Phase 2 (FastAPI, Postgres, WhatsApp/AA) is a re-skin, not a rewrite.
+NFR-6: Migratability: business logic in framework-agnostic services/; Reflex State orchestrates only. PostgreSQL is already the Phase-1 store; Phase 2 (FastAPI, WhatsApp/AA) is a re-skin, not a rewrite.
 NFR-7: Localization format: formatINR() (Indian number grouping: ₹1,25,000) and formatDate() (ISO → "30 Jun 2026") are required shared utilities used in all currency and date displays. Non-standard formatting fails acceptance.
 NFR-8: Accessibility baseline: role="log" + aria-live="polite" on Copilot chat thread; aria-live="assertive" on auto-auth transition headline; aria-disabled (not disabled) on not-yet-active CTAs.
 NFR-9: Performance baseline: statement parse completes in <60s for a standard 3-month PDF on a developer laptop. Dashboard initial render <3s after parse.
@@ -114,7 +114,7 @@ NFR-9: Performance baseline: statement parse completes in <60s for a standard 3-
 ### Additional Requirements
 
 - **Starter template**: `reflex init` + project skeleton setup (pages, services/{ingestion,categorize,engine,narrate}/, models.py, .env, requirements.txt) is the foundation for Epic 1 Story 1.
-- **Source tree structure (AD-2, AD-14):** `finance_app/` (Reflex app root) + `services/` (framework-agnostic Python, NO reflex imports) + `tests/` + `data/` layout must be established on Day 1.
+- **Source tree structure (AD-2, AD-14):** `finance_app/` (Reflex app root) + `services/` (framework-agnostic Python, NO reflex imports) + `tests/` + `data/` layout must be established on Day 1, along with `docker-compose.yml` (PostgreSQL 16, service `db`) and `alembic/` migrations (Postgres is the Phase-1 store).
 - **`pytest services/engine/` is the non-negotiable MVP quality gate** — must run with zero LLM calls; enforced by a raising fixture (AD-1).
 - **Golden-file ingestion tests** — one fixture per supported bank format (CSV + HDFC PDF) in `tests/ingestion/`.
 - **IDOR test required (AD-4)** — a dedicated test asserts user A cannot read user B's transactions, commitments, or chat history; must pass before Phase 2.
@@ -163,7 +163,7 @@ UX-DR18: Briefing panel — 2–4 sentence calm narrative above chart section; O
 | FR-8.1 – FR-8.6 | Epic 7 | Insight detectors, evidence blocks, SEBI phrasing, dismiss lifecycle |
 | FR-9.1 – FR-9.4 | Epic 5 | Commitment CRUD, recurring detection, live STS update |
 | NFR-1 | Epics 4, 8 | Honesty/safety spine + hardening pass |
-| NFR-2 | Epic 1 | Local SQLite, reflex run |
+| NFR-2 | Epic 1 | Local PostgreSQL (docker-compose), reflex run |
 | NFR-3 | Epic 4 | Computation/narration separation enforced by pytest |
 | NFR-4 | Epics 3, 5, 6 | Model routing constants, prompt caching |
 | NFR-5 | Epics 1, 6 | httpOnly cookie, .env secrets, SSE auth seam |
@@ -259,9 +259,9 @@ So that every subsequent story can persist data and display numbers consistently
 
 **Acceptance Criteria:**
 
-**Given** the Reflex app is running
-**When** `reflex db init && reflex db makemigrations && reflex db migrate` are run
-**Then** an SQLite DB file is created with all 8 tables: `users`, `uploaded_files`, `transactions`, `merchant_rules`, `commitments`, `score_events`, `insights`, `chat_messages`
+**Given** docker-compose is available (with `docker-compose.yml` defining the `postgres:16-alpine` service `db`) and `DATABASE_URL` defaults to the local Postgres DSN when unset (`rxconfig.py` / `alembic/env.py`)
+**When** `docker-compose up -d db` starts PostgreSQL 16 and `alembic upgrade head` is run
+**Then** the PostgreSQL database is provisioned with all 8 tables: `users`, `uploaded_files`, `transactions`, `merchant_rules`, `commitments`, `score_events`, `insights`, `chat_messages` (SQLite is used only by throwaway unit-test engines, never as the app store)
 **And** each user-scoped table has an integer primary key and a `user_id` foreign key
 **And** `direction` enum is `credit`|`debit`; `category_source` is `rule`|`llm`|`user`; `criticality` is `critical`|`important`|`flexible` with default `important`
 **And** `services/utils/format.py` exports `formatINR(amount: float) -> str` using Indian number grouping (e.g. `₹1,25,000` for 125000.0)

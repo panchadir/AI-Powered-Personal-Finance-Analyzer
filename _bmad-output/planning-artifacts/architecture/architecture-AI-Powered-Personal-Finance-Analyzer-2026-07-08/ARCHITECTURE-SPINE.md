@@ -27,7 +27,7 @@ companions:
 ```
 UI layer          Reflex pages + rx.State (orchestrate only; no logic)
 Service layer     services/{ingestion, categorize, engine, narrate}/ — framework-agnostic Python
-Data layer        rx.Model / sqlmodel → SQLite
+Data layer        rx.Model / sqlmodel → PostgreSQL 16 (psycopg2; Alembic migrations)
 ```
 
 The engine/narrate split within the service layer is this project's load-bearing wall (see AD-1). The ports-and-adapters pattern at parsers (`StatementParser` protocol) and LLM callers (`Categorizer`/`Narrator` interfaces) keeps both edges mockable in tests and swappable for Phase 2 without touching business logic.
@@ -44,7 +44,7 @@ graph TD
         NAR[narrate/]
     end
     subgraph DATA["Data Layer"]
-        DB[(SQLite via rx.Model)]
+        DB[(PostgreSQL 16 via rx.Model)]
     end
     subgraph EXT["External"]
         PDF[pdfplumber / camelot / statementsparser]
@@ -198,7 +198,10 @@ graph TD
 | Reflex | latest stable (pin in requirements.txt Day 1) |
 | reflex-local-auth | latest stable (pin version) |
 | sqlmodel (via rx.Model) | bundled with Reflex |
-| SQLite | built-in (Python stdlib) |
+| PostgreSQL | 16 (`postgres:16-alpine` via docker-compose) — Phase-1 store |
+| psycopg2 | latest stable (Postgres driver) |
+| Alembic | latest stable (schema migrations) |
+| SQLite | built-in (Python stdlib) — test-only, throwaway unit-test engines |
 | pdfplumber | latest stable |
 | camelot-py | latest stable |
 | statementsparser | latest stable [ASSUMPTION: covers HDFC demo format — verify Day 1 hour 1] |
@@ -251,14 +254,14 @@ C4Container
     Container(browser, "Browser UI", "Reflex → React", "7 pages: auth, upload, transactions, dashboard, insights, copilot")
     Container(reflexbe, "Reflex Backend", "FastAPI/Starlette (Reflex runtime)", "rx.State event handlers; serves SSE stream for Copilot")
     Container(svc, "services/", "Python", "ingestion · categorize · engine · narrate; all framework-agnostic")
-    ContainerDb(sqlite, "SQLite", "local file", "users · uploaded_files · transactions · commitments · score_events · insights · chat_messages · merchant_rules")
+    ContainerDb(pg, "PostgreSQL 16", "docker-compose service db", "users · uploaded_files · transactions · commitments · score_events · insights · chat_messages · merchant_rules")
     Container_Ext(claude, "Claude API", "Anthropic", "Tier-2 categorization (haiku-4-5) · narration + Copilot (opus-4-8 / sonnet-5)")
     Container_Ext(pdfinput, "Bank Statement", "PDF / CSV file", "Uploaded by user")
 
     Rel(priya, browser, "Uses", "HTTP")
     Rel(browser, reflexbe, "WebSocket + HTTP", "Reflex live state + SSE")
     Rel(reflexbe, svc, "calls", "Python function calls")
-    Rel(svc, sqlite, "reads / writes", "sqlmodel / SQLAlchemy")
+    Rel(svc, pg, "reads / writes", "sqlmodel / SQLAlchemy")
     Rel(svc, claude, "HTTPS", "Anthropic SDK")
     Rel(pdfinput, browser, "file upload", "multipart form")
 ```
@@ -301,10 +304,9 @@ erDiagram
 ## Deferred
 
 - **TLS / HTTPS** — not needed for local single-user MVP; required for Phase 2 cloud deployment.
-- **Postgres** — connection-string swap from SQLite when Phase 2 multi-user deployment lands; sqlmodel/SQLAlchemy makes this a config change.
 - **DPDP consent-manager architecture** — full consent flows deferred to Phase 2; MVP establishes the httpOnly cookie baseline only.
 - **Email verification on register** — explicitly out of MVP scope (PRD §2); deferred to Phase 2.
-- **Encryption at rest** — SQLite file is unencrypted on the local filesystem; accepted for Phase 1 single-device local use.
+- **Encryption at rest** — the local PostgreSQL data volume is unencrypted on the local filesystem; accepted for Phase 1 single-device local use.
 - **Multi-tenancy / rate limiting / audit logging** — irrelevant for single-user local MVP; all required for Phase 2 production.
 - **OCR for scanned/image PDFs** — detected and honestly refused in MVP; deferred to Phase 2.
 - **Account Aggregator / FIU integration** — Phase 2+; MVP ingestion pipeline is designed as the multi-source pillar it will sit alongside, not a throwaway.

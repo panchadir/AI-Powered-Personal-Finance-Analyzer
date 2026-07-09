@@ -277,11 +277,11 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 ## 5. Non-Functional Requirements
 
 - **NFR-1 Honesty & safety (hard):** no displayed number may cause a missed committed obligation; conservative-by-default; any pipeline failure degrades to a visible, plainly-worded state — never a silent wrong number. LLM must not be in the computation path for Safe-to-Spend or Confidence Score.
-- **NFR-2 Local & single-user:** runs on `reflex run`; no cloud accounts required; data in local SQLite.
+- **NFR-2 Local & single-user:** runs on `reflex run`; no cloud accounts required; data in a local PostgreSQL 16 instance (docker-compose service `db`). SQLite is test-only.
 - **NFR-3 Separation of computation & narration:** all money math is deterministic, unit-tested Python in `services/engine/`; LLM confined to language in `services/narrate/`. This boundary is architectural, not stylistic.
 - **NFR-4 Cost & model routing:** total Claude API spend for build + demo cycle < $15. **`claude-haiku-4-5`** for Tier-2 categorization; **`claude-opus-4-8`** (or `claude-sonnet-5` as cost lever) for briefing narration and Copilot. Batch API for bulk categorization; prompt caching for system prompts (~90% saving on cached portion).
 - **NFR-5 Privacy/provenance:** data stays local; only transaction text needed for categorization/Q&A sent to Claude API; UI states this boundary. Secrets in `.env` (git-ignored). Auth token in httpOnly cookie.
-- **NFR-6 Migratability:** business logic in framework-agnostic `services/`; Reflex `State` orchestrates only. Phase 2 (FastAPI, Postgres, WhatsApp/AA) is a re-skin, not a rewrite.
+- **NFR-6 Migratability:** business logic in framework-agnostic `services/`; Reflex `State` orchestrates only. PostgreSQL is already the Phase-1 store; Phase 2 (FastAPI, WhatsApp/AA) is a re-skin, not a rewrite.
 - **NFR-7 Localization format:** `formatINR()` (Indian number grouping: ₹1,25,000) and `formatDate()` (ISO → "30 Jun 2026") are **required shared utilities** used in all currency and date displays. Non-standard formatting fails acceptance.
 - **NFR-8 Accessibility baseline:** `role="log"` + `aria-live="polite"` on Copilot chat thread; `aria-live="assertive"` on auto-auth transition headline; `aria-disabled` (not `disabled`) on not-yet-active CTAs.
 - **NFR-9 Performance baseline:** statement parse completes in <60 s for a standard 3-month PDF on a developer laptop. Dashboard initial render <3 s after parse. These are the bounds — "fast" and "responsive" are not acceptable substitutes.
@@ -290,7 +290,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 
 ## 6. Technical Architecture (of record: the research doc)
 
-Modular monolith in **Reflex** (pure Python → React frontend + FastAPI/Starlette backend). Stack: Reflex · reflex-local-auth · `rx.Model`/sqlmodel → SQLite · `rx.plotly` · pdfplumber/camelot/statementsparser + pandas · Anthropic Claude (**`claude-haiku-4-5`** for categorization, **`claude-opus-4-8`**/**`claude-sonnet-5`** for narration + Copilot; structured outputs, read-only tool use, streaming, prompt caching). **Load-bearing rule:** `services/engine/` (deterministic) is strictly separated from `services/narrate/` (LLM). Full detail, data schema, 3-day plan, and risk register in [technical research document](planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md) — treat as the architecture spec.
+Modular monolith in **Reflex** (pure Python → React frontend + FastAPI/Starlette backend). Stack: Reflex · reflex-local-auth · `rx.Model`/sqlmodel → PostgreSQL 16 (psycopg2, Alembic migrations; SQLite test-only) · `rx.plotly` · pdfplumber/camelot/statementsparser + pandas · Anthropic Claude (**`claude-haiku-4-5`** for categorization, **`claude-opus-4-8`**/**`claude-sonnet-5`** for narration + Copilot; structured outputs, read-only tool use, streaming, prompt caching). **Load-bearing rule:** `services/engine/` (deterministic) is strictly separated from `services/narrate/` (LLM). Full detail, data schema, 3-day plan, and risk register in [technical research document](planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md) — treat as the architecture spec.
 
 ---
 

@@ -142,11 +142,11 @@ documentsSelected:
 | ID | Category | Requirement |
 |---|---|---|
 | NFR-1 | Honesty & Safety (hard) | No displayed number may cause a missed obligation; conservative-by-default; pipeline failure degrades to visible state; LLM never in STS/CS computation path |
-| NFR-2 | Deployment | Runs on `reflex run`; no cloud required; data in local SQLite; single-user MVP |
+| NFR-2 | Deployment | Runs on `reflex run`; no cloud required; data in local PostgreSQL 16 (docker-compose service `db`; SQLite test-only); single-user MVP |
 | NFR-3 | Architecture | All money math in services/engine/ (deterministic); LLM confined to services/narrate/; architectural boundary, not stylistic |
 | NFR-4 | Cost & Model Routing | Claude API spend < $15 for build+demo; claude-haiku-4-5 for categorization; claude-opus-4-8 (or claude-sonnet-5) for narration+Copilot; batch API + prompt caching |
 | NFR-5 | Privacy | Data stays local; only transaction text sent to Claude API; UI states boundary; secrets in .env; auth token in httpOnly cookie |
-| NFR-6 | Migratability | Business logic in framework-agnostic services/; Phase 2 (FastAPI, Postgres, WhatsApp/AA) is re-skin not rewrite |
+| NFR-6 | Migratability | Business logic in framework-agnostic services/; PostgreSQL already the Phase-1 store; Phase 2 (FastAPI, WhatsApp/AA) is re-skin not rewrite |
 | NFR-7 | Localization | formatINR() (Indian grouping ₹1,25,000) and formatDate() (ISO→"30 Jun 2026") required in all currency/date displays |
 | NFR-8 | Accessibility | role="log"+aria-live="polite" on Copilot; aria-live="assertive" on auto-auth; aria-disabled on inactive CTAs |
 | NFR-9 | Performance | Parse <60s for standard 3-month PDF on dev laptop; Dashboard initial render <3s after parse |
@@ -266,7 +266,7 @@ The PRD is **highly complete** for an MVP document. It provides:
 | NFR | Requirement | Epic / Story Coverage | Status |
 |---|---|---|---|
 | NFR-1 | Honesty spine; no silent failures; LLM not in STS/CS path | Epics 4 (S4.2, S4.3, S4.4), 8 (S8.1); all narrate/ guards | ✅ Covered |
-| NFR-2 | Local SQLite; reflex run | Epic 1 → S1.1, S1.2 | ✅ Covered |
+| NFR-2 | Local PostgreSQL (docker-compose); reflex run | Epic 1 → S1.1, S1.2 | ✅ Covered |
 | NFR-3 | services/engine/ separated from services/narrate/ | Epic 4 → S4.2 (enforced by architecture + pytest structure) | ✅ Covered |
 | NFR-4 | Model routing constants; prompt caching; <$15 | Epic 5 → S5.3; Epic 6 → S6.2 (config.py constants + cache_control) | ✅ Covered |
 | NFR-5 | Data local; secrets in .env; httpOnly cookie | Epic 1 → S1.1, S1.3; Epic 6 → S6.2 | ✅ Covered |

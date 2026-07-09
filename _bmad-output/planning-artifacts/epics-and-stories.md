@@ -27,10 +27,10 @@
 ## E1 — Foundation & Auth (P0, Day 1) → FR-1
 **Goal:** a running Reflex app a user can register into and log into, with local persistence.
 
-- **S1.1 (S)** `reflex init`; project skeleton — pages, `services/{ingestion,categorize,engine,narrate}/`, `models.py`, `.env`, `requirements.txt`. *(Do the Reflex chat-app tutorial first if new to `rx.State` — this is the ½-day ramp.)*
+- **S1.1 (S)** `reflex init`; project skeleton — pages, `services/{ingestion,categorize,engine,narrate}/`, `models.py`, `.env`, `requirements.txt`, `docker-compose.yml` (PostgreSQL 16), `alembic/`. *(Do the Reflex chat-app tutorial first if new to `rx.State` — this is the ½-day ramp.)*
   - AC: `reflex run` serves a blank multi-page app locally.
-- **S1.2 (M)** `rx.Model` tables (users + app schema) + `reflex db init/makemigrations/migrate` on SQLite.
-  - AC: DB file created; tables match the PRD data model.
+- **S1.2 (M)** `rx.Model` tables (users + app schema) provisioned on PostgreSQL 16 via docker-compose (`db` service) + Alembic migrations (`alembic upgrade head`). SQLite is test-only.
+  - AC: `docker-compose up -d db` + `alembic upgrade head` provisions Postgres with all tables matching the PRD data model.
 - **S1.3 (M)** Integrate `reflex-local-auth`: register / login / logout pages; `@reflex_local_auth.require_login` on protected pages.
   - AC: register → logout → login works; passwords bcrypt-hashed; unauthenticated access redirects to login; T&C and Privacy links open in an in-page modal (not a new tab); no consent checkbox is pre-ticked on the register form (DPDP Rule 4 — FR-1.7 P0); auto-auth redirect has `aria-live="assertive"` on confirmation headline; manual fallback link visible after 3 s; `?fail=1` in URL suppresses auto-redirect (FR-1.9 P0).
 - **S1.4 (S)** Scope every data query by `user_id`.
