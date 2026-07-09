@@ -1,7 +1,138 @@
-"""rx.Model table definitions (all tables live here).
+"""Database tables for the AI-Powered Personal Finance Analyzer (Story 1.2).
 
-The 8 tables — users, uploaded_files, transactions, merchant_rules, commitments,
-score_events, insights, chat_messages — are defined in Story 1.2 along with the
-enums (direction, category_source, criticality). Intentionally empty in Story 1.1;
-adding tables here now would diverge from Story 1.2's exact acceptance criteria.
+The 8 tables required by the AC:
+``users`` · ``uploaded_files`` · ``transactions`` · ``merchant_rules`` ·
+``commitments`` · ``score_events`` · ``insights`` · ``chat_messages``.
+
+Design notes (see story 1-2 Dev Notes for the full rationale):
+
+* **``users`` = reflex-local-auth's ``LocalUser``** (tablename ``localuser``). We do NOT
+  hand-roll a second users table — that would fragment identity and break Story 1.3's
+  auto-login. Importing ``reflex_local_auth`` here registers ``LocalUser`` (and its auth
+  session table) with the shared SQLModel metadata so migrations create them. Every
+  user-scoped table's ``user_id`` FK therefore targets ``localuser.id``.
+* **Enums are stored as plain ``str`` columns** (no native DB enum), governed by the
+  framework-agnostic ``services/utils/enums.py`` so ``services/`` never has to import this
+  UI-layer module (AD-2). Defaults use the enum ``.value``.
+* **Money is ``Decimal``**, never ``float`` (AD-8): ``amount``, ``balance_after``,
+  ``commitments.amount``. ``float`` is display-only, confined to ``formatINR`` (AD-13).
+* ``rx.Model`` supplies the integer ``id`` primary key automatically (AC #2); we only add
+  the ``user_id`` FK and the domain columns.
 """
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from decimal import Decimal
+
+import reflex as rx
+import reflex_local_auth  # noqa: F401  — registers LocalUser (`localuser`) + auth session tables
+import sqlmodel
+
+from services.utils.enums import CategorySource, Criticality
+
+# reflex-local-auth's user table name — the FK target for every user-scoped table.
+USER_FK = "localuser.id"
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class UploadedFile(rx.Model, table=True):
+    """A statement file a user uploaded (Epic 2 populates parse metadata)."""
+
+    __tablename__ = "uploaded_files"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    filename: str
+    status: str = "uploaded"  # uploaded | parsing | parsed | failed (Epic 2 refines)
+    uploaded_at: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
+class Transaction(rx.Model, table=True):
+    """Canonical transaction row (AD-6). Every parser normalizes to this shape."""
+
+    __tablename__ = "transactions"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    source_file_id: int | None = sqlmodel.Field(
+        default=None, foreign_key="uploaded_files.id", index=True
+    )
+    date: str  # ISO 'YYYY-MM-DD' (normalized at ingestion — dedup key component)
+    description_raw: str
+    merchant_normalized: str | None = None
+    amount: Decimal = sqlmodel.Field(max_digits=12, decimal_places=2)  # Decimal, not float (AD-8)
+    direction: str  # Direction: 'credit' | 'debit'
+    balance_after: Decimal | None = sqlmodel.Field(
+        default=None, max_digits=12, decimal_places=2
+    )
+    category: str | None = None
+    category_source: str | None = None  # CategorySource: 'rule' | 'llm' | 'user'
+    category_confidence: float | None = None  # display/threshold only, never money math
+    created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
+class MerchantRule(rx.Model, table=True):
+    """User-taught categorization rule ("Teach Me", Story 3.3). Per-user, not global."""
+
+    __tablename__ = "merchant_rules"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    pattern: str
+    category: str
+    source: str = CategorySource.user.value  # 'user'
+    created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
+class Commitment(rx.Model, table=True):
+    """A recurring obligation the engine ring-fences (Story 5.5 / FR-9)."""
+
+    __tablename__ = "commitments"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    name: str
+    amount: Decimal = sqlmodel.Field(max_digits=12, decimal_places=2)  # Decimal, not float
+    due_day: int  # 1–31; 31 renders as "end of month" (Story 5.5)
+    criticality: str = Criticality.important.value  # default 'important' (AC #3 / FR-4.3)
+    created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
+class ScoreEvent(rx.Model, table=True):
+    """Auditable Confidence-Score change (AD-9). The UI score is the latest row here."""
+
+    __tablename__ = "score_events"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    score: int
+    delta: int
+    trigger_event: str  # spelled trigger_event, NOT triggering_event (AD-9 / CS-3)
+    explanation: str
+    suggested_action: str | None = None
+    timestamp: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
+class Insight(rx.Model, table=True):
+    """A proactive behavioral insight in Observation-Evidence-Explanation-Action shape (Epic 7)."""
+
+    __tablename__ = "insights"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    pattern_name: str
+    observation: str
+    evidence: str
+    explanation: str
+    action_suggestion: str
+    status: str = "active"  # active | dismissed (dismiss lifecycle, FR-8.4)
+    created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
+class ChatMessage(rx.Model, table=True):
+    """A Copilot chat turn, stored server-side and scoped to the user (Story 6.1 / FR-7.9)."""
+
+    __tablename__ = "chat_messages"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    role: str  # 'user' | 'assistant'
+    content: str
+    trace_sources: str | None = None  # JSON-encoded citations (FR-7.5)
+    timestamp: datetime = sqlmodel.Field(default_factory=_utcnow)

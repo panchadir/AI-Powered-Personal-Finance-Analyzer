@@ -955,9 +955,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-party-mode` (Observed) | +1 (Step 30; total 3 sessions across the tracker) |
 | `/bmad-agent-dev` → Amelia (Observed) | 1 (menu host for Steps 39–41) |
 | `bmad-sprint-planning` via `SP` (Observed) | 1 (Step 39) |
-| `bmad-create-story` via `CS` (Observed) | 1 (Step 40) |
-| `bmad-dev-story` via `DS` (Observed) | 1 (Step 41) |
-| `/bmad-code-review` (Observed) | 1 (Step 42) |
+| `bmad-create-story` via `CS` (Observed) | 3 (Steps 40, 43, 46) |
+| `bmad-dev-story` via `DS` (Observed) | 3 (Steps 41, 44, 47) |
+| `/bmad-code-review` (Observed) | 3 (Steps 42, 45, 48) |
 
 ## Agent Usage
 
@@ -979,7 +979,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Full BMAD cast (16 personas, session mode) + 4 parallel audit subagents | 1 (Step 30) |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
-| Amelia (Senior Software Engineer, `bmad-agent-dev`) | 1 (Steps 39–41, single activation) |
+| Amelia (Senior Software Engineer, `bmad-agent-dev`) | 2 (Steps 39–41 activation; Steps 43–44 activation) |
 
 ## Skill Usage
 
@@ -1006,9 +1006,9 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-check-implementation-readiness` | 1 |
 | `bmad-agent-dev` | 1 |
 | `bmad-sprint-planning` | 1 |
-| `bmad-create-story` | 1 |
-| `bmad-dev-story` | 1 |
-| `bmad-code-review` | 1 |
+| `bmad-create-story` | 3 |
+| `bmad-dev-story` | 3 |
+| `bmad-code-review` | 3 |
 
 ## Agent → Skill Mapping
 
@@ -2165,6 +2165,248 @@ The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI
 - **Dependencies:** Step 41 (the implementation under review).
 - **Next Recommended BMAD Command:** `bmad-create-story` for Story 1.2 (Database Schema & Shared Formatting Utilities).
 - **Notes:** Review run inline (no subagents) per user's operating preference. Diff captured via a git intent-to-add + `git reset` so no files or commits were altered during the read-only gather step.
+
+---
+
+## Step 43 — Create Story 1.2 (Context Engineering: DB Schema & Formatting Utilities)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `bmad-poc`)
+**BMAD Phase:** Phase 5: Implementation — story context engineering
+**Workflow:** `bmad-create-story`
+**User Goal:** With no `ready-for-dev` story available, create Story 1.2 with comprehensive implementation context so it can be developed flawlessly.
+**BMAD Command:** Amelia menu `DS` → no ready story → user chose option `1` → `bmad-create-story`. **Source: Observed**.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`) · model claude-opus-4-8.
+- **Role:** Story context engine (prevent LLM developer mistakes).
+- **Reason Invoked:** Story 1.2 was `backlog` (no story file); dev-story had nothing to implement.
+- **Input:** `epics.md` (Story 1.2 ACs), `ARCHITECTURE-SPINE.md` (AD-6/AD-9/AD-13, enums, source tree), `project-context.md`, previous story 1.1, prototype `shared/format.js`, `demo-data.json` field shapes.
+- **Output:** `1-2-database-schema-and-shared-formatting-utilities.md` — 7 ACs, 6 TDD tasks, exhaustive Dev Notes.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`
+- **Purpose:** Produce a comprehensive, context-filled story spec optimized for the dev agent.
+- **Contribution:** Front-loaded the three highest-risk traps for this story so the dev could not fall into them.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Discovered target from sprint-status (first `backlog` = 1.2) → loaded epics/architecture/project-context/prototype/previous-story → analyzed reflex-local-auth identity model → wrote story file → set `ready-for-dev` → updated sprint-status.
+- **Key Decisions / Findings (Observed):**
+  - **`users`-table decision:** reflex-local-auth owns identity; the story mandates FKs to the library's user table (verify `__tablename__`) rather than a hand-rolled second `users` table (would fragment identity, break 1.3 auto-login).
+  - **Enum-location trap (AD-2):** `direction`/`category_source`/`criticality` must live under `services/` (not `finance_app/models.py`) or a later `services/`→`finance_app` import trips Story 1.1's boundary guard. Testable rationale supplied.
+  - **Money = `Decimal`** (AD-8) with SQLite affinity caveat; **`formatINR`/`formatDate` parity** with the JS twin plus a deliberate `ValueError` divergence required by AC #6.
+  - Locked `transactions` to the canonical AD-6 schema and `score_events` to AD-9 (`trigger_event`, not `triggering_event`).
+- **Deliverables:** Story 1.2 spec at `ready-for-dev`.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/1-2-database-schema-and-shared-formatting-utilities.md`.
+- **Artifacts Updated:** `sprint-status.yaml` (1.2 → ready-for-dev).
+- **Dependencies:** Step 40 (story template/pattern), Step 24 (architecture spine), Step 26 (project context), Step 41 (previous story learnings).
+- **Next Recommended BMAD Command:** `bmad-dev-story` to implement 1.2.
+- **Notes:** Ran inline (no subagents) per the user's operating preference.
+
+---
+
+## Step 44 — Dev Story 1.2: Database Schema & Shared Formatting Utilities
+
+**Timestamp:** 2026-07-09 (this conversation, branch `bmad-poc`)
+**BMAD Phase:** Phase 5: Implementation — story development
+**Workflow:** `bmad-dev-story`
+**User Goal:** Implement Story 1.2 test-first and ship verified schema + formatting utilities.
+**BMAD Command:** `/bmad-dev-story` (**Observed** — explicit `<command-name>` invocation).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`) · model claude-opus-4-8.
+- **Role:** Developer implementing the story (red-green-refactor).
+- **Reason Invoked:** Story 1.2 was `ready-for-dev` after Step 43.
+- **Input:** Story 1.2 spec; `project-context.md`; architecture spine; installed reflex-local-auth package.
+- **Output:** 3 shared enums, `formatINR`/`formatDate`, 7 `rx.Model` tables, working `reflex db` migration standing up all 8 tables; 39 new tests. All 7 ACs met.
+- **Source:** **Observed** (commands and outputs directly executed and verified).
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`
+- **Purpose:** Execute story implementation to completion, then mark for review.
+- **Contribution:** Implemented all 6 tasks TDD; captured `baseline_commit` (`8d6d010`); stood up the DB; full suite green; story → review.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** baseline_commit capture + story→in-progress → **bootstrapped a fresh `.venv` (Python 3.14.6) and installed the full pinned `requirements.txt`** (this tree had no venv) → Task 1 enums (`services/utils/enums.py`, RED→GREEN) → Task 2 `formatINR` (RED→GREEN) → Task 3 `formatDate` (RED→GREEN; `pytest tests/utils/` 32 passed = AC #6) → Task 4 seven `rx.Model` tables FK'd to reflex-local-auth `localuser` + schema test (7 passed) → Task 5 `db_url` + `reflex db init/makemigrations/migrate` → verified `reflex.db` has all 8 tables → Task 6 full-suite regression (45 passed) → story→review, sprint-status→review.
+- **Inputs:** Story 1.2 spec, architecture spine, project-context, installed packages.
+- **Outputs:** `services/utils/enums.py`, `formatINR`/`formatDate`, 7 DB tables, migration `alembic/versions/31751a886cde_.py`, `reflex.db`; 39 new tests.
+- **Key Decisions / Findings (Observed):**
+  - **`users` table confirmed = reflex-local-auth `LocalUser`** (tablename **`localuser`**; fields `id, username, password_hash, enabled`) by inspecting the installed package; all `user_id` FKs target `localuser.id`. No second users table.
+  - **Shared enums placed in `services/utils/enums.py`** (framework-agnostic) → AD-2 boundary guard stays green; `finance_app/models.py` imports one-way.
+  - **Money columns are `NUMERIC(12,2)`** (Decimal, not float) per AD-8; `formatINR` float param is display-only. Formatters raise `ValueError` on invalid input (deliberate divergence from the JS twin, per AC #6).
+  - **Environment:** full pinned stack (reflex 0.9.6.post1, reflex-local-auth 0.5.0, pandas 3.0.3, camelot-py 2.0.0, statementsparser 0.1.0, anthropic 0.116.0, …) installed cleanly on Python 3.14.6 — no build failures. `rx.Model` deprecation warning noted (still sanctioned by the spine; flagged for a future migration). `reflex db init` needed `db_url` → added `sqlite:///reflex.db` to `rxconfig.py`; app entrypoint needed `import models` for alembic discovery.
+  - **Tests:** full suite **45 passed** (Story 1.1's 6 guards + 39 new), no regressions; boundary + statementsparser guards still green.
+- **Deliverables:** Story 1.2 complete (status `review`); DB schema live; formatting utilities shipped.
+- **Artifacts Created:** `services/utils/enums.py`, `tests/utils/test_enums.py`, `tests/utils/test_format.py`, `tests/test_models_schema.py`, `alembic.ini`, `alembic/**` (incl. `versions/31751a886cde_.py`). (`reflex.db`, `.venv/` git-ignored.)
+- **Artifacts Updated:** `finance_app/models.py` (7 tables), `finance_app/finance_app.py` (models import), `services/utils/format.py` (formatters), `rxconfig.py` (`db_url`), `1-2-...utilities.md` (baseline_commit, tasks checked, Dev Agent Record, File List, Change Log, Status → review), `sprint-status.yaml` (1.2 → review).
+- **Dependencies:** Step 43 (story spec), Step 41 (scaffold/placeholders filled here), Step 24 (architecture spine), Step 26 (project context).
+- **Next Recommended BMAD Command:** `code-review` on Story 1.2 (ideally a different LLM), then `bmad-create-story` for Story 1.3 (User Registration with Auto-Login).
+- **Notes:** Ran inline (no subagents) per the user's operating preference. `.venv` was rebuilt from scratch this session; Story 1.1 had used Python 3.12.6, this session used 3.14.6 — the pinned stack installed cleanly on 3.14, but note the minor-version drift for reproducibility.
+
+---
+
+## Step 45 — Code Review of Story 1.2 (inline adversarial review + patch)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `bmad-poc`)
+**BMAD Phase:** Phase 5: Implementation — code review of Story 1.2
+**Workflow:** `bmad-code-review`
+**User Goal:** Adversarially review the Story 1.2 schema + formatting work against its spec and the AD-guards, then act on findings.
+**BMAD Command:** `/bmad-code-review` (**Observed** — explicit `<command-name>` invocation). Diff mode: uncommitted/untracked working tree vs `baseline_commit 8d6d010`.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`, still active from Step 44) running the code-review workflow.
+- **Role:** Code reviewer (Blind Hunter + Edge Case Hunter + Acceptance Auditor lenses, run inline — user's established no-subagent preference).
+- **Input:** Story 1.2 diff (16 files, +1188/−13; alembic autogen + BMAD tracking docs excluded from adversarial focus); spec `1-2-...utilities.md`; `project-context.md`.
+- **Output:** 3 findings (1 decision→patch, 1 patch, 1 defer) + 1 dismissed; both patches applied; story → `done`.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`
+- **Purpose:** Adversarial parallel-layer review + structured triage + act on findings.
+- **Contribution:** Verified all 7 ACs genuinely met; found the AD-8×AD-13 `formatINR`/`Decimal` seam and an unused import; deferred a tz-aware-timestamp convention item.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Gather context (diff via intent-to-add, then `git reset` — read-only) → review (3 lenses inline; empirically verified hypotheses in the venv) → triage (severity + bucket) → wrote findings to story → resolved decision-needed (user chose option 1) → applied both patches → re-ran suite → status update.
+- **Findings (all Observed against real code):**
+  - **[Medium · decision→patch]** `formatINR` rejected `Decimal` — the engine's money type (AD-8) — while being the only display path (AD-13); a latent runtime-`ValueError` foot-gun for Epic 5/6 call sites. User chose to **broaden `formatINR` to accept `float | Decimal`**; added Decimal + non-finite-Decimal tests.
+  - **[Low · patch]** Unused import `Direction` in `models.py` (suppressed by `# noqa: F401`; project-context "remove unused imports"). Removed; this surfaced that `tests/test_models_schema.py` was reaching the enums via the models re-export — repointed it to `services.utils.enums` (canonical home).
+  - **[Low · defer]** tz-aware `_utcnow()` defaults flow into naive `DateTime` columns; harmless until timestamps are consumed (Epic 4/5). Logged to `deferred-work.md`.
+  - **[dismissed]** AC #1 literally names a `users` table; schema uses reflex-local-auth's `localuser` — intentional and documented, every FK resolves.
+- **Verification:** full suite **48 passed** after patches (45 pre-review + 3 new Decimal tests); no regressions.
+- **Deliverables:** Story 1.2 reviewed and closed (`done`); 2 cleanups applied; 1 item added to the deferred-work ledger.
+- **Artifacts Updated:** `1-2-...utilities.md` (Review Findings section, patch bullets checked, Change Log, Status → done), `sprint-status.yaml` (1.2 → done), `services/utils/format.py` (Decimal support), `finance_app/models.py` (import), `tests/utils/test_format.py` (+3 tests), `tests/test_models_schema.py` (enum import), `deferred-work.md` (tz-timestamp item).
+- **Dependencies:** Step 44 (the implementation under review).
+- **Next Recommended BMAD Command:** `bmad-create-story` for Story 1.3 (User Registration with Auto-Login) — where reflex-local-auth's `localuser`/`localauthsession` tables get wired to real registration.
+- **Notes:** Review run inline (no subagents) per the user's operating preference and the Step 42 precedent. Same-session/same-LLM review caveat noted in the story's Review Findings; compensated by reviewing adversarially against the ACs and AD-guards and empirically verifying each hypothesis in the venv. Diff gathered via git intent-to-add + `git reset` (read-only; no commits altered).
+
+---
+
+## Step 46 — Create Story 1.3 (Context Engineering: User Registration with Auto-Login)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `bmad-poc`)
+**BMAD Phase:** Phase 5: Implementation — story context engineering
+**Workflow:** `bmad-create-story`
+**User Goal:** Create Story 1.3 with comprehensive implementation context (next `backlog` story after 1.2 closed).
+**BMAD Command:** Code-review next-steps option `1` ("start the next story") → `bmad-create-story`. **Source: Observed**.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`) · model claude-opus-4-8.
+- **Role:** Story context engine (prevent LLM developer mistakes).
+- **Reason Invoked:** Story 1.3 was `backlog`; user chose to start the next story.
+- **Input:** `epics.md` (Story 1.3 ACs), `ARCHITECTURE-SPINE.md` (AD-5/AD-4), `prd.md` FR-1.x, `project-context.md`, the **installed `reflex-local-auth==0.5.0` source** (local_auth/registration/login/user), prototype `01.1-register.html`, previous stories 1.1/1.2.
+- **Output:** `1-3-user-registration-with-auto-login.md` — 8 ACs, 4 tasks, exhaustive Dev Notes; plus a product decision captured and a deferred-work entry.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`
+- **Purpose:** Produce a comprehensive, context-filled story spec optimized for the dev agent.
+- **Contribution:** Surfaced two implementation-time contradictions the planning docs missed, resolved one via a product decision, and specified the reflex-local-auth overrides the dev must make.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Discovered target (first `backlog` = 1.3) → loaded epics/PRD/spine/project-context/prototype/previous-stories → **inspected the installed reflex-local-auth package** → found the AD-5 contradiction → **paused and asked the user** (AskUserQuestion) for the auth-token direction → ran a spike confirming the `rx.Cookie` override compiles → wrote the story → logged the httpOnly deferral → set `ready-for-dev` → updated sprint-status.
+- **Key Decisions / Findings (Observed):**
+  - **AD-5 contradiction (binding AD vs reality):** `reflex-local-auth==0.5.0` stores the auth token in `rx.LocalStorage` — the exact thing AD-5/FR-1.1 forbid — and Reflex state tokens can't be true httpOnly. **User chose (AskUserQuestion) the MVP-pragmatic path:** a SameSite `rx.Cookie` for Phase 1; true httpOnly deferred to Phase 2 (logged in `deferred-work.md`). Spike confirmed the subclass `auth_token` override yields a `Cookie`-backed var.
+  - **Stock-behavior overrides the dev must make:** reflex-local-auth (a) does **not** auto-login (redirects to `/login`) and (b) is **username-based, not email-based**. Story 1.3 requires auto-login → `/upload` and email accounts (email stored in the `username` column).
+  - **Prototype divergence:** `01.1-register.html` shows a *no-auto-login* flow ("please log in to continue") — superseded by canonical FR-1.2/epics (auto-login). Prototype is reference for microcopy/layout only.
+  - Scoped 1.3 vs 1.4 (login/logout/guards/IDOR) vs 1.5 (blur-validation, accessible transition, nav scaffold) explicitly to prevent over-build.
+- **Deliverables:** Story 1.3 spec at `ready-for-dev`.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/1-3-user-registration-with-auto-login.md`.
+- **Artifacts Updated:** `sprint-status.yaml` (1.3 → ready-for-dev), `deferred-work.md` (AD-5 httpOnly Phase-2 deferral).
+- **Dependencies:** Step 44 (1.2 schema — `localuser`/`localauthsession` tables), Step 24 (spine AD-5), Step 26 (project context), Step 28 (epics).
+- **Next Recommended BMAD Command:** `bmad-dev-story` to implement 1.3 (larger story — auth UI + manual `reflex run` verification for the cookie/redirect ACs).
+- **Notes:** This is the first story where create-story paused for a user decision — a binding-AD contradiction (AD-5) that materially changes the task list warranted it, unlike derivable defaults. Ran inline (no subagents).
+
+---
+
+## Step 47 — Dev Story 1.3: User Registration with Auto-Login
+
+**Timestamp:** 2026-07-09 (this conversation, branch `bmad-poc`)
+**BMAD Phase:** Phase 5: Implementation — story development
+**Workflow:** `bmad-dev-story`
+**User Goal:** Implement Story 1.3 test-first and ship verified registration + cookie-based auth.
+**BMAD Command:** `dev-story` (user instruction after create-story). **Source: Observed**.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`) · model claude-opus-4-8.
+- **Role:** Developer implementing the story (red-green-refactor).
+- **Reason Invoked:** Story 1.3 was `ready-for-dev` after Step 46.
+- **Input:** Story 1.3 spec; `project-context.md`; installed reflex-local-auth source; prototype register microcopy.
+- **Output:** Standalone cookie-backed `AuthState` + `RegisterState`, `/register` page UI, 20 new tests. All 8 ACs met.
+- **Source:** **Observed** (commands and outputs directly executed and verified).
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`
+- **Purpose:** Execute story implementation to completion, then mark for review.
+- **Contribution:** Implemented 4 tasks TDD; captured `baseline_commit` (`8d6d010`); `reflex run` caught the AD-5 subclass-override failure and drove the fallback; full suite green; story → review.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** baseline_commit + story→in-progress → Task 1 cookie `AuthState` + AD-5 tripwire (RED→GREEN) → Task 2 `register_new_user`/`RegisterState` email+bcrypt+auto-login (RED→GREEN, 13 tests) → Task 3 `/register` page UI + smoke test (RED→GREEN) → Task 4 `reflex run` verification → **caught that the compiled token was still localStorage** → refactored `AuthState` to standalone `rx.State` (the story's documented fallback) → re-verified compiled `clientStorage.cookies` carries `_auth_token` (SameSite=strict) → full suite 68 passed → story→review, sprint-status→review.
+- **Key Decisions / Findings (Observed):**
+  - **AD-5 subclass-override failed at runtime (the headline finding).** `AuthState(LocalAuthState)` with a `rx.Cookie` override compiled the token to **localStorage** anyway (the parent state's var wins). Took the fallback: standalone `AuthState(rx.State)` reimplementing `_login`/`authenticated_user`/`is_authenticated`/`do_logout` on a cookie token, reusing only reflex-local-auth's `LocalUser`/`LocalAuthSession` models + bcrypt. Post-refactor the compiled `clientStorage.cookies` carries `_auth_token` (SameSite=strict) — AC #3 mechanism verified.
+  - **False-green corrected:** the first tripwire checked the class-attr Var wrapper (passed even when the compiled token was localStorage). Replaced with a field-default assertion (`get_fields()[...].default` is a `Cookie`) + a "does not inherit LocalAuthState" structural guard.
+  - **Vestigial empty `_auth_token` localStorage slot** from the library's unused `LocalAuthState` remains (never written; real token is the cookie) — logged to `deferred-work.md` for Phase-2 removal.
+  - Overrode the two stock library behaviors (no-auto-login → `/upload`; username → email). No new deps (regex email validation).
+- **Verification:** `reflex run` compiled clean; `/register`, `/`, `/upload` serve 200; backend `/ping` 200; compiled `clientStorage` confirms the cookie. Full `pytest` **68 passed** (48 prior + 20 new), no regressions.
+- **Deliverables:** Story 1.3 complete (status `review`); registration + cookie auth working.
+- **Artifacts Created:** `finance_app/state/auth_state.py`, `finance_app/pages/register.py`, `tests/security/test_auth_token_storage.py`, `tests/security/test_registration.py`, `tests/test_register_page_smoke.py`.
+- **Artifacts Updated:** `finance_app/pages/__init__.py` (register route), `1-3-...md` (tasks/Dev Agent Record/File List/Change Log/Status → review), `sprint-status.yaml` (1.3 → review), `deferred-work.md` (vestigial-localStorage caveat).
+- **Dependencies:** Step 46 (story spec), Step 44 (1.2 schema — `localuser`/`localauthsession`), Step 24 (spine AD-5).
+- **Next Recommended BMAD Command:** `code-review` on Story 1.3 (ideally a different LLM; recommend a live browser DevTools pass on the cookie/redirect round-trip), then `create-story` for 1.4 (login/logout/protected routes/IDOR — builds on this cookie `AuthState`).
+- **Notes:** The `reflex run` verification step earned its keep — it caught an AD-5 violation that all unit tests (including the first tripwire) missed. Ran inline (no subagents). 1.2 + 1.3 both remain uncommitted in the working tree.
+
+---
+
+## Step 48 — Code Review of Story 1.3 (inline adversarial review + patch)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `bmad-poc`)
+**BMAD Phase:** Phase 5: Implementation — code review of Story 1.3
+**Workflow:** `bmad-code-review`
+**User Goal:** Adversarially review the Story 1.3 registration/cookie-auth work against its spec + the security ADs, then act on findings.
+**BMAD Command:** `code-review` (user instruction). **Source: Observed**. Diff mode: working tree **scoped to Story 1.3's 6 files** vs `baseline_commit 8d6d010` (1.2's uncommitted changes excluded — 1.2 already reviewed in Step 45).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`) running the code-review workflow.
+- **Role:** Code reviewer (Blind Hunter + Edge Case Hunter + Acceptance Auditor lenses, inline).
+- **Input:** Story 1.3 diff (6 files, +482); spec `1-3-...md`; `project-context.md` (AD-5/AD-4/OWASP rules).
+- **Output:** 1 patch (applied) + 2 defer + 2 dismissed. Story → `done`.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`
+- **Purpose:** Adversarial review + triage + act.
+- **Contribution:** Verified all 8 ACs; found + fixed an unhandled-crash path on long passwords; deferred two low items; recorded a forward requirement for 1.4.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Gather (1.3-scoped diff via intent-to-add, then `git reset`) → review (3 lenses inline; empirically verified bcrypt/duplicate behavior in the venv) → triage → wrote findings to story + deferred-work → applied the patch + tests → full suite 70 passed → status → done.
+- **Findings (all Observed):**
+  - **[Medium · patch · fixed]** Unvalidated max password length. bcrypt 5.0 **raises** `ValueError` >72 bytes (confirmed — does not truncate), so a long password crashed `handle_registration`. Fixed with a `MAX_PASSWORD_BYTES=72` guard returning a friendly error + boundary tests (73→graceful, 72→accepted).
+  - **[Low · defer]** `handle_registration` orchestration is app-verified, not unit-tested (rx.State handler testing is fragile) — logged for an Epic-8 state-test harness.
+  - **[Low · defer]** Duplicate-email check-then-insert is not concurrency-safe; DB `unique` constraint protects integrity (confirmed `IntegrityError`); single-user MVP → very low.
+  - **[dismissed ×2]** "/login not routed until 1.4" (intentional); email-lowercase-on-login (recorded as a forward requirement for 1.4, not a 1.3 defect).
+- **Verification:** full suite **70 passed** (68 + 2 boundary tests); no regressions.
+- **Deliverables:** Story 1.3 reviewed and closed (`done`); 1 fix; 3 items in the deferred-work ledger.
+- **Artifacts Updated:** `1-3-...md` (Review Findings, patch checked, Change Log, Status → done), `sprint-status.yaml` (1.3 → done), `finance_app/state/auth_state.py` (max-length guard), `tests/security/test_registration.py` (+2 tests), `deferred-work.md` (3 entries).
+- **Dependencies:** Step 47 (the implementation under review).
+- **Next Recommended BMAD Command:** `create-story` for 1.4 (login/logout/protected routes/IDOR) — builds on the cookie `AuthState`; also recommend committing 1.1–1.3 to give 1.4 a clean baseline.
+- **Notes:** Review scoped to 1.3's files because 1.2 + 1.3 are both uncommitted against the same baseline. Ran inline (no subagents). Empirical verification (bcrypt raising on >72 bytes) turned a "silent truncation" hypothesis into a confirmed crash-path fix.
 
 ---
 
