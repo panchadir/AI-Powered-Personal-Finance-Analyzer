@@ -17,14 +17,14 @@ This document provides the complete epic and story breakdown for AI-Powered Pers
 ### Functional Requirements
 
 FR-1.1: Register with email + password; bcrypt-hashed, never stored plaintext; auth token in httpOnly cookie (not localStorage) for DPDP compliance and XSS protection.
-FR-1.2: Registration auto-authenticates and redirects immediately to Upload — no email verification for MVP.
+FR-1.2: Registration creates the account and shows a `"Registration successful → Return to Login"` confirmation panel — no auto-login, no session, no auto-redirect (product decision 2026-07-09, supersedes the original auto-login intent); the user logs in to reach Upload. No email verification for MVP.
 FR-1.3: User can log in and log out; protected pages redirect unauthenticated users to login.
 FR-1.4: All data scoped to user_id; no cross-user data access. A test asserts this — no IDOR walks into Phase 2.
 FR-1.5: Trust signal ("No guessing. No shame.") appears above the form fields — functionally required, removal fails acceptance. Password field includes a show/hide toggle.
 FR-1.6: "Email already registered" error embeds an inline "Log in instead?" link.
 FR-1.7: T&C and Privacy links open in an in-page modal (not a new tab); no pre-ticked consent checkboxes (DPDP Rule 4).
 FR-1.8: Validation fires on blur, clears on input — on-submit-only validation is not acceptable.
-FR-1.9: Auto-auth transition: aria-live="assertive" on confirmation headline; manual fallback link surfaces after 3s if redirect has not fired; ?fail=1 error state must not auto-redirect.
+FR-1.9: Registration-success confirmation: the panel replaces the form with `role="status"` and `aria-live="assertive"` on the `"Registration successful!"` headline, and offers a `"Return to Login"` action; no session is created and no auto-redirect occurs (no-auto-login, product decision 2026-07-09).
 
 FR-2.1: Upload CSV bank statement; map columns to the canonical transaction schema (≥2 common Indian-bank CSV shapes supported).
 FR-2.2: Upload text-based PDF; extract via statementsparser → pdfplumber → camelot → LLM-text fallback.
@@ -74,7 +74,7 @@ FR-6.1 (P0): Hero-first layout: Safe-to-Spend card and Confidence chip always ab
 FR-6.2 (P0): Plain-language briefing narrated by Claude — honest, calm, non-judgmental, jargon-free; confidence caveat never buried.
 FR-6.3 (P1): Briefing follows Observation → Evidence → Explanation → Action shape.
 FR-6.4 (P0): Persistent left nav across all four app screens (Transactions / Dashboard / Insights / Copilot).
-FR-6.5 (P0): "+ Add a commitment" opens an inline modal (name / amount / due-date / criticality). On save, Safe-to-Spend updates live per FR-4.10.
+FR-6.5 (P0): "+ Add a commitment" on the Dashboard navigates to the dedicated Commitments Management page (WDS screen 02.1) — a list of commitments with per-row Edit/Delete, a Safe-to-Spend impact bar, and an add/edit modal on that page (name / amount / due-date / criticality). On save, Safe-to-Spend updates live per FR-4.10.
 
 FR-7.1 (P0): Chat interface; responses stream token-by-token.
 FR-7.2 (P0): Copilot answers using read-only tools over real data — never invents numbers, never performs a financial action.
@@ -97,7 +97,7 @@ FR-8.6 (P1): Insights woven into the briefing.
 FR-9.1 (P1): Detect recurring obligations (similar amount ±10%, ~monthly cadence); proactively surface for user confirmation.
 FR-9.2 (P1): User can add/edit/delete commitment: name, amount, due-day, criticality (Critical / Important / Flexible). Default: Important.
 FR-9.3 (P1): due_day=31 maps to last day of shorter months; displayed as "end of month."
-FR-9.4 (P1): POST /commitments and PATCH /commitments/{id} responses include safe_to_spend_updated so the client updates the Dashboard without a separate fetch.
+FR-9.4 (P1): POST /commitments and PATCH /commitments/{id} responses include safe_to_spend_updated so the Commitments page updates its Safe-to-Spend impact bar (and the Dashboard reflects it) without a separate fetch.
 
 ### NonFunctional Requirements
 
@@ -108,7 +108,7 @@ NFR-4: Cost & model routing: total Claude API spend for build + demo cycle < $15
 NFR-5: Privacy/provenance: data stays local; only transaction text needed for categorization/Q&A sent to Claude API; UI states this boundary. Secrets in .env (git-ignored). Auth token in httpOnly cookie.
 NFR-6: Migratability: business logic in framework-agnostic services/; Reflex State orchestrates only. PostgreSQL is already the Phase-1 store; Phase 2 (FastAPI, WhatsApp/AA) is a re-skin, not a rewrite.
 NFR-7: Localization format: formatINR() (Indian number grouping: ₹1,25,000) and formatDate() (ISO → "30 Jun 2026") are required shared utilities used in all currency and date displays. Non-standard formatting fails acceptance.
-NFR-8: Accessibility baseline: role="log" + aria-live="polite" on Copilot chat thread; aria-live="assertive" on auto-auth transition headline; aria-disabled (not disabled) on not-yet-active CTAs.
+NFR-8: Accessibility baseline: role="log" + aria-live="polite" on Copilot chat thread; aria-live="assertive" on the registration-success confirmation headline; aria-disabled (not disabled) on not-yet-active CTAs.
 NFR-9: Performance baseline: statement parse completes in <60s for a standard 3-month PDF on a developer laptop. Dashboard initial render <3s after parse.
 
 ### Additional Requirements
@@ -158,7 +158,7 @@ UX-DR18: Briefing panel — 2–4 sentence calm narrative above chart section; O
 | FR-3.1 – FR-3.10 | Epic 3 | Tier-1/2/3 categorization, badges, virtual scroll, Teach Me |
 | FR-4.1 – FR-4.12 | Epic 4 | STS formula, reservation rule, evidence pack struct, pytest suite |
 | FR-5.1 – FR-5.8 | Epic 4 | Confidence Score, score_events, cold start, over-conservatism guard |
-| FR-6.1 – FR-6.5 | Epic 5 | Dashboard layout, briefing narration, left nav, commitment modal |
+| FR-6.1 – FR-6.5 | Epic 5 | Dashboard layout, briefing narration, left nav, dedicated Commitments page (02.1) |
 | FR-7.1 – FR-7.10 | Epic 6 | Copilot streaming, read-only tools, trace chips, quick prompts |
 | FR-8.1 – FR-8.6 | Epic 7 | Insight detectors, evidence blocks, SEBI phrasing, dismiss lifecycle |
 | FR-9.1 – FR-9.4 | Epic 5 | Commitment CRUD, recurring detection, live STS update |
@@ -200,7 +200,7 @@ The deterministic engine computes Safe-to-Spend and Confidence Score with a full
 **FRs covered:** FR-4.1–FR-4.12, FR-5.1–FR-5.8
 **NFRs:** NFR-1, NFR-3
 **Risk flag:** Largest epic by FR count (20 FRs + 12-scenario pytest suite). No split recommended (shared evidence pack). If bleeding into Day-3 morning, invoke scope-guard cut order immediately.
-
+`
 ### Epic 5: Dashboard, Briefing & Commitment Management
 A user sees their Safe-to-Spend hero card, Confidence Score chip, morning briefing, and charts on a single calm screen — and can add/edit/delete commitments that immediately update the Safe-to-Spend figure.
 **FRs covered:** FR-6.1–FR-6.5, FR-9.1–FR-9.4
@@ -269,19 +269,19 @@ So that every subsequent story can persist data and display numbers consistently
 **And** `pytest tests/utils/` passes with edge cases: zero (₹0), crore amounts (₹1,00,00,000), leap-year dates, and invalid input raises `ValueError`
 **And** all arithmetic in `services/` uses `Decimal`, never `float` (format functions accept float for display only)
 
-### Story 1.3: User Registration with Auto-Login
+### Story 1.3: User Registration
 
 As a new user,
-I want to register with email and password and be automatically logged in,
-So that I can immediately start uploading my statement without friction.
+I want to register with email and password and then log in,
+So that I can create my account securely and start uploading my statement.
 
 **Acceptance Criteria:**
 
 **Given** I am on the registration page
 **When** I fill in a valid email and password and submit
 **Then** my account is created with a bcrypt-hashed password (never stored plaintext)
-**And** I am automatically authenticated and redirected to the Upload page within 3 seconds
-**And** the session token is set as an httpOnly, SameSite cookie — never written to localStorage, sessionStorage, or a custom header
+**And** no session is created and there is no auto-login/auto-redirect — the form is replaced by a `"Registration successful → Return to Login"` confirmation panel (`role="status"`, `aria-live="assertive"`) directing me to log in (product decision 2026-07-09, supersedes the original auto-login intent)
+**And** because registration creates no session, no auth token is written anywhere; the httpOnly/SameSite cookie rule (never localStorage, sessionStorage, or a custom header) applies when I subsequently log in (Story 1.4)
 **And** the page displays `"No guessing. No shame."` above the form fields — removing this text fails acceptance
 **And** the password field includes a show/hide toggle
 **And** T&C and Privacy links open in an in-page modal, not a new tab
@@ -316,10 +316,10 @@ So that my data is protected and I can always get back to where I need to be.
 **When** User A is logged in and a direct DB query is filtered only by User B's `user_id`
 **Then** it returns empty results for User A's session (IDOR baseline)
 
-### Story 1.5: Auth Transition UX, Validation Behavior & Nav Scaffold
+### Story 1.5: Auth Confirmation UX, Validation Behavior & Nav Scaffold
 
 As a user registering or logging in,
-I want inline validation feedback, an accessible auto-redirect transition, and a persistent navigation skeleton,
+I want inline validation feedback, an accessible registration-success confirmation, and a persistent navigation skeleton,
 So that I can complete auth confidently and the nav is in place for all subsequent screens.
 
 **Acceptance Criteria:**
@@ -329,11 +329,10 @@ So that I can complete auth confidently and the nav is in place for all subseque
 **Then** validation fires immediately — on-submit-only validation is not acceptable
 **And** error messages clear as I start typing (on input)
 
-**Given** auto-login fires after successful registration
-**When** the confirmation screen appears
-**Then** the confirmation headline has `aria-live="assertive"`
-**And** a manual fallback link (`"Take me to upload →"`) becomes visible after 3 seconds if the redirect has not fired
-**And** if `?fail=1` is present in the URL, the auto-redirect is suppressed and the fallback link is shown immediately
+**Given** registration succeeds
+**When** the success confirmation panel appears (replacing the form)
+**Then** the panel is `role="status"` with `aria-live="assertive"` on the `"Registration successful!"` headline
+**And** it offers a `"Return to Login"` action and creates no session — there is no auto-login and no auto-redirect (product decision 2026-07-09)
 
 **Given** any of the 4 app screens renders (Transactions, Dashboard, Insights, Copilot)
 **When** the page loads
@@ -687,19 +686,24 @@ So that I can understand where my money went as supporting evidence — not as t
 **And** chart axis labels, tick values, and tooltips use `formatINR()` and `formatDate()` — `rx.plotly` default number formatting is explicitly overridden (raw `125000.0` on chart labels fails acceptance)
 **And** an upcoming commitments timeline is displayed showing commitment name, amount, due date, and criticality tier
 
-### Story 5.5: Commitment Management — Add, Edit, Delete
+### Story 5.5: Commitment Management Page — List, Add, Edit, Delete (screen 02.1)
 
 As a user who wants to declare a recurring obligation,
-I want to add, edit, and delete commitments and see my Safe-to-Spend update immediately,
+I want a dedicated Commitments page to list, add, edit, and delete commitments and see my Safe-to-Spend impact,
 So that my ring-fencing accurately reflects my real financial obligations.
 
 **Acceptance Criteria:**
 
 **Given** I click `"+ Add a commitment"` on the Dashboard
-**When** the inline modal opens
-**Then** it shows fields: name, amount, due-day (1–31), criticality (Critical / Important / Flexible) with default `Important`
+**When** it activates
+**Then** I navigate to the dedicated **Commitments Management page** (WDS prototype screen `02.1`) — **not** an inline Dashboard modal (product decision: align to the WDS prototype)
+**And** the page shows a Safe-to-Spend **impact bar**, and a list of my commitments (name, amount, due-day, criticality) each with a per-row **Edit / Delete** menu
+
+**Given** I am on the Commitments page
+**When** I open `"+ Add"` (or a row's Edit)
+**Then** an add/edit **modal on this page** shows fields: name, amount, due-day (1–31), criticality (Critical / Important / Flexible) with default `Important`
 **And** on save, the `rx.State` handler calls `services/engine/` — no inline STS arithmetic in the handler
-**And** the engine result is written to DB and the hero card updates without a full page reload
+**And** the engine result is written to DB, the page's Safe-to-Spend impact bar updates, and the Dashboard hero reflects the new figure when next rendered (never a stale number)
 **And** `due_day=31` is stored as `31` and rendered as `"end of month"`; in months shorter than 31 days it resolves to the last calendar day
 **And** edit and delete follow the same pattern: call engine → write result → yield UI update
 **And** `POST /commitments` and `PATCH /commitments/{id}` responses include `safe_to_spend_updated`

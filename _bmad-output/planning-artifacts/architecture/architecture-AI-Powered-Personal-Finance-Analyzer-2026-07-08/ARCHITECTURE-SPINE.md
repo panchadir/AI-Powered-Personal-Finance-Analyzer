@@ -295,7 +295,7 @@ erDiagram
 | Dashboard + briefing (FR-6) | pages/dashboard.py · services/narrate/ · state/dashboard_state.py | AD-1, AD-3, AD-13 |
 | AI Copilot (FR-7) | services/narrate/copilot.py · pages/copilot.py | AD-1, AD-10, AD-11 |
 | Proactive insights (FR-8) | services/engine/ (detectors) · services/narrate/ (narration) · insights table | AD-1, AD-3 |
-| Commitments management (FR-9) | services/engine/commitments.py · pages/dashboard.py (inline modal) | AD-3, AD-8 |
+| Commitments management (FR-9) | services/engine/commitments.py · pages/commitments.py (dedicated 02.1 page: list + per-row edit/delete + add/edit modal) | AD-3, AD-8 |
 | Shared formatting | services/utils/format.py | AD-13 |
 | Phase 2 migration readiness | services/ boundary (no reflex imports) | AD-2, AD-14 |
 

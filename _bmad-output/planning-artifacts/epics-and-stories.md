@@ -32,7 +32,7 @@
 - **S1.2 (M)** `rx.Model` tables (users + app schema) provisioned on PostgreSQL 16 via docker-compose (`db` service) + Alembic migrations (`alembic upgrade head`). SQLite is test-only.
   - AC: `docker-compose up -d db` + `alembic upgrade head` provisions Postgres with all tables matching the PRD data model.
 - **S1.3 (M)** Integrate `reflex-local-auth`: register / login / logout pages; `@reflex_local_auth.require_login` on protected pages.
-  - AC: register → logout → login works; passwords bcrypt-hashed; unauthenticated access redirects to login; T&C and Privacy links open in an in-page modal (not a new tab); no consent checkbox is pre-ticked on the register form (DPDP Rule 4 — FR-1.7 P0); auto-auth redirect has `aria-live="assertive"` on confirmation headline; manual fallback link visible after 3 s; `?fail=1` in URL suppresses auto-redirect (FR-1.9 P0).
+  - AC: register → logout → login works; passwords bcrypt-hashed; unauthenticated access redirects to login; T&C and Privacy links open in an in-page modal (not a new tab); no consent checkbox is pre-ticked on the register form (DPDP Rule 4 — FR-1.7 P0); registration shows a `"Registration successful → Return to Login"` confirmation panel with `aria-live="assertive"` on the headline and no auto-login/auto-redirect (FR-1.9 P0; product decision 2026-07-09).
 - **S1.4 (S)** Scope every data query by `user_id`.
   - AC: a second test user sees none of the first user's data.
 

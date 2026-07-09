@@ -65,8 +65,8 @@ Account Aggregator / FIU integration · WhatsApp delivery · DPDP consent-manage
 
 **Evening — Priya hears about the app from a colleague.** She is anxious about an upcoming rent payment and an EMI she can't clearly remember. She opens the app.
 
-1. **Register:** She sees "No guessing. No shame." above the form. She enters her email and password. The app creates her account and redirects her directly to Upload — no email gate.
-2. **Auto-login transition:** A brief confirmation screen ("You're in — let's look at your money") auto-redirects to Upload within 3 seconds.
+1. **Register:** She sees "No guessing. No shame." above the form. She enters her email and password. The app creates her account and shows a "Registration successful → Return to Login" confirmation — no email gate, no auto-login.
+2. **Log in:** She clicks "Return to Login", signs in with the credentials she just created, and lands on Upload (no session is created at registration; product decision 2026-07-09).
 3. **Upload:** She uploads last month's HDFC statement (PDF). She watches four honest progress steps fire in sequence. The app summarizes: "18 categorized by rules · 3 by AI · 3 need your help." She reviews and corrects two merchants with Teach Me.
 4. **Transactions table:** She sees a clean list. Green credits, debit rows, confidence badges. She clicks "See my Dashboard."
 
@@ -89,16 +89,16 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 ### FR-1 — Authentication & access (P0) → *capability 1*
 
 - **FR-1.1** Register with email + password; bcrypt-hashed, never stored plaintext; auth token in **httpOnly cookie** (not localStorage) for DPDP compliance and XSS protection.
-- **FR-1.2** Registration **auto-authenticates** and redirects immediately to Upload — no email verification for MVP. [NON-GOAL for MVP: email verification — deferred to Phase 2.]
+- **FR-1.2** Registration creates the account and shows a **"Registration successful → Return to Login"** confirmation — no auto-login, no session, no auto-redirect (product decision 2026-07-09, supersedes the original auto-authenticate intent); the user logs in to reach Upload. No email verification for MVP. [NON-GOAL for MVP: email verification — deferred to Phase 2.]
 - **FR-1.3** User can log in and log out; protected pages redirect unauthenticated users to login.
 - **FR-1.4** All data scoped to `user_id`; no cross-user data access. A test asserts this — no IDOR walks into Phase 2.
 - **FR-1.5** **Trust signal** ("No guessing. No shame.") appears above the form fields — functionally required, removal fails acceptance. Password field includes a show/hide toggle.
 - **FR-1.6** "Email already registered" error embeds an inline "Log in instead?" link.
 - **FR-1.7** T&C and Privacy links open in an **in-page modal** (not a new tab); no pre-ticked consent checkboxes (DPDP Rule 4).
 - **FR-1.8** Validation fires **on blur**, clears on input — on-submit-only validation is not acceptable.
-- **FR-1.9** Auto-auth transition: `aria-live="assertive"` on confirmation headline; manual fallback link surfaces after 3 s if redirect has not fired; `?fail=1` error state must not auto-redirect.
+- **FR-1.9** Registration-success confirmation: the panel replaces the form with `role="status"` and `aria-live="assertive"` on the `"Registration successful!"` headline, and offers a `"Return to Login"` action; no session is created and no auto-redirect occurs (no-auto-login, product decision 2026-07-09).
 
-**AC:** register → auto-redirect to Upload → log out → log back in → see only own data; token in httpOnly cookie; trust signal above form; cross-user isolation test passes.
+**AC:** register → "Registration successful → Return to Login" (no auto-login) → log in → Upload → log out → log back in → see only own data; token in httpOnly cookie; trust signal above form; cross-user isolation test passes.
 
 ---
 
@@ -173,7 +173,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 
 - **FR-4.9 Shortfall state:** when `spendable_pool < 0`, Safe-to-Spend is floored to ₹0 and an honest shortfall message surfaces: "Committed bills before payday exceed your balance by ₹{amount} — here's what to do." No crash, no silence.
 
-- **FR-4.10 Live update:** Safe-to-Spend recalculates in the Dashboard hero card when a commitment is added, edited, or deleted from any surface, without a full page reload.
+- **FR-4.10 Live update:** Safe-to-Spend recalculates when a commitment is added, edited, or deleted from any surface (including the dedicated Commitments page's Safe-to-Spend impact bar); the Dashboard hero reflects the change without a full page reload.
 
 - **FR-4.11 Briefing snapshot vs. live hero (decision of record):** briefing narration = snapshot at generation time; hero card = live. This is intentional, not a bug.
 
@@ -214,11 +214,11 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 - **FR-6.2 (P0)** Plain-language **briefing** narrated by Claude — honest, calm, non-judgmental, jargon-free; confidence caveat never buried. Narration explains the engine's evidence pack — **never computes numbers**.
 - **FR-6.3 (P1)** Briefing follows Observation → Evidence → Explanation → Action shape.
 - **FR-6.4 (P0)** **Persistent left nav** across all five app screens, in order: Dashboard, Transactions, Commitments, Insights, Copilot.
-- **FR-6.5 (P0)** "+ Add a commitment" opens an inline modal (name / amount / due-date / criticality). On save, Safe-to-Spend updates live per FR-4.10.
+- **FR-6.5 (P0)** "+ Add a commitment" on the Dashboard navigates to the dedicated Commitments Management page (WDS screen 02.1) — a list of commitments with per-row Edit/Delete, a Safe-to-Spend impact bar, and an add/edit modal on that page (name / amount / due-date / criticality). On save, Safe-to-Spend updates live per FR-4.10.
 
 **Tone contract (non-negotiable for all generated text in FR-6.2/6.3):** honest, calm, non-judgmental. Observation framing ("We noticed…"), not accusation ("You spent too much on…"). Specific copy for edge states (low confidence, shortfall, empty dashboard) in the UX specs; the briefing must not invent copy that contradicts those.
 
-**AC:** dashboard leads with Safe-to-Spend + why, not a chart wall; briefing passes the tone contract (reviewable via the demo run); every number in prose matches engine output exactly; left nav present on all app screens; inline modal updates Safe-to-Spend without page reload.
+**AC:** dashboard leads with Safe-to-Spend + why, not a chart wall; briefing passes the tone contract (reviewable via the demo run); every number in prose matches engine output exactly; left nav present on all app screens; the dedicated Commitments page (02.1) updates Safe-to-Spend without a full page reload.
 
 ---
 
@@ -268,7 +268,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 - **FR-9.1 (P1)** Detect recurring obligations (similar amount ±10%, ~monthly cadence); proactively surface: "We noticed a ₹8,500 charge every 5th — is this an EMI?" — user confirms or dismisses.
 - **FR-9.2 (P1)** User can add/edit/delete commitment: name, amount, due-day, criticality (Critical / Important / Flexible per FR-4.3). Default: **Important**.
 - **FR-9.3 (P1)** `due_day=31` maps to last day of shorter months; displayed as "end of month."
-- **FR-9.4 (P1)** `POST /commitments` and `PATCH /commitments/{id}` responses include `safe_to_spend_updated` so the client updates the Dashboard without a separate fetch.
+- **FR-9.4 (P1)** `POST /commitments` and `PATCH /commitments/{id}` responses include `safe_to_spend_updated` so the Commitments page updates its Safe-to-Spend impact bar (and the Dashboard reflects it) without a separate fetch.
 
 **AC:** EMI-like patterns detected and surfaced for confirmation; manual commitments feed Safe-to-Spend ring-fencing per FR-4.2; `due_day=31` renders as "end of month" in February; Safe-to-Spend updates live after save.
 
@@ -283,7 +283,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 - **NFR-5 Privacy/provenance:** data stays local; only transaction text needed for categorization/Q&A sent to Claude API; UI states this boundary. Secrets in `.env` (git-ignored). Auth token in httpOnly cookie.
 - **NFR-6 Migratability:** business logic in framework-agnostic `services/`; Reflex `State` orchestrates only. PostgreSQL is already the Phase-1 store; Phase 2 (FastAPI, WhatsApp/AA) is a re-skin, not a rewrite.
 - **NFR-7 Localization format:** `formatINR()` (Indian number grouping: ₹1,25,000) and `formatDate()` (ISO → "30 Jun 2026") are **required shared utilities** used in all currency and date displays. Non-standard formatting fails acceptance.
-- **NFR-8 Accessibility baseline:** `role="log"` + `aria-live="polite"` on Copilot chat thread; `aria-live="assertive"` on auto-auth transition headline; `aria-disabled` (not `disabled`) on not-yet-active CTAs.
+- **NFR-8 Accessibility baseline:** `role="log"` + `aria-live="polite"` on Copilot chat thread; `aria-live="assertive"` on the registration-success confirmation headline; `aria-disabled` (not `disabled`) on not-yet-active CTAs.
 - **NFR-9 Performance baseline:** statement parse completes in <60 s for a standard 3-month PDF on a developer laptop. Dashboard initial render <3 s after parse. These are the bounds — "fast" and "responsive" are not acceptable substitutes.
 
 ---
@@ -317,7 +317,7 @@ Full schema and migration notes in the technical research document.
 
 | Endpoint | Method | Purpose / Key payload |
 |---|---|---|
-| `/auth/register` | POST | Register + auto-auth; set httpOnly cookie |
+| `/auth/register` | POST | Register; show "Registration successful → Return to Login" (no auto-login, no session created) |
 | `/auth/login` | POST | Log in; set httpOnly cookie |
 | `/auth/logout` | POST | Clear session |
 | `/statements/upload` | POST | Upload PDF/CSV; returns `{ file_id, status }` |

@@ -59,14 +59,14 @@ documentsSelected:
 | ID | Priority | Capability | Requirement Summary |
 |---|---|---|---|
 | FR-1.1 | P0 | Auth | Register email+password; bcrypt hashed; auth token in httpOnly cookie |
-| FR-1.2 | P0 | Auth | Registration auto-authenticates; redirect to Upload; no email verification MVP |
+| FR-1.2 | P0 | Auth | Registration → "Registration successful → Return to Login" (no auto-login/session; product decision 2026-07-09); log in to reach Upload; no email verification MVP |
 | FR-1.3 | P0 | Auth | Login/logout; protected pages redirect to login |
 | FR-1.4 | P0 | Auth | All data scoped to user_id; no cross-user access; IDOR test required |
 | FR-1.5 | P0 | Auth | Trust signal ("No guessing. No shame.") above form; password show/hide toggle |
 | FR-1.6 | P0 | Auth | "Email already registered" error with inline "Log in instead?" link |
 | FR-1.7 | P0 | Auth | T&C / Privacy links open in in-page modal; no pre-ticked consent checkboxes (DPDP Rule 4) |
 | FR-1.8 | P0 | Auth | Validation fires on blur, clears on input |
-| FR-1.9 | P0 | Auth | Auto-auth transition: aria-live="assertive"; manual fallback after 3s; ?fail=1 must not auto-redirect |
+| FR-1.9 | P0 | Auth | Registration-success confirmation: aria-live="assertive" headline; "Return to Login" action; no auto-login/auto-redirect |
 | FR-2.1 | P0 | Upload | Upload CSV; map to canonical schema (≥2 Indian-bank shapes) |
 | FR-2.2 | P0 | Upload | Upload text-based PDF via statementsparser → pdfplumber → camelot → LLM fallback chain |
 | FR-2.3 | P0 | Upload | Normalize to canonical schema; de-duplicate on hash(date+amount+description); persist |
@@ -111,7 +111,7 @@ documentsSelected:
 | FR-6.2 | P0 | Dashboard | Plain-language briefing narrated by Claude; honest, calm, non-judgmental; LLM never computes numbers |
 | FR-6.3 | P1 | Dashboard | Briefing follows Observation → Evidence → Explanation → Action shape |
 | FR-6.4 | P0 | Dashboard | Persistent left nav across all 4 app screens |
-| FR-6.5 | P0 | Dashboard | "+ Add a commitment" inline modal; STS updates live on save |
+| FR-6.5 | P0 | Dashboard→Commitments | "+ Add a commitment" navigates to dedicated Commitments page (02.1): list + per-row edit/delete + STS impact bar + add/edit modal; STS updates live on save |
 | FR-7.1 | P0 | Copilot | Chat interface; responses stream token-by-token |
 | FR-7.2 | P0 | Copilot | Copilot uses read-only tools over real data; never invents numbers; never performs financial actions |
 | FR-7.3 | P0 | Copilot | 4 hardcoded LLM system-prompt rules (non-configurable): no invented figures; explicit uncertainty; no investment recs; always populate trace |
@@ -148,7 +148,7 @@ documentsSelected:
 | NFR-5 | Privacy | Data stays local; only transaction text sent to Claude API; UI states boundary; secrets in .env; auth token in httpOnly cookie |
 | NFR-6 | Migratability | Business logic in framework-agnostic services/; PostgreSQL already the Phase-1 store; Phase 2 (FastAPI, WhatsApp/AA) is re-skin not rewrite |
 | NFR-7 | Localization | formatINR() (Indian grouping ₹1,25,000) and formatDate() (ISO→"30 Jun 2026") required in all currency/date displays |
-| NFR-8 | Accessibility | role="log"+aria-live="polite" on Copilot; aria-live="assertive" on auto-auth; aria-disabled on inactive CTAs |
+| NFR-8 | Accessibility | role="log"+aria-live="polite" on Copilot; aria-live="assertive" on registration-success confirmation; aria-disabled on inactive CTAs |
 | NFR-9 | Performance | Parse <60s for standard 3-month PDF on dev laptop; Dashboard initial render <3s after parse |
 
 **Total NFRs: 9**
@@ -187,14 +187,14 @@ The PRD is **highly complete** for an MVP document. It provides:
 | FR | PRD Requirement Summary | Epic / Story Coverage | Status |
 |---|---|---|---|
 | FR-1.1 | Register; bcrypt; httpOnly cookie | Epic 1 → S1.3 | ✅ Covered |
-| FR-1.2 | Auto-auth → Upload; no email verify | Epic 1 → S1.3 | ✅ Covered |
+| FR-1.2 | Register → Return to Login (no auto-login); no email verify | Epic 1 → S1.3 | ✅ Covered |
 | FR-1.3 | Login/logout; protected page redirect | Epic 1 → S1.4 | ✅ Covered |
 | FR-1.4 | user_id scoping; IDOR test | Epic 1 → S1.4 (baseline); Epic 8 → S8.3 (full IDOR test) | ✅ Covered |
 | FR-1.5 | Trust signal above form; show/hide | Epic 1 → S1.3 | ✅ Covered |
 | FR-1.6 | "Email already registered" inline link | Epic 1 → S1.3 | ✅ Covered |
 | FR-1.7 | T&C in modal; no pre-ticked checkboxes | Epic 1 → S1.3 | ✅ Covered |
 | FR-1.8 | Validation on blur, clears on input | Epic 1 → S1.5 | ✅ Covered |
-| FR-1.9 | aria-live on transition; fallback link; ?fail=1 | Epic 1 → S1.5 | ✅ Covered |
+| FR-1.9 | aria-live on registration-success headline; Return to Login; no auto-redirect | Epic 1 → S1.5 | ✅ Covered |
 | FR-2.1 | CSV upload; ≥2 Indian-bank shapes | Epic 2 → S2.2 | ✅ Covered |
 | FR-2.2 | PDF upload; parser chain | Epic 2 → S2.3 | ✅ Covered |
 | FR-2.3 | Normalize; dedup; persist | Epic 2 → S2.5 | ✅ Covered |
@@ -239,7 +239,7 @@ The PRD is **highly complete** for an MVP document. It provides:
 | FR-6.2 | Briefing narrated by Claude; LLM no math | Epic 5 → S5.3 | ✅ Covered |
 | FR-6.3 | Briefing: O→E→E→A shape (P1) | Epic 5 → S5.3 | ✅ Covered |
 | FR-6.4 | Persistent left nav across all 4 screens | Epic 1 → S1.5 (skeleton); all epics maintain it | ✅ Covered |
-| FR-6.5 | "+ Add commitment" modal; live update | Epic 5 → S5.5 | ✅ Covered |
+| FR-6.5 | Dashboard → dedicated Commitments page (02.1); live update | Epic 5 → S5.5 | ✅ Covered |
 | FR-7.1 | Chat; token-by-token streaming | Epic 6 → S6.1 | ✅ Covered |
 | FR-7.2 | Read-only tools; no invented numbers | Epic 6 → S6.2 | ✅ Covered |
 | FR-7.3 | 4 hardcoded system-prompt rules | Epic 6 → S6.2 | ✅ Covered |
@@ -380,7 +380,7 @@ The epics include 18 UX-DRs (UX-DR1 through UX-DR18) sourced from the UX spec. T
 | httpOnly cookie for SSE auth | AD-5 × AD-11 seam — SSE uses cookie, never URL token | ✅ Explicitly guarded |
 | Dashboard initial render <3s | NFR-9; Reflex State lazy-loading pattern | ✅ Supported |
 | Left nav present across all screens | Architecture spine (AD-2) single app root; layout pattern | ✅ Supported |
-| Inline modals (commitment, T&C) | Reflex rx.dialog; no architectural conflict | ✅ Supported |
+| Modals (commitment add/edit on the Commitments page, T&C) | Reflex rx.dialog; no architectural conflict | ✅ Supported |
 
 ---
 
@@ -482,7 +482,7 @@ The epics include 18 UX-DRs (UX-DR1 through UX-DR18) sourced from the UX spec. T
 |---|---|---|---|
 | S1.1 — Project Skeleton | Developer setup story | ✅ Self-contained | ✅ |
 | S1.2 — DB Schema + Utilities | ⚠️ Creates ALL 8 tables upfront | ⚠️ Violates "create tables when needed" best practice | 🟠 See below |
-| S1.3 — Registration + Auto-Login | Right-sized | ✅ | ✅ |
+| S1.3 — Registration (no auto-login) | Right-sized | ✅ | ✅ |
 | S1.4 — Login/Logout + Protected Routes | Right-sized | ✅ | ✅ |
 | S1.5 — Auth Transition + Nav Scaffold | Right-sized | ✅ | ✅ |
 | S2.1 — Parser Protocol | Developer story | ✅ | ✅ |
