@@ -7,7 +7,14 @@ load_dotenv()
 
 config = rx.Config(
     app_name="finance_app",
-    db_url=os.environ["DATABASE_URL"],
+    # Postgres is the Phase-1 store. Default to the local Postgres DSN from
+    # .env.example so a fresh checkout runs `pytest`/`reflex run` out-of-the-box
+    # without a committed `.env`, instead of crashing on a missing DATABASE_URL.
+    # `or` (not just get's default) also covers a present-but-empty DATABASE_URL.
+    # Docker/other deployments always set DATABASE_URL, so this fallback is dev-only.
+    # Keep in sync with the identical fallback in alembic/env.py.
+    db_url=os.environ.get("DATABASE_URL")
+    or "postgresql+psycopg2://finance_user:finance_pass@localhost:5432/finance_db",
     # Bind backend to all interfaces so it's reachable inside Docker.
     backend_host="0.0.0.0",
     plugins=[

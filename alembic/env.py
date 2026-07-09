@@ -21,7 +21,14 @@ from reflex_local_auth import LocalUser  # noqa: F401 — registers localuser + 
 target_metadata = SQLModel.metadata
 
 # Override sqlalchemy.url from environment — alembic.ini has no hardcoded URL.
-config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+# Fall back to the local dev DSN when DATABASE_URL is unset/empty so `alembic
+# upgrade head` runs on a fresh checkout without a committed `.env`. Docker/other
+# deployments always set DATABASE_URL. Keep in sync with the fallback in rxconfig.py.
+config.set_main_option(
+    "sqlalchemy.url",
+    os.environ.get("DATABASE_URL")
+    or "postgresql+psycopg2://finance_user:finance_pass@localhost:5432/finance_db",
+)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
