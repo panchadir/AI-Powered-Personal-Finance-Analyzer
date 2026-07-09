@@ -401,12 +401,26 @@ a { color: inherit; }
 }
 
 .hero-card {
-  /* The hero number is meant to dominate as a focal point, not stretch edge-to-edge on wide monitors. */
-  max-width: 960px;
+  /* Fills the full dashboard content width; the two-column split below keeps it visually balanced
+     instead of leaving the amount stranded in a sea of white space on wide monitors. */
   background: linear-gradient(160deg, #ffffff 0%, var(--primary-tint) 100%);
   border: 1px solid #d6ebe6;
-  border-radius: var(--radius); padding: var(--space-lg);
+  border-radius: var(--radius); padding: calc(var(--space-lg) + var(--space-md)) var(--space-lg);
   box-shadow: var(--shadow);
+}
+.hero-primary, .hero-secondary { min-width: 0; }
+
+/* Wide screens: the Safe-to-Spend amount (left) and its supporting detail — after-salary,
+   confidence, and the "why" explanation (right) — sit side-by-side, each with room to breathe. */
+@media (min-width: 860px) {
+  .hero-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) 1px minmax(0, 1fr);
+    column-gap: var(--space-xl);
+    align-items: center;
+  }
+  .hero-card .hero-sep { height: 100%; width: 1px; margin: 0; }
+  .hero-secondary .hero-conf { margin-top: var(--space-md); }
 }
 .hero-label { font-size: var(--text-sm); font-weight: 500; color: var(--gray-600); margin: 0; }
 .hero-amount { font-size: var(--text-4xl); font-weight: 700; color: var(--ink); margin: var(--space-xs) 0 0; line-height: 1.05; letter-spacing: -0.03em; }
@@ -486,7 +500,7 @@ a { color: inherit; }
 .tl-tag { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; color: var(--primary); background: var(--primary-tint); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
 .hero-amount { transition: color .2s ease; }
 @keyframes flashAmount { 0% { color: var(--primary); } 100% { color: var(--ink); } }
-.add-commitment { display: inline-block; margin-top: var(--space-md); font-size: var(--text-sm); }
+.add-commitment { margin-top: var(--space-md); }
 
 /* Left side nav — desktop-only, always the full labeled rail (no mobile icon-only variant). */
 .side-nav {

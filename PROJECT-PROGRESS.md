@@ -953,6 +953,11 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-party-mode` (Observed) | +1 (Step 28; nested in Step 02) |
 | `/bmad-check-implementation-readiness` (Observed) | 1 (Step 29) |
 | `/bmad-party-mode` (Observed) | +1 (Step 30; total 3 sessions across the tracker) |
+| `/bmad-agent-dev` → Amelia (Observed) | 1 (menu host for Steps 39–41) |
+| `bmad-sprint-planning` via `SP` (Observed) | 1 (Step 39) |
+| `bmad-create-story` via `CS` (Observed) | 1 (Step 40) |
+| `bmad-dev-story` via `DS` (Observed) | 1 (Step 41) |
+| `/bmad-code-review` (Observed) | 1 (Step 42) |
 
 ## Agent Usage
 
@@ -974,6 +979,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Full BMAD cast (16 personas, session mode) + 4 parallel audit subagents | 1 (Step 30) |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
+| Amelia (Senior Software Engineer, `bmad-agent-dev`) | 1 (Steps 39–41, single activation) |
 
 ## Skill Usage
 
@@ -998,6 +1004,11 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-agent-pm` | 1 |
 | `bmad-create-epics-and-stories` | 1 |
 | `bmad-check-implementation-readiness` | 1 |
+| `bmad-agent-dev` | 1 |
+| `bmad-sprint-planning` | 1 |
+| `bmad-create-story` | 1 |
+| `bmad-dev-story` | 1 |
+| `bmad-code-review` | 1 |
 
 ## Agent → Skill Mapping
 
@@ -1012,6 +1023,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (Party Mode orchestrator) | `bmad-party-mode` |
 | Freya (WDS Phase 4 UX Designer) | `wds-4-ux-design` (Steps 17–18; Step 19 = direct file restructure, no skill) |
 | Claude Code (WDS Phase 5 Implementation Partner) | `wds-5-agentic-development` |
+| Amelia (`bmad-agent-dev`) | `bmad-sprint-planning`, `bmad-create-story`, `bmad-dev-story`, `bmad-code-review` |
 
 ## Artifacts
 
@@ -1070,6 +1082,14 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/project-context.md` | Step 26 | — (40 rules; projection of ARCHITECTURE-SPINE + 4 Party Seams + 6 Agent-Misread Guards; status: complete) |
 | `_bmad-output/planning-artifacts/epics.md` | Step 28 | Step 28 (ongoing — Epics 1–5 stories written; Epics 6–8 pending) |
 | `_bmad-output/planning-artifacts/implementation-readiness-report-2026-07-09.md` | Step 29 | — (complete, all 6 steps) |
+| `_bmad-output/implementation-artifacts/sprint-status.yaml` | Step 39 | Step 40 (epic-1 in-progress; 1.1 ready-for-dev), Step 41 (1.1 → review) |
+| `_bmad-output/implementation-artifacts/1-1-project-skeleton-and-app-scaffold.md` | Step 40 | Step 41 (implemented — tasks/Dev Agent Record/File List/Change Log; status → review) |
+| `finance_app/**` (Reflex app: entrypoint, 6 route pages, components, state, models placeholder) | Step 41 | — (first application source in repo) |
+| `_bmad-output/implementation-artifacts/deferred-work.md` | Step 42 | — (code-review deferred-work ledger) |
+| `data/.gitkeep` | Step 42 | — (fix: keeps required `data/` dir under version control) |
+| `services/**` (framework-agnostic packages: ingestion, categorize+schema, engine, narrate+config, utils+format — placeholders) | Step 41 | — |
+| `tests/**` (`test_service_boundary.py` AC-6 guard, `ingestion/test_statementsparser_smoke.py` AC-4 guard, package inits) | Step 41 | — |
+| `rxconfig.py`, `requirements.txt` (pinned), `.env.example`, `docs/day1-assumption-validations.md`, `data/` | Step 41 | — (`.gitignore` also updated: `.env`/`.venv`/caches) |
 
 ## Corrections & Rework Log
 
@@ -1127,7 +1147,11 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 34 — Party Mode: Phase 2 cluster 3/3 — Scenario 01's 7 pages desktop rework, Confidence chip relabeled, 2 broken links fixed  <-- Phase 2 punch list fully closed
 [TODO]    Human sanity-check (small, non-blocking): (1) read `01.5-dashboard.md`'s new Confidence Score section + `01-priyas-first-honest-morning.md`'s reworded persona narrative (auto-generated); (2) Scenario 03's urgency premise is now a step weaker than original design — fine, but remember if it's later cited for a latency requirement
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
-[TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) validate CSV/PDF parser on real bank statements (S2.3) Day 1 Hour 1. All Step 30 findings are now resolved. Then bmad-quick-dev / bmad-dev-story.
+[DONE]    Step 39 — Sprint Planning — sprint-status.yaml generated (8 epics / 33 stories / 8 retros; all backlog)
+[DONE]    Step 40 — Create Story 1.1 — dev-ready context spec written (ready-for-dev); epic-1 → in-progress
+[DONE]    Step 41 — Dev Story 1.1 — Project Skeleton & App Scaffold BUILT & VERIFIED (first app source code; reflex run serves 6 routes; pytest 5 passed; statementsparser→HDFC assumption PASS; status → review)  <-- run code-review, then create Story 1.2
+[DONE]    Step 42 — Code Review of Story 1.1 — 6 ACs verified met; 4 cleanups applied (data/.gitkeep, unused import, trailing newline, docstring); AD-2 boundary-guard enhancement deferred then RESOLVED same session (services/→finance_app import now guarded; suite 6 passed); Story 1.1 → done
+[TODO]    Development continues — create Story 1.2 (DB schema & formatting utils). Day-1 caveats for Epic 2 recorded in docs/day1-assumption-validations.md (statementsparser import name + schema adapter + live-parse owed in S2.3).
 ```
 
 **Current phase (updated Step 24):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
@@ -1144,13 +1168,14 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 34 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update; Step 30 = 3rd `/bmad-party-mode` session) |
-| Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
-| Distinct skills | 16 (+`bmad-generate-project-context`, +`bmad-advanced-elicitation` at Step 26; `bmad-party-mode` already counted at Steps 15–16; +`bmad-check-implementation-readiness` at Step 29) |
+| Steps recorded | 42 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 20 (+`bmad-code-review` at Step 42; Steps 39–41 added `bmad-agent-dev`/`bmad-sprint-planning`/`bmad-create-story`/`bmad-dev-story`) |
+| Distinct agents | 8 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer], Amelia [`bmad-agent-dev`]) |
+| Distinct skills | 21 (+`bmad-agent-dev`, +`bmad-sprint-planning`, +`bmad-create-story`, +`bmad-dev-story` at Steps 39–41; +`bmad-code-review` at Step 42) |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 23 (+`implementation-readiness-report-2026-07-09.md` at Step 29) |
+| Artifact groups tracked | 31 (+`sprint-status.yaml`, +story 1.1 spec at Steps 39–40; +`finance_app/**`, +`services/**`, +`tests/**`, +config/docs group at Step 41; +`deferred-work.md`, +`data/.gitkeep` at Step 42) |
+| Application source code | First shipped at Step 41 (Story 1.1) — Steps 1–38 were ideation/research/planning/UX/prototype only |
 | Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 | Open findings from Step 30 | 0 unapplied — all 10 resolved across Steps 31–34 (6 build-blocker fixes + `days=0` scenario + X1 desktop-only propagated across 12 docs + Confidence Score contradiction closed + Commitments promoted P1 + both broken cross-refs + PRD typo + spine citation) |
@@ -1980,6 +2005,166 @@ The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI
 - **Dependencies:** Step 35 (introduced the 5-item sidebar this step reverts), Step 37 (this step continues in the same session).
 - **Next Recommended BMAD Command:** [T] Acceptance Testing; prototype Scenario 03 (Copilot return-visit) remains the last unbuilt page.
 - **Notes:** None.
+
+---
+
+## Step 39 — Sprint Planning (Sprint Status Generation)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Implementation — sprint tracking bootstrap (first implementation-phase activity in the project)
+**Workflow:** `bmad-sprint-planning`
+**User Goal:** Generate the sprint-status tracking file from the canonical epics so implementation work has a single source of truth for story state.
+**BMAD Command:** `sp` menu selection under the `bmad-agent-dev` (Amelia) agent → `bmad-sprint-planning`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (Senior Software Engineer persona, `bmad-agent-dev` skill).
+- **Role:** Developer generating sprint tracking.
+- **Reason Invoked:** User activated `/bmad-agent-dev` and selected menu item `SP`.
+- **Input:** `_bmad-output/planning-artifacts/epics.md` (whole document, 8 epics / 33 stories); `project-context.md` (persistent facts).
+- **Output:** New `sprint-status.yaml` with all epics, stories, and retrospectives at initial status.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-sprint-planning`
+- **Purpose:** Parse epics, detect story statuses, build `sprint-status.yaml`.
+- **Contribution:** Inventoried 8 epics + 33 stories; wrote status file (all epics `backlog`, all stories `backlog`, all retrospectives `optional`) — no prior status file existed and no story files existed, so nothing was auto-upgraded.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Parse epics → build structure → status detection (clean slate) → write file → validate.
+- **Inputs:** `epics.md` (chosen over `epics-and-stories.md` per whole-document priority).
+- **Outputs:** `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+- **Key Decisions:** Used `epics.md` as the canonical source (76 KB, 8-epic; supersedes the earlier `epics-and-stories.md`).
+- **Deliverables:** Sprint status file — 8 epics, 33 stories, 8 retrospective entries. Validation passed (no orphan entries, legal statuses, valid YAML).
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+- **Artifacts Updated:** None (later updated in Steps 40–41).
+- **Dependencies:** Step 28 (epics), Step 24 (architecture spine), Step 26 (project context).
+- **Next Recommended BMAD Command:** `bmad-create-story` for story 1.1.
+- **Notes:** None.
+
+---
+
+## Step 40 — Create Story 1.1 (Context Engineering)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Implementation — story context preparation
+**Workflow:** `bmad-create-story`
+**User Goal:** Prepare the next backlog story (auto-discovered = 1.1) with comprehensive, dev-ready implementation context.
+**BMAD Command:** `cs` menu selection under Amelia → `bmad-create-story`. **Source: Observed**.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`).
+- **Role:** Story context engine.
+- **Reason Invoked:** User selected menu item `CS` after sprint planning.
+- **Input:** `sprint-status.yaml` (auto-discovered first `backlog` story = `1-1-project-skeleton-and-app-scaffold`); `epics.md` Epic 1 + Story 1.1; `ARCHITECTURE-SPINE.md` (source tree, stack, AD-2/AD-14); `project-context.md`. Also verified greenfield repo state (no `finance_app/`, `services/`, `requirements.txt`, `rxconfig.py`).
+- **Output:** Comprehensive story file for 1.1 with 6 ACs (from epics), 6 tasks with subtasks, dev notes (source tree contract, pinned stack, `reflex init` gotcha, scope guardrails), references.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`
+- **Purpose:** Produce a dev-ready story file that prevents implementation mistakes.
+- **Contribution:** Wrote `1-1-project-skeleton-and-app-scaffold.md` (status `ready-for-dev`); marked epic-1 `in-progress` and story 1.1 `ready-for-dev` in sprint-status.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Determine target story (auto-discover) → load epics/architecture/context → verify greenfield → write story → update sprint-status.
+- **Inputs:** Sprint status, epics.md, architecture spine, project-context.
+- **Outputs:** Story 1.1 spec file.
+- **Key Decisions:** Sharpened AC #6 to grep for both `import reflex` and `rx.`; added explicit scope guardrails (no formatters/DB/auth — those are Story 1.2+); flagged the two Day-1 validations (statementsparser, service boundary).
+- **Deliverables:** `1-1-project-skeleton-and-app-scaffold.md` (ready-for-dev).
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/1-1-project-skeleton-and-app-scaffold.md`.
+- **Artifacts Updated:** `_bmad-output/implementation-artifacts/sprint-status.yaml` (epic-1 → in-progress; story 1.1 → ready-for-dev).
+- **Dependencies:** Step 39 (sprint status), Step 28 (epics), Step 24 (architecture).
+- **Next Recommended BMAD Command:** `bmad-dev-story` to implement 1.1.
+- **Notes:** None.
+
+---
+
+## Step 41 — Dev Story 1.1: Project Skeleton & App Scaffold (first CODE step)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Implementation — story development (**first step in the project to produce application source code**, not planning/design artifacts)
+**Workflow:** `bmad-dev-story`
+**User Goal:** Implement story 1.1 test-first and ship a verified, runnable scaffold.
+**BMAD Command:** `ds` menu selection under Amelia → `bmad-dev-story`. **Source: Observed**.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`) · model claude-opus-4-8.
+- **Role:** Developer implementing the story.
+- **Reason Invoked:** User selected `DS`; story 1.1 was `ready-for-dev`.
+- **Input:** Story 1.1 spec; `project-context.md`; architecture spine.
+- **Output:** Full Reflex app scaffold (6 routes serving), `services/` framework-agnostic package tree, pinned `requirements.txt`, `.env`/`.gitignore` hygiene, two Day-1 guard tests, statementsparser validation doc. All 6 ACs met.
+- **Source:** **Observed** (this session; commands and outputs directly executed and verified).
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`
+- **Purpose:** Execute story implementation to completion (red-green-refactor), then mark for review.
+- **Contribution:** Implemented all 6 tasks; captured `baseline_commit` (`17193db`); ran the app and full test suite; updated story to `review` and sprint-status accordingly.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** baseline_commit capture + story→in-progress → created `.venv` (Python 3.12.6) → installed + pinned toolchain → `services/` tree + AST boundary guard test (AC #6, RED→GREEN) → `reflex init` + reshaped demo into `pages/components/state` layout (6 `@rx.page` routes) → `requirements.txt` pinned to actual versions + `.env.example` + `.gitignore` → validated statementsparser→HDFC (AC #4) + smoke test + docs → verified (`reflex run` serves all 6 routes 200, backend `/ping` 200; `pytest` 5 passed) → story→review, sprint-status→review.
+- **Inputs:** Story 1.1 spec, architecture spine, project-context.
+- **Outputs:** Runnable multi-page Reflex skeleton; framework-agnostic `services/` packages; pinned deps; 5 passing tests; Day-1 validation record.
+- **Key Decisions / Findings (Observed):**
+  - Installed into an isolated `.venv`; pinned actual versions (reflex 0.9.6.post1, reflex-local-auth 0.5.0, pdfplumber 0.11.10, camelot-py 2.0.0, statementsparser 0.1.0, pandas 3.0.3, anthropic 0.116.0, python-dotenv 1.2.2, pytest 9.1.1).
+  - **statementsparser (flagged assumption) — PASS with caveats:** PyPI `statementsparser` imports as `statementparser` (no trailing "s"); ships a dedicated registered `HDFCParser` with a `Decimal`-based `Transaction`; but its shape ≠ our canonical schema (Story 2.1 adapter owed, AD-6) and a live parse of the actual Priya demo PDF is owed in Story 2.3 (no demo fixture exists yet). Recorded in `docs/day1-assumption-validations.md`.
+  - AC #6 enforced as a **permanent AST-based guard** (`tests/test_service_boundary.py`), not a one-time grep.
+  - Two environment/tooling issues handled honestly, not papered over: first `reflex run` failed on a bun-on-Windows cache `EPERM` (transient — warm-cache retry succeeded); Radix implicit-enablement `DeprecationWarning` resolved by adding `rx.plugins.RadixThemesPlugin()` to `rxconfig.py`.
+  - Scope discipline: no DB tables/formatters/auth implemented (Story 1.2+); named modules left as documented placeholders.
+- **Deliverables:** Story 1.1 complete (status `review`); app verified running; test harness green from Day 1.
+- **Artifacts Created:** `rxconfig.py` (edited), `finance_app/**` (entrypoint, `pages/` ×6 routes, `components/placeholder.py`, `state/`, `models.py`), `services/**` (`ingestion/`, `categorize/` + `schema.py`, `engine/`, `narrate/` + `config.py`, `utils/` + `format.py`), `tests/**` (`test_service_boundary.py`, `ingestion/test_statementsparser_smoke.py`, package inits), `requirements.txt` (pinned), `.env.example`, `docs/day1-assumption-validations.md`, `data/` (empty). (`.venv/`, `.web/`, `.pytest_cache/`, `reflex.lock` git-ignored; `reflex init` also emitted untracked root `AGENTS.md`/`CLAUDE.md` templates.)
+- **Artifacts Updated:** `_bmad-output/implementation-artifacts/1-1-project-skeleton-and-app-scaffold.md` (baseline_commit, tasks checked, Dev Agent Record, File List, Change Log, Status → review), `_bmad-output/implementation-artifacts/sprint-status.yaml` (story 1.1 → review), `.gitignore`.
+- **Dependencies:** Step 40 (story spec), Step 24 (architecture spine), Step 26 (project context).
+- **Next Recommended BMAD Command:** `code-review` on story 1.1 (ideally a different LLM), then `bmad-create-story` for Story 1.2 (DB schema & formatting utilities).
+- **Notes:** First application source code in the repository — prior 38 steps were ideation, research, planning, UX, and HTML-prototype work. The Reflex go/no-go checkpoint (Day 2 noon) is de-risked by the enforced `services/` boundary.
+
+---
+
+## Step 42 — Code Review of Story 1.1 (inline adversarial review + patch)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Implementation — code review of Story 1.1
+**Workflow:** `bmad-code-review`
+**User Goal:** Adversarially review the Story 1.1 scaffold against its spec, then act on findings. (User interrupted an accidental `/bmad-check-implementation-readiness` invocation and ran `/bmad-code-review` instead.)
+**BMAD Command:** `/bmad-code-review` (**Observed** — explicit `<command-name>` invocation). Diff mode: uncommitted/untracked working tree vs `baseline_commit 17193db`.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Amelia (`bmad-agent-dev`, still active from Steps 39–41) running the code-review workflow.
+- **Role:** Code reviewer (Blind Hunter + Edge Case Hunter + Acceptance Auditor lenses, run inline — user did not opt into subagents).
+- **Input:** Story 1.1 diff (34 files, +359 lines authored; reflex-init boilerplate `AGENTS.md`/`CLAUDE.md`/`assets/` excluded); spec `1-1-project-skeleton-and-app-scaffold.md`; `project-context.md`.
+- **Output:** 5 findings (4 patch, 1 defer, 0 decision-needed, 0 dismissed); all 4 patches applied; story → `done`.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`
+- **Purpose:** Adversarial parallel-layer review + structured triage + act on findings.
+- **Contribution:** Verified all 6 ACs genuinely met; found and fixed 4 cleanups; deferred 1 enhancement to the boundary guard.
+- **Triggering Agent:** Amelia.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Gather context (diff via intent-to-add, then index restored — read-only) → review (3 lenses inline) → triage (severity + bucket) → write findings to story → apply patches → status update.
+- **Findings (all Observed against real code):**
+  - **[Medium → fixed]** Empty `data/` directory would not survive a fresh clone (git does not track empty dirs), defeating AC #2's structure under AC #1's "fresh clone" framing. Fixed with `data/.gitkeep`.
+  - **[Low → fixed]** Unused `import pytest` in `tests/ingestion/test_statementsparser_smoke.py` (project-context "no unused imports"). Removed.
+  - **[Low → fixed]** `rxconfig.py` missing trailing newline. Fixed.
+  - **[Low → fixed]** `tests/__init__.py` malformed docstring `""". tests."""` (scripted-gen leftover). Fixed to `"""Test suite root."""`.
+  - **[Low → deferred → RESOLVED same session]** AD-2 boundary guard detects only `import reflex`, not `services/`→`finance_app` UI imports (also an AD-2 dependency-direction violation). Initially deferred; then **fixed at user request in this session** — guard generalized to check top-level import roots, new `test_no_ui_layer_import_in_services` added, detection verified, suite → 6 passed. Ledger entry in `deferred-work.md` marked resolved.
+- **Verification:** `pytest` re-run after patches → 5 passed; `rxconfig.py` re-parses with trailing newline; `data/` now tracked.
+- **Deliverables:** Story 1.1 reviewed and closed (`done`); 4 cleanups applied; deferred-work ledger started.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/deferred-work.md`; `data/.gitkeep`.
+- **Artifacts Updated:** `1-1-project-skeleton-and-app-scaffold.md` (Review Findings section, patches checked, Change Log, Status → done), `sprint-status.yaml` (1.1 → done), `rxconfig.py`, `tests/__init__.py`, `tests/ingestion/test_statementsparser_smoke.py`.
+- **Dependencies:** Step 41 (the implementation under review).
+- **Next Recommended BMAD Command:** `bmad-create-story` for Story 1.2 (Database Schema & Shared Formatting Utilities).
+- **Notes:** Review run inline (no subagents) per user's operating preference. Diff captured via a git intent-to-add + `git reset` so no files or commits were altered during the read-only gather step.
 
 ---
 

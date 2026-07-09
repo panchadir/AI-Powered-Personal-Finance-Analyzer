@@ -1,0 +1,23 @@
+# AI-Powered Personal Finance Analyzer — Phase 1 MVP
+# Versions pinned to what is actually installed (Story 1.1 AC #3). Python 3.11+.
+# Note: sqlmodel and rx.plotly ship bundled with reflex; SQLite is Python stdlib —
+# no separate pins required. Keep this file lean: only dependencies actually used.
+
+# --- Web framework + auth ---
+reflex==0.9.6.post1
+reflex-local-auth==0.5.0
+
+# --- Statement ingestion (Epic 2) ---
+pdfplumber==0.11.10
+camelot-py==2.0.0
+statementsparser==0.1.0
+pandas==3.0.3
+
+# --- LLM (Epics 3, 5, 6, 7) ---
+anthropic==0.116.0
+
+# --- Config / secrets ---
+python-dotenv==1.2.2
+
+# --- Testing ---
+pytest==9.1.1

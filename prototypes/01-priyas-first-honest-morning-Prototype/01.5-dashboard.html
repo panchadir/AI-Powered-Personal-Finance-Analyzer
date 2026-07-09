@@ -25,32 +25,36 @@
       <button id="dashboard-topnav-avatar" class="dash-avatar" aria-label="Profile and settings">PS</button>
     </div>
 
-    <!-- Section: Safe-to-Spend Hero Card -->
+    <!-- Section: Safe-to-Spend Hero Card — full-width, two-column balanced layout -->
     <section id="dashboard-hero" class="hero-card">
-      <p id="dashboard-hero-label" class="hero-label">Safe to spend today</p>
-      <p id="dashboard-hero-today-amount" class="hero-amount" aria-label="Safe to spend today">₹0</p>
-      <p id="dashboard-hero-freshness" class="hero-freshness">Based on your statement from —</p>
+      <div class="hero-primary">
+        <p id="dashboard-hero-label" class="hero-label">Safe to spend today</p>
+        <p id="dashboard-hero-today-amount" class="hero-amount" aria-label="Safe to spend today">₹0</p>
+        <p id="dashboard-hero-freshness" class="hero-freshness">Based on your statement from —</p>
+      </div>
 
       <hr class="hero-sep">
 
-      <div id="dashboard-hero-after-salary" class="hero-after">
-        <span id="dashboard-hero-after-salary-label" class="hero-after-label">After your salary lands</span>
-        <span id="dashboard-hero-after-salary-amount" class="hero-after-amount">₹0</span>
-      </div>
-
-      <div id="dashboard-hero-confidence" class="hero-conf">
-        <span id="dashboard-hero-confidence-label" class="hero-conf-label">Confidence</span>
-        <button id="dashboard-hero-confidence-chip" class="conf-chip conf-chip--amber"
-                aria-label="Confidence: On track — tap to see what changed it">On track</button>
-        <div id="dashboard-hero-confidence-drillin" class="conf-drillin hidden" role="dialog" aria-label="Confidence Score history">
-          <p id="conf-drillin-summary" class="conf-drillin-summary"></p>
-          <ul id="conf-drillin-events" class="conf-drillin-events"></ul>
+      <div class="hero-secondary">
+        <div id="dashboard-hero-after-salary" class="hero-after">
+          <span id="dashboard-hero-after-salary-label" class="hero-after-label">After your salary lands</span>
+          <span id="dashboard-hero-after-salary-amount" class="hero-after-amount">₹0</span>
         </div>
-      </div>
 
-      <div class="hero-why">
-        <button id="dashboard-hero-why" class="hero-why-trigger" aria-expanded="false" aria-controls="dashboard-hero-why-content">Why ₹0?</button>
-        <p id="dashboard-hero-why-content" class="hero-why-content hidden"></p>
+        <div id="dashboard-hero-confidence" class="hero-conf">
+          <span id="dashboard-hero-confidence-label" class="hero-conf-label">Confidence</span>
+          <button id="dashboard-hero-confidence-chip" class="conf-chip conf-chip--amber"
+                  aria-label="Confidence: On track — tap to see what changed it">On track</button>
+          <div id="dashboard-hero-confidence-drillin" class="conf-drillin hidden" role="dialog" aria-label="Confidence Score history">
+            <p id="conf-drillin-summary" class="conf-drillin-summary"></p>
+            <ul id="conf-drillin-events" class="conf-drillin-events"></ul>
+          </div>
+        </div>
+
+        <div class="hero-why">
+          <button id="dashboard-hero-why" class="hero-why-trigger" aria-expanded="false" aria-controls="dashboard-hero-why-content">Why ₹0?</button>
+          <p id="dashboard-hero-why-content" class="hero-why-content hidden"></p>
+        </div>
       </div>
     </section>
 
@@ -83,7 +87,7 @@
       <section id="dashboard-commitments" class="dash-section dash-card">
         <h2 id="dashboard-commitments-headline">Upcoming commitments</h2>
         <ul id="dashboard-commitments-list" class="timeline"></ul>
-        <a href="02.1-commitments-management.html" id="dashboard-commitments-add" class="link add-commitment">+ Add a commitment</a>
+        <button type="button" id="dashboard-commitments-add" class="btn btn--primary add-commitment" onclick="goTo('02.1-commitments-management.html')">+ Add a commitment</button>
       </section>
 
     </div>
