@@ -26,7 +26,8 @@ _Source of truth: `_bmad-output/planning-artifacts/architecture/architecture-AI-
 | Reflex | latest stable | pin in `requirements.txt` Day 1 |
 | reflex-local-auth | latest stable | pin version; session/auth |
 | sqlmodel (via `rx.Model`) | bundled with Reflex | data layer |
-| SQLite | Python stdlib | Phase 1 store; Postgres deferred to Phase 2 |
+| PostgreSQL (via `psycopg2`) | 16 (`postgres:16-alpine`) | Phase-1 store. Local dev DSN in `.env.example`; Docker uses the compose `db` service. `rxconfig.py`/`alembic/env.py` fall back to the local DSN when `DATABASE_URL` is unset. |
+| SQLite | Python stdlib | Test-only: unit tests use throwaway temp SQLite engines (no LLM/Postgres needed). Not the app store. |
 | pdfplumber / camelot-py / statementsparser | latest stable | statement parsers (adapters) |
 | pandas | latest stable | tabular processing |
 | Anthropic Python SDK | latest stable | Claude API |
