@@ -161,6 +161,7 @@ class RegisterState(AuthState):
     error_message: str = ""
     email_taken: bool = False  # True when the submitted email is already registered (AC #8)
     show_password: bool = False  # drives the show/hide password toggle (AC #5)
+    show_confirm: bool = False  # show/hide for the confirm-password field
 
     @rx.event
     def toggle_password(self):
@@ -168,13 +169,22 @@ class RegisterState(AuthState):
         self.show_password = not self.show_password
 
     @rx.event
+    def toggle_confirm(self):
+        """Flip confirm-password field visibility."""
+        self.show_confirm = not self.show_confirm
+
+    @rx.event
     def handle_registration(self, form_data: dict[str, Any]):
         """Register + auto-login + redirect to /upload (FR-1.2). Replaces the stock
         reflex-local-auth flow, which does not auto-login and redirects to /login."""
         self.error_message = ""
         self.email_taken = False
+        password = form_data.get("password") or ""
+        if password != (form_data.get("confirm_password") or ""):
+            self.error_message = "Passwords don't match."
+            return
         with rx.session() as session:
-            result = register_new_user(session, form_data.get("email"), form_data.get("password"))
+            result = register_new_user(session, form_data.get("email"), password)
         if not result.ok:
             self.error_message = result.error
             self.email_taken = result.email_taken
