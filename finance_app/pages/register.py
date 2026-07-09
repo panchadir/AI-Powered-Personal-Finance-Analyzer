@@ -1,9 +1,13 @@
 """Registration page (Story 1.3, route ``/register``).
 
-Custom UI over reflex-local-auth: trust signal, email + password with a show/hide toggle,
-in-page Terms/Privacy modals (never a new tab), link-consent (no pre-ticked checkbox —
-DPDP Rule 4), and an inline "Log in instead?" link when the email is already registered.
-On submit the account is created, the user is auto-logged-in, and redirected to /upload.
+Rendered to match the **approved WDS prototype** ``01.1-register.html`` verbatim: the same
+DOM structure and the same ``wds.css`` class names (auth card, app header with the ₹ logo,
+trust signal, per-field inline validation, password show/hide toggles, a confirm-password
+field, in-page Terms/Privacy modals, a link-consent legal footnote, and — on success — the
+"Registration successful → Return to Login" panel, with **no auto-login**).
+
+Only functionality and validation are layered on top of the prototype's markup; the layout,
+copy, spacing and visual hierarchy come straight from the prototype (the UI baseline).
 """
 
 import reflex as rx
@@ -17,19 +21,75 @@ TRUST_HEADLINE = "Your honest financial picture. No guessing. No shame."
 TRUST_SUBLINE = "We only tell you what we actually know. When we're uncertain, we say so."
 
 _TERMS_BODY = (
-    "Placeholder Terms of Service for the MVP. We frame everything as information, never "
-    "financial advice."
+    "Placeholder Terms of Service for the prototype. In production this opens the full Terms "
+    "of Service. We frame everything as information, never financial advice."
 )
 _PRIVACY_BODY = (
-    "Placeholder Privacy notice (DPDP-conscious). We collect only what is needed to compute "
+    "Placeholder privacy notice (DPDP-compliant). We collect only what is needed to compute "
     "your Safe-to-Spend, we never sell your data, and consent is never pre-ticked."
 )
 
 
+def _app_header() -> rx.Component:
+    """Prototype Section 1: the ₹ logo mark + app name, centered above the card body."""
+    return rx.el.header(
+        rx.el.div("₹", class_name="logo-mark", aria_hidden="true"),
+        rx.el.h1("AI Financial Copilot", class_name="app-name"),
+        class_name="register-header",
+    )
+
+
+def _field(
+    label: str,
+    name: str,
+    placeholder: str,
+    error: rx.Var,
+    *,
+    input_type: str = "text",
+    autocomplete: str | None = None,
+    toggle: rx.Component | None = None,
+    extra: rx.Component | None = None,
+) -> rx.Component:
+    """One ``.field`` (label + input-wrap + inline error), matching the prototype markup."""
+    attrs: dict = {}
+    if autocomplete:
+        attrs["autoComplete"] = autocomplete
+    return rx.el.div(
+        rx.el.label(label, html_for=f"register-{name}"),
+        rx.el.div(
+            rx.el.input(
+                id=f"register-{name}",
+                name=name,
+                type=input_type,
+                placeholder=placeholder,
+                custom_attrs=attrs,
+                # .has-error paints the red border (prototype behaviour).
+                class_name=rx.cond(error != "", "has-error", ""),
+            ),
+            toggle if toggle is not None else rx.fragment(),
+            class_name="input-wrap",
+        ),
+        rx.el.span(error, class_name="error", role="alert"),
+        extra if extra is not None else rx.fragment(),
+        class_name="field",
+    )
+
+
+def _pw_toggle(is_shown: rx.Var, on_click) -> rx.Component:
+    """The 'Show'/'Hide' button pinned inside the password input (prototype .pw-toggle)."""
+    return rx.el.button(
+        rx.cond(is_shown, "Hide", "Show"),
+        type="button",  # never submits — just toggles visibility
+        on_click=on_click,
+        aria_label=rx.cond(is_shown, "Hide password", "Show password"),
+        class_name="pw-toggle",
+    )
+
+
 def _legal_modal(label: str, body: str) -> rx.Component:
-    """A link that opens an in-page modal (AC #6) — not a new tab."""
+    """A legal link that opens an in-page modal (AC #6) — never a new tab."""
     return rx.dialog.root(
-        rx.dialog.trigger(rx.link(label, cursor="pointer", color_scheme="blue")),
+        rx.dialog.trigger(rx.el.a(label, class_name="link", cursor="pointer")),
         rx.dialog.content(
             rx.dialog.title(label),
             rx.dialog.description(body),
@@ -38,112 +98,110 @@ def _legal_modal(label: str, body: str) -> rx.Component:
     )
 
 
-def _error_callout() -> rx.Component:
-    """Amber error; when the email is already registered, include an inline 'Log in instead?' link (AC #8)."""
-    return rx.cond(
-        RegisterState.error_message != "",
-        rx.callout(
-            rx.hstack(
-                rx.text(RegisterState.error_message),
-                rx.cond(
-                    RegisterState.email_taken,
-                    rx.link(
-                        "Log in instead?",
-                        href=reflex_local_auth.routes.LOGIN_ROUTE,
-                        weight="bold",
-                    ),
-                ),
-                spacing="2",
-                align="center",
-            ),
-            color_scheme="amber",
-            role="alert",
-            width="100%",
-        ),
-    )
-
-
-def _password_field() -> rx.Component:
-    """Password input with a show/hide toggle (AC #5)."""
-    return rx.hstack(
-        rx.input(
-            name="password",
-            type=rx.cond(RegisterState.show_password, "text", "password"),
-            placeholder="8+ characters",
-            custom_attrs={"autoComplete": "new-password"},
-            required=True,
-            width="100%",
-        ),
-        rx.button(
-            rx.cond(RegisterState.show_password, "Hide", "Show"),
-            type="button",  # not a submit — just toggles visibility
-            on_click=RegisterState.toggle_password,
-            aria_label=rx.cond(RegisterState.show_password, "Hide password", "Show password"),
-            variant="soft",
-        ),
-        width="100%",
-        spacing="2",
-    )
-
-
-def _consent_line() -> rx.Component:
-    """Link-consent (no checkbox → nothing pre-ticked, AC #7); legal links open modals (AC #6)."""
-    return rx.text(
-        "By creating an account you agree to our ",
-        _legal_modal("Terms of Service", _TERMS_BODY),
-        " and ",
-        _legal_modal("Privacy Policy", _PRIVACY_BODY),
-        ".",
-        size="1",
-        color_scheme="gray",
-    )
-
-
-def register_form() -> rx.Component:
+def _register_form() -> rx.Component:
     return rx.form(
-        rx.vstack(
-            rx.text("Email address", weight="medium"),
-            rx.input(
-                name="email",
-                type="email",
-                placeholder="you@example.com",
-                custom_attrs={"autoComplete": "email"},
-                required=True,
-                width="100%",
+        _field(
+            "Email address", "email", "you@example.com", RegisterState.email_error,
+            input_type="email", autocomplete="email",
+            # On a duplicate email, offer an inline "Log in instead?" link (AC #8).
+            extra=rx.cond(
+                RegisterState.email_taken,
+                rx.el.a(
+                    "Log in instead?",
+                    href=reflex_local_auth.routes.LOGIN_ROUTE,
+                    class_name="link",
+                    font_size="var(--text-sm)",
+                ),
             ),
-            rx.text("Password", weight="medium"),
-            _password_field(),
-            rx.button("Create my account", type="submit", width="100%", margin_top="0.5em"),
-            _consent_line(),
-            spacing="3",
-            width="100%",
+        ),
+        _field(
+            "Password", "password", "8+ characters", RegisterState.password_error,
+            input_type=rx.cond(RegisterState.show_password, "text", "password"),
+            autocomplete="new-password",
+            toggle=_pw_toggle(RegisterState.show_password, RegisterState.toggle_password),
+        ),
+        _field(
+            "Confirm password", "confirm_password", "Repeat your password",
+            RegisterState.confirm_error,
+            input_type=rx.cond(RegisterState.show_confirm, "text", "password"),
+            autocomplete="new-password",
+            toggle=_pw_toggle(RegisterState.show_confirm, RegisterState.toggle_confirm),
+        ),
+        rx.el.button(
+            rx.el.span("Create my account", class_name="btn-label"),
+            type="submit",
+            class_name="btn btn--primary",
         ),
         on_submit=RegisterState.handle_registration,
-        width="100%",
+        class_name="register-form",
+    )
+    # NOTE: rx.form (not rx.el.form) so on_submit receives the serialized field dict.
+
+
+def _form_view() -> rx.Component:
+    """Everything shown before a successful submit (trust signal → form → links → legal)."""
+    return rx.fragment(
+        rx.el.section(
+            rx.el.h2(TRUST_HEADLINE, class_name="trust-headline"),
+            rx.el.p(TRUST_SUBLINE, class_name="trust-subline"),
+            class_name="register-trust",
+        ),
+        # Form-level (network/server) error banner — the prototype's toast, inline here.
+        rx.cond(
+            RegisterState.error_message != "",
+            rx.el.div(RegisterState.error_message, class_name="upload-error", role="alert"),
+        ),
+        _register_form(),
+        rx.el.div(
+            rx.el.span("Already have an account? ", class_name="text-muted"),
+            rx.el.a("Log in", href=reflex_local_auth.routes.LOGIN_ROUTE, class_name="link"),
+            class_name="register-existing-user",
+        ),
+        rx.el.p(
+            rx.el.span(
+                "By creating an account you agree to our ",
+                _legal_modal("Terms of Service", _TERMS_BODY),
+                " and ",
+                _legal_modal("Privacy Policy", _PRIVACY_BODY),
+                ". We never sell your data.",
+                class_name="text-muted",
+            ),
+            class_name="register-legal",
+        ),
     )
 
 
-@rx.page(route=reflex_local_auth.routes.REGISTER_ROUTE, title="Create your account · Finance Analyzer")
-def register() -> rx.Component:
-    return rx.center(
-        rx.card(
-            rx.vstack(
-                # Trust signal ABOVE the form (AC #4).
-                rx.heading(TRUST_HEADLINE, size="6"),
-                rx.text(TRUST_SUBLINE, color_scheme="gray"),
-                _error_callout(),
-                register_form(),
-                rx.hstack(
-                    rx.text("Already have an account?", color_scheme="gray"),
-                    rx.link("Log in", href=reflex_local_auth.routes.LOGIN_ROUTE),
-                    spacing="2",
-                ),
-                spacing="4",
-                width="100%",
-            ),
-            width="28em",
-            max_width="90vw",
+def _success_view() -> rx.Component:
+    """Prototype success state: no auto-login — the user returns to Login to sign in."""
+    return rx.el.section(
+        rx.el.div("✓", class_name="success-check", aria_hidden="true"),
+        rx.el.h2("Registration successful!", class_name="register-success-headline"),
+        rx.el.p(
+            "Your account has been created. For your security, please log in to continue.",
+            class_name="text-muted register-success-sub",
         ),
-        min_height="100vh",
-        padding="2em",
+        rx.el.a(
+            "Return to Login",
+            href=reflex_local_auth.routes.LOGIN_ROUTE,
+            class_name="btn btn--primary",
+            text_decoration="none",
+        ),
+        class_name="register-success",
+        role="status",
+    )
+
+
+@rx.page(
+    route=reflex_local_auth.routes.REGISTER_ROUTE,
+    title="Create your account · AI Financial Copilot",
+    on_load=RegisterState.reset_form,
+)
+def register() -> rx.Component:
+    return rx.el.main(
+        rx.el.div(
+            _app_header(),
+            rx.cond(RegisterState.registration_success, _success_view(), _form_view()),
+            class_name="auth-card",
+        ),
+        class_name="page page--auth",
     )
