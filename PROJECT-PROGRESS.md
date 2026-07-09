@@ -924,6 +924,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 32 | Party Mode: Phase 2 desktop-only propagation, cluster 1/3 — PRD X1 resolved into §11, spine Deferred entry rewritten, `project-context.md` new rule (41 rules), `ux-spec-mvp.md` 5-item nav | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | `prd.md`, `ARCHITECTURE-SPINE.md`, `project-context.md`, `ux-spec-mvp.md`, `epics.md` |
 | 33 | Party Mode: Phase 2 desktop-only propagation, cluster 2/3 — Scenario 02/03 desktop rework, bottom-sheet→modal, Commitments promoted P1, Confidence Score drill-in status corrected | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | `00-ux-scenarios.md`, `02-priya-protects-what-matters.md`, `02.1-commitments-management.md`, `03-priyas-two-tap-gut-check.md`, `03.1-copilot-chat.md` |
 | 34 | Party Mode: Phase 2 desktop-only propagation, cluster 3/3 (Scenario 01, 7 pages) — sidebar nav, Confidence chip relabeled to match epics.md S5.1/5.2, 2 broken links fixed; Phase 2 punch list closed | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | All 7 files under `01-priyas-first-honest-morning/` + the scenario overview |
+| … | Steps 35–48 (sprint planning, Stories 1.1–1.3 create/dev/review) — see step entries above; not individually rowed here | various (Observed) | Amelia / Claude Code | app skeleton, DB schema, registration + cookie auth, code reviews |
+| 49 | Dev correction: WDS prototypes made the UI source of truth — `wds.css` theme app-wide, Register aligned (no-auto-login supersedes FR-1.2), Login + Upload built from prototypes; `project-context.md` gains the WDS/story-workflow rules | None (direct instruction) (Observed) | Claude Code (dev — WDS UI alignment) | `assets/wds.css`, `rxconfig.py`, `finance_app/**` (auth/register/upload/state/app), `_bmad-output/project-context.md` |
 
 ## Commands Used
 
@@ -958,6 +960,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-create-story` via `CS` (Observed) | 3 (Steps 40, 43, 46) |
 | `bmad-dev-story` via `DS` (Observed) | 3 (Steps 41, 44, 47) |
 | `/bmad-code-review` (Observed) | 3 (Steps 42, 45, 48) |
+| None (direct instruction) (Observed) | +1 (Step 49 — WDS UI alignment) |
 
 ## Agent Usage
 
@@ -980,6 +983,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 | Amelia (Senior Software Engineer, `bmad-agent-dev`) | 2 (Steps 39–41 activation; Steps 43–44 activation) |
+| Claude Code (dev — WDS UI alignment) | 1 (Step 49) |
 
 ## Skill Usage
 
@@ -2407,6 +2411,43 @@ The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI
 - **Dependencies:** Step 47 (the implementation under review).
 - **Next Recommended BMAD Command:** `create-story` for 1.4 (login/logout/protected routes/IDOR) — builds on the cookie `AuthState`; also recommend committing 1.1–1.3 to give 1.4 a clean baseline.
 - **Notes:** Review scoped to 1.3's files because 1.2 + 1.3 are both uncommitted against the same baseline. Ran inline (no subagents). Empirical verification (bcrypt raising on >72 bytes) turned a "silent truncation" hypothesis into a confirmed crash-path fix.
+
+---
+
+## Step 49 — Dev Correction: WDS prototypes made the UI source of truth (theme + Register/Login/Upload) + project-context rules
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Implementation — UI correction / alignment to the approved WDS prototypes
+**Workflow:** None (direct user instruction — development correction, not a BMAD skill invocation)
+**User Goal:** Stop generating screens from BMAD-UX outputs and instead **reuse the approved WDS prototypes** (`prototypes/01-priyas-first-honest-morning-Prototype/`) as the UI source of truth: align the implemented Register page to its prototype, build the other onboarding screens from theirs, and codify the rule so it holds going forward.
+**BMAD Command:** None — direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer, no BMAD persona active).
+- **Role:** Align the Reflex implementation to the WDS prototype set; update the agent-facing rules file.
+- **Input:** WDS prototypes `01.1-register`, `01.2-login`, `01.3-statement-upload` + `shared/styles.css`; current `finance_app/**`; `epics.md`; `project-context.md`.
+- **Output:** WDS theme wired app-wide; Register aligned; Login + Upload built from prototypes; `project-context.md` new binding section; two session-memory rules.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A — no BMAD skill run; direct implementation (used `AskUserQuestion` for the two genuine conflicts and `TodoWrite`/`reflex run` for execution/verification).
+- **Contribution:** N/A.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Explore prototypes + current impl → surface 2 conflicts to the user (`AskUserQuestion`) → reuse `shared/styles.css` verbatim as `assets/wds.css` + wire theme on `RadixThemesPlugin` → align Register → build Login → build Upload → verify (`reflex run` compiles clean + `pytest` 70 passed) → run the app for the user → update `project-context.md` + memory.
+- **Key Decisions (all Observed, user-approved):**
+  - **WDS prototypes are the UI source of truth** — reuse the prototype's own CSS/class names (`.auth-card`, `.page--flow`, `.upload-zone`, `.btn--primary`, …) rather than the default Radix look or BMAD-UX regeneration.
+  - **Register no longer auto-logs-in** — shows the prototype's "Registration successful → Return to Login" screen. This **supersedes PRD FR-1.2 (auto-login → /upload)** for this flow; flagged for FR reconciliation, not silently dropped.
+  - Upload's parse step is a **simulation** (demo counts) — the real parser is an Epic 2 concern (`services/ingestion` unbuilt); marked as the single integration point.
+- **Verification:** `reflex run --env dev` → "App Running", **0 compile problems** (ran per screen batch); `pytest` **70 passed**; app served `GET / → HTTP 200` on `:3000` with a seeded demo account (`priya@example.com`).
+- **Deliverables:** Theme + Login + Register + Upload aligned to their WDS prototypes; new binding `project-context.md` section; scope for the remaining 4 screens recorded.
+- **Artifacts Created:** `assets/wds.css` (verbatim copy of the prototype `shared/styles.css`), `finance_app/state/upload_state.py`; session memory `wds-prototype-ui-baseline.md`, `register-no-auto-login-decision.md` (outside the repo, in the agent memory store).
+- **Artifacts Updated:** `_bmad-output/project-context.md` (new "UI/UX Baseline & Story-Implementation Workflow" section; frontmatter `rule_count` 41→53, `sections_completed` +1); `rxconfig.py` (WDS theme on `RadixThemesPlugin`); `finance_app/finance_app.py` (serve `wds.css`); `finance_app/pages/auth.py`, `register.py`, `upload.py`; `finance_app/state/auth_state.py` (Register success flow + `LoginState` + forgot-password reset).
+- **Dependencies:** Steps 41–48 (app skeleton + cookie auth / Register logic), Steps 20–22 & 27 (the WDS prototypes being reused).
+- **Next Recommended Command:** Build Dashboard/Transactions/Insights/Copilot from their WDS prototypes (01.5/01.4/01.6/01.7) — first port the shared left-sidebar nav (`.side-nav`) and the prototype demo dataset; and reconcile the FR-1.2 auto-login wording in the PRD against the approved no-auto-login decision.
+- **Notes:** Only Register was previously built (on default Radix); Login/Upload and the other four were `coming_soon` placeholders — so the "divergence" was mostly the missing WDS theme + the Register flow. Remaining 4 screens deferred (data-driven, share nav + dataset). App left running per user request; older stray reflex processes on ports 8000–8002 from repeated compile checks were not all reaped.
 
 ---
 

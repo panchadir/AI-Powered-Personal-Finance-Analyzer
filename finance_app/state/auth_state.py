@@ -102,6 +102,58 @@ def register_new_user(session: Session, email: str | None, password: str | None)
     return RegistrationResult(ok=True, user_id=user.id)
 
 
+def authenticate(session: Session, email: str | None, password: str | None) -> LocalUser | None:
+    """Return the ``LocalUser`` for valid credentials, else ``None``.
+
+    Framework-agnostic and session-injected so it is unit-testable without a Reflex app.
+    Email is normalized (trimmed + lowercased) to match registration's storage. The caller
+    surfaces a **uniform** error whether the email is unknown or the password is wrong — this
+    helper never distinguishes the two (no user enumeration).
+    """
+    email = (email or "").strip().lower()
+    if not email or not password:
+        return None
+    user = session.exec(select(LocalUser).where(LocalUser.username == email)).one_or_none()
+    if user is None or not user.enabled or not user.verify(password):
+        return None
+    return user
+
+
+def user_for_token(session: Session, token: str | None) -> LocalUser | None:
+    """Return the ``LocalUser`` bound to a valid, non-expired session ``token``, else ``None``.
+
+    The single source of truth for "is this cookie token a live session?" — reused by
+    ``AuthState.authenticated_user`` (UI reactivity), ``AuthState.check_auth`` (route guard),
+    and the IDOR baseline test. Session-injected so the decision is unit-testable.
+    """
+    if not token:
+        return None
+    row = session.exec(
+        select(LocalUser, LocalAuthSession).where(
+            LocalAuthSession.session_id == token,
+            LocalAuthSession.expiration >= datetime.datetime.now(datetime.timezone.utc),
+            LocalUser.id == LocalAuthSession.user_id,
+        )
+    ).first()
+    return row[0] if row else None
+
+
+def clear_sessions_for_token(session: Session, token: str | None) -> int:
+    """Delete every ``LocalAuthSession`` bound to ``token``; return how many were removed.
+
+    The DB side of logout (AC #3). Session-injected so the effect is unit-testable.
+    """
+    if not token:
+        return 0
+    rows = session.exec(
+        select(LocalAuthSession).where(LocalAuthSession.session_id == token)
+    ).all()
+    for row in rows:
+        session.delete(row)
+    session.commit()
+    return len(rows)
+
+
 class AuthState(rx.State):
     """Cookie-backed session state (AD-5). Standalone — NOT a reflex-local-auth subclass."""
 
@@ -117,15 +169,8 @@ class AuthState(rx.State):
     def authenticated_user(self) -> LocalUser:
         """The signed-in user, or a sentinel ``LocalUser(id=-1)`` when not authenticated."""
         with rx.session() as session:
-            result = session.exec(
-                select(LocalUser, LocalAuthSession).where(
-                    LocalAuthSession.session_id == self.auth_token,
-                    LocalAuthSession.expiration >= datetime.datetime.now(datetime.timezone.utc),
-                    LocalUser.id == LocalAuthSession.user_id,
-                )
-            ).first()
-            if result:
-                user, _ = result
+            user = user_for_token(session, self.auth_token)
+            if user is not None:
                 return user
         return LocalUser(id=-1)  # type: ignore[call-arg]
 
@@ -135,14 +180,23 @@ class AuthState(rx.State):
         return self.authenticated_user.id is not None and self.authenticated_user.id >= 0
 
     @rx.event
+    def check_auth(self):
+        """Route guard (AD-4/AC #4): redirect to login when the cookie token has no live session.
+
+        Wire as an ``on_load`` on every protected page. Reads the session **fresh** (not the
+        cached ``is_authenticated`` var, which is interval-refreshed and can be stale on first
+        load). Returns ``None`` when authenticated so the page renders normally.
+        """
+        with rx.session() as session:
+            if user_for_token(session, self.auth_token) is None:
+                return rx.redirect(LOGIN_ROUTE)
+
+    @rx.event
     def do_logout(self):
         """Delete any LocalAuthSession rows bound to the current cookie token."""
         with rx.session() as session:
-            for auth_session in session.exec(
-                select(LocalAuthSession).where(LocalAuthSession.session_id == self.auth_token)
-            ).all():
-                session.delete(auth_session)
-            session.commit()
+            clear_sessions_for_token(session, self.auth_token)
+        # Re-assign to force Reflex to re-emit the (now session-less) cookie to the browser.
         self.auth_token = self.auth_token
 
     def _login(self, user_id: int, expiration_delta: datetime.timedelta = AUTH_SESSION_EXPIRATION_DELTA) -> None:
@@ -318,9 +372,9 @@ class LoginState(AuthState):
         if self.email_error or self.password_error:
             return
         with rx.session() as session:
-            user = session.exec(select(LocalUser).where(LocalUser.username == email)).one_or_none()
+            user = authenticate(session, email, password)
         # Uniform message whether the email is unknown or the password is wrong (no user enumeration).
-        if user is None or not user.enabled or not user.verify(password):
+        if user is None:
             self.form_error = "Invalid email or password. Please try again."
             return
         self._login(user.id)
