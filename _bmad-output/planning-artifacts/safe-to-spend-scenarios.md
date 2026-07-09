@@ -4,7 +4,7 @@
 **Authors:** Amelia (engine), Winston (review), Murat (test architecture)
 **Status:** Build-ready — this is the `services/engine/` pytest gate referenced by **PRD FR-4 AC / FR-5 AC** and **epic S4.2**.
 
-> **Why this file exists.** The PRD, the epics, and the innovation-strategy roadmap all name "the 7 Wizard-of-Oz scenarios" as the single hard quality gate for the deterministic engine — but the scenarios were never written down (the problem-solving session paused at Step 4). This file enumerates them: **7 core scenarios + 3 boundary cases**, each with exact inputs and expected outputs, so `test_safe_to_spend.py` can be table-driven and correct rather than invented under deadline. **No LLM computes any number here — this is deterministic Python, unit-tested.**
+> **Why this file exists.** The PRD, the epics, and the innovation-strategy roadmap all name "the 7 Wizard-of-Oz scenarios" as the single hard quality gate for the deterministic engine — but the scenarios were never written down (the problem-solving session paused at Step 4). This file enumerates them: **7 core scenarios + 6 boundary cases (13 total)**, each with exact inputs and expected outputs, so `test_safe_to_spend.py` can be table-driven and correct rather than invented under deadline. **No LLM computes any number here — this is deterministic Python, unit-tested.**
 
 ---
 
@@ -57,12 +57,13 @@ Rounded **down** to the nearest ₹10 (never round a spend figure up). Two-layer
 | **9** | **Payday tomorrow + same-day commitment, uncertain income** (÷1 blow-up guard) | bal ₹18,000; buffer ₹2,000; rent ₹15,000 due tomorrow (income day); salary **Medium** confidence, 1d | ₹15,000 (income Medium → don't assume it covers same-day rent) | ₹1,000 | 1 | **₹1,000** | Same-day commitment reserved from present balance when income confidence < High; prevents the "÷1 → ₹16,000" over-payout |
 | **10** | **Shortfall / would-be-negative** (never negative, never hidden) | bal ₹16,000; buffer ₹2,000; rent ₹15,000 + EMI ₹8,500 due before income = ₹23,500 | ₹23,500 | −₹9,500 | any | **₹0** (floored) | STS floored at ₹0 (never negative); honest shortfall surfaced ("committed bills before payday exceed your balance by ₹9,500 — here's what to do"); no crash |
 
-## Additional boundary cases (11–12)
+## Additional boundary cases (11–13)
 
 | # | Boundary (tests) | Key inputs | reserved_total | pool | days | **STS today** | Must-hold assertion |
 |---|---|---|---|---|---|---|---|
 | **11** | **Over-conservatism guard (FR-5.8)** — commitment-free, positive balance must yield non-zero STS | bal ₹30,000; buffer ₹2,000; **no commitments** due before next income; next income in 20d | ₹0 | ₹28,000 | 20 | **₹1,400/day** | STS must be > ₹0 when balance is positive and no commitments are due this cycle — ₹0 on these inputs is a **bug** (over-conservatism) |
 | **12** | **Salary not detected (FR-4.8)** — no income credit identified in statement | bal ₹20,000; buffer ₹2,000; no transaction identified as salary; no confirmed income date | ₹0 (no commitments) | ₹18,000 | unknown | **N/A** | `safe_to_spend_after_income` = null; `data_quality_flags` includes `"no_income_detected"`; user-facing copy matches FR-4.8: "We couldn't detect a salary — add one manually?" — never a zero or crash |
+| **13** | **Payday is today** (÷0 guard — the other half of the Seam's "0 or undefined" fallback; Scenario 12 already covers the `undefined` half) | bal ₹20,000; buffer ₹2,000; rent ₹15,000 due in 10 days (**after** today's income — not reserved this cycle); salary ₹55,000 confirmed **today**, High confidence; `days_until_next_confirmed_income` = **0** | ₹0 | ₹18,000 | 0 | **₹18,000** (reserved-only fallback — `days=0` is never used as a divisor) | Engine must never compute `pool ÷ 0`: no `ZeroDivisionError`, no `Infinity`/`NaN`, no crash. Falls back to reserved-only mode (`safe_to_spend_today = max(0, pool)`, undivided) — the same fallback path S4.2's AC names for `undefined`, now exercised for `0` |
 
 ---
 
@@ -77,6 +78,6 @@ Run alongside the Safe-to-Spend suite so the two indicators never contradict:
 
 ## Implementation note
 
-Table-drive it: `@pytest.mark.parametrize` over the 10 rows above; assert each field of the evidence pack. `safety_ok` must be `True` for scenarios 1–9 and correctly `False`-with-honest-shortfall for 10. **This suite is the go/no-go for Day 2 — green before the dashboard is wired.**
+Table-drive it: `@pytest.mark.parametrize` over the 13 rows above; assert each field of the evidence pack. `safety_ok` must be `True` for scenarios 1–9, 11, 12, and 13, and correctly `False`-with-honest-shortfall for 10. **Scenarios 12 and 13 together are the explicit test for the `days_until_next_confirmed_income` ÷0 guard named in `project-context.md`'s Seams section — 12 covers `undefined`, 13 covers `0`. Neither may be skipped; a payday-morning crash is the exact failure mode this pair exists to catch.** **This suite is the go/no-go for Day 2 — green before the dashboard is wired.**
 
 *Generated by BMAD party-mode cross-functional review — clears the Critical blocker in the MVP-readiness Alignment Matrix (Problem-Solution doc → the 7 WoZ scenarios now exist in build-ready form).*

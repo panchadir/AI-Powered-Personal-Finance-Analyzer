@@ -25,7 +25,7 @@ Days into using the app, facing a real spending decision (a dinner invite), Priy
 ## User & Situation (Q3)
 
 **Persona:** Priya — The Overwhelmed Earner (Primary)
-**Situation:** About two weeks into using the app, mid-afternoon at work, a colleague invites her to dinner that will cost around ₹1,200.
+**Situation:** About two weeks into using the app, during a short break between meetings at her desk, a colleague pings her on Slack to invite her to dinner that will cost around ₹1,200.
 
 ---
 
@@ -39,8 +39,8 @@ Days into using the app, facing a real spending decision (a dinner invite), Priy
 
 ## Device & Starting Point (Q5 + Q6)
 
-**Device:** Mobile (Android budget device, responsive web browser)
-**Entry:** Already a habitual user, she opens the app directly to the Copilot right after getting the invite, mid-conversation with her colleague.
+**Device:** Desktop (localhost, single-user browser app)
+**Entry:** Already a habitual user, she opens the app directly to the Copilot in a quick break at her desk, right after getting the invite over Slack.
 
 ---
 
@@ -56,7 +56,7 @@ Proves the Copilot's return-usage value — the depth behind habit formation and
 
 ## Shortest Path (Q8)
 
-1. **Copilot Chat** — she taps the "Can I afford ₹___?" gut-check quick prompt, enters ₹1,200, and gets an honest yes with reasoning in two taps ✓
+1. **Copilot Chat** — she clicks the "Can I afford ₹___?" gut-check quick prompt, enters ₹1,200, and gets an honest yes with reasoning in two clicks ✓
 
 ---
 

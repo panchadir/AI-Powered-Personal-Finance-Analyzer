@@ -46,10 +46,10 @@ A successful Phase 1 MVP lets a user:
 9. Leave the application feeling more informed and confident than when they opened it.
 
 ### MVP scope: the committed golden path
-The **final MVP flow** is a single committed golden path — **Register → (auto) Login → Upload Statement → Transactions Table → Dashboard → AI Insights & Recommendations → AI Copilot** (capabilities 1–8; capability 9 = the informed-and-confident outcome). All seven steps are must-ship. **Delivery-risk note:** committing all eight capabilities in a 3-day solo build removes any stretch safety-margin; if the schedule slips, trim via the epics' scope-guard cut order (polish/quality first — the deterministic engine + honesty spine is never cut), do not silently drop a committed capability.
+The **final MVP flow** is a single committed golden path — **Register → (auto) Login → Upload Statement → Dashboard → Transactions Table → AI Insights & Recommendations → AI Copilot** (capabilities 1–8; capability 9 = the informed-and-confident outcome). All seven steps are must-ship. **Navigation note (2026-07-09):** Dashboard and Transactions Table are swapped from the originally-drafted order — the Dashboard is the default landing page immediately after upload (high-level Safe-to-Spend summary first), with Transactions one click away via its "View All Transactions" CTA, not an automatic post-upload redirect; all authenticated screens remain freely reachable from the persistent sidebar regardless of this walkthrough order. **Delivery-risk note:** committing all eight capabilities in a 3-day solo build removes any stretch safety-margin; if the schedule slips, trim via the epics' scope-guard cut order (polish/quality first — the deterministic engine + honesty spine is never cut), do not silently drop a committed capability.
 
 ### Out of scope (deferred, not dropped)
-Account Aggregator / FIU integration · WhatsApp delivery · DPDP consent-manager architecture · native mobile app · cloud deployment · multi-account reconciliation · scanned/image-PDF OCR · vernacular statement parsing at scale · real-time bank sync · email verification on register. The MVP runs **locally, single-user**, on uploaded statements only.
+Account Aggregator / FIU integration · WhatsApp delivery · DPDP consent-manager architecture · native mobile app · cloud deployment · multi-account reconciliation · scanned/image-PDF OCR · vernacular statement parsing at scale · real-time bank sync · email verification on register. The MVP runs **locally, single-user**, on uploaded statements only. Browser-based mobile/responsive access is also out of scope for Phase 1 (distinct from the native-mobile-app exclusion above) — see the resolved device-framing decision in §11.
 
 ---
 
@@ -131,7 +131,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
   - `rule_categorised` → no badge
   - Raw confidence percentages must **never** be shown to the user.
 - **FR-3.6** Filter chips dynamically generated from actual parsed categories; "Needs review" chip always present when count > 0.
-- **FR-3.7** Transaction list uses **virtual scroll** — standard DOM list not acceptable for 100–300 rows on budget Android.
+- **FR-3.7** Transaction list uses **virtual scroll** — standard DOM list not acceptable for 100–300 rows without layout thrash on a standard developer machine.
 - **FR-3.8** "Needs review" banner uses **amber tone**, not error red.
 - **FR-3.9** "See my Dashboard" CTA always enabled (sticky) — user never blocked in review loop.
 - **FR-3.10** Credit/income rows visually distinguished with green treatment.
@@ -197,7 +197,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 
 - **FR-5.1 Confidence Score (0–100):** measures financial *preparedness only* (commitment coverage, buffer health, spending pace vs. income, savings trend) — **never** app engagement.
 - **FR-5.2 Prediction Confidence (Low|Medium|High):** measures *data completeness* (statement recency, categorization coverage, commitment-detection certainty) — shown alongside the Score, **never conflated** with it.
-- **FR-5.3 Event-to-explanation binding:** every score change writes a `score_events` row: (delta, triggering_event, explanation, suggested_action). An unexplained score change is structurally impossible.
+- **FR-5.3 Event-to-explanation binding:** every score change writes a `score_events` row: (delta, `trigger_event`, explanation, suggested_action). An unexplained score change is structurally impossible.
 - **FR-5.4 Cold start:** compute immediately; Prediction Confidence = Low/Medium with stated reason. Frame as "Confidence grows with more data" — positive framing, not a failure state. No fake neutral-50.
 - **FR-5.5 Confidence chip interaction:** tapping the chip surfaces an inline tooltip with distinct copy per level (High / Medium / Low, each in plain language). Raw score numbers are **never** displayed.
 - **FR-5.6 "Why?" expandable block:** expandable on the hero card showing a 1–2 sentence explanation traceable to real data. Fallback copy when data insufficient: *"We don't have enough data yet to fully explain this."*
@@ -213,7 +213,7 @@ Each requirement lists acceptance criteria (AC). Priority: **P0** = MVP-blocking
 - **FR-6.1 (P0)** Hero-first layout: Safe-to-Spend card and Confidence chip always above the fold; charts below. Structural non-negotiable.
 - **FR-6.2 (P0)** Plain-language **briefing** narrated by Claude — honest, calm, non-judgmental, jargon-free; confidence caveat never buried. Narration explains the engine's evidence pack — **never computes numbers**.
 - **FR-6.3 (P1)** Briefing follows Observation → Evidence → Explanation → Action shape.
-- **FR-6.4 (P0)** **Persistent left nav** across all four app screens (Transactions / Dashboard / Insights / Copilot).
+- **FR-6.4 (P0)** **Persistent left nav** across all five app screens, in order: Dashboard, Transactions, Commitments, Insights, Copilot.
 - **FR-6.5 (P0)** "+ Add a commitment" opens an inline modal (name / amount / due-date / criticality). On save, Safe-to-Spend updates live per FR-4.10.
 
 **Tone contract (non-negotiable for all generated text in FR-6.2/6.3):** honest, calm, non-judgmental. Observation framing ("We noticed…"), not accusation ("You spent too much on…"). Specific copy for edge states (low confidence, shortfall, empty dashboard) in the UX specs; the briefing must not invent copy that contradicts those.
@@ -365,7 +365,8 @@ Top four (full register in the technical research document):
 | Confidence Score cold start | Compute immediately; Prediction Confidence Low with reason; "Confidence grows with more data" framing. |
 | Multi-bank gap | Single-statement MVP with explicit caveat; multi-account is Phase 2. |
 | Briefing vs. live hero | Briefing = snapshot at generation time; hero = live current figure. Intentional. |
-| Navigation architecture | Persistent left nav across all 4 app screens. |
+| Navigation architecture | Persistent left nav (~200px sidebar) across all 5 app screens, in order: Dashboard, Transactions, Commitments, Insights, Copilot. |
+| Device framing (X1) | MVP is **desktop-only** (localhost, single-user browser app). Mobile-responsive web is optional/future-phase, not a Day-1–3 commitment. |
 | Commitment criticality tiers | Critical / Important / Flexible with distinct ring-fencing; default = Important. |
 | Chat history storage | Server-side, scoped to `user_id`. |
 | Salary not detected | Graceful prompt, not zero or error. |
@@ -379,7 +380,6 @@ Top four (full register in the technical research document):
 
 | ID | Severity | Item | Owner | Resolve condition |
 |---|---|---|---|---|
-| X1 | Recommended | UX scenarios assume mobile-responsive web; `ux-spec-mvp.md` is silent on responsive. Reconcile device framing before implementation begins. | PM | Before Day 1 build start |
 | R1 | Recommended | Add an explicit Definition-of-Done line to Scenario 01 in UX Scenarios. | UX | Before acceptance testing |
 | R2 | Recommended | Disambiguate Scenario 02's `🚀 P2` summary tag (trigger-map tier, not build priority — E7 Commitments is P1 must-ship). | PM | Before story creation |
 | O2 | Optional | Clarify whether "Commitments Management" is a standalone page or a Dashboard section for Phase 2 scope planning. | PM | Before Phase 2 kick-off |
