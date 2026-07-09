@@ -7,6 +7,7 @@ orchestrate only; business logic lives in ``services/`` (AD-2).
 
 import reflex as rx
 
+from finance_app import models  # noqa: F401  (import registers DB tables for migrations — Story 1.2)
 from finance_app import pages  # noqa: F401  (import registers all @rx.page routes)
 
 app = rx.App()
