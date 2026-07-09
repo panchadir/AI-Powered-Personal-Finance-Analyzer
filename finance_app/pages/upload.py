@@ -126,7 +126,7 @@ def _progress_card() -> rx.Component:
 
 
 @rx.page(route="/upload", title="Upload your statement · AI Financial Copilot",
-         on_load=UploadState.reset_page)
+         on_load=[UploadState.check_auth, UploadState.reset_page])
 def upload() -> rx.Component:
     return rx.el.main(
         _topbar(),
