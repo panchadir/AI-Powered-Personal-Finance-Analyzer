@@ -1,0 +1,119 @@
+# generated: 2026-07-09
+# last_updated: 2026-07-09
+# project: AI-Powered-Personal-Finance-Analyzer
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-07-09
+last_updated: 2026-07-09
+project: AI-Powered-Personal-Finance-Analyzer
+# (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  # Epic 1: Secure Access & App Foundation
+  epic-1: in-progress
+  1-1-project-skeleton-and-app-scaffold: done
+  1-2-database-schema-and-shared-formatting-utilities: backlog
+  1-3-user-registration-with-auto-login: backlog
+  1-4-user-login-logout-and-protected-routes: backlog
+  1-5-auth-transition-ux-validation-behavior-and-nav-scaffold: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Statement Upload & Transaction Extraction
+  epic-2: backlog
+  2-1-canonical-transaction-schema-and-parser-protocol: backlog
+  2-2-csv-parser-indian-bank-formats: backlog
+  2-3-pdf-parser-chain-text-based-statements: backlog
+  2-4-upload-page-progress-summary-and-cta: backlog
+  2-5-deduplication-and-persistence: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Transaction Categorization & Teach Me
+  epic-3: backlog
+  3-1-tier-1-rules-engine-and-transactions-table: backlog
+  3-2-tier-2-llm-categorizer-claude-haiku: backlog
+  3-3-teach-me-user-correction-and-merchant-rules: backlog
+  3-4-confidence-badges-and-transaction-table-polish: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Financial Engine — Safe-to-Spend & Confidence Score
+  epic-4: backlog
+  4-1-engine-pre-flight-read-and-lock-the-scenario-contract: backlog
+  4-2-safe-to-spend-engine-implementation: backlog
+  4-3-safe-to-spend-pytest-suite-all-13-scenarios: backlog
+  4-4-confidence-score-engine-and-score-events-writeback: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Dashboard, Briefing & Commitment Management
+  epic-5: backlog
+  5-1-dashboard-layout-hero-card-and-confidence-chip: backlog
+  5-2-confidence-score-drill-in-panel: backlog
+  5-3-morning-briefing-narration: backlog
+  5-4-dashboard-charts-and-spending-breakdown: backlog
+  5-5-commitment-management-add-edit-delete: backlog
+  5-6-commitment-auto-detection: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: AI Copilot
+  epic-6: backlog
+  6-1-copilot-chat-ui-with-streaming: backlog
+  6-2-read-only-tools-and-honesty-enforcement: backlog
+  6-3-sse-streaming-contract-trace-chips-and-error-resilience: backlog
+  6-4-quick-prompts-and-insights-context-handoff: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Proactive Insights
+  epic-7: backlog
+  7-1-insight-detector-engine-all-5-patterns-coded: backlog
+  7-2-insight-narration-o-e-e-a-shape-and-sebi-rule: backlog
+  7-3-insights-page-and-dismiss-lifecycle: backlog
+  7-4-dashboard-insight-teaser: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Hardening & Demo-Readiness
+  epic-8: backlog
+  8-1-edge-case-honest-refusals: backlog
+  8-2-onboarding-empty-states: backlog
+  8-3-idor-security-test-cross-user-data-isolation: backlog
+  8-4-readme-and-one-command-setup: backlog
+  8-5-demo-dry-run-and-regression-guard: backlog
+  epic-8-retrospective: optional

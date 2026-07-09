@@ -1,0 +1,16 @@
+*.db
+.states
+.web
+*.py[cod]
+__pycache__/
+assets/external/
+
+# Secrets — never commit real keys (Story 1.1 AC #5, AD Secrets convention)
+.env
+
+# Local virtual environment
+.venv/
+
+# Tooling caches
+.pytest_cache/
+reflex.lock
