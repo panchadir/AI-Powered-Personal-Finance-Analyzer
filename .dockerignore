@@ -1,0 +1,29 @@
+# Secrets — never bake into the image
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Reflex build artifacts (rebuilt inside the container)
+.web/
+reflex.db
+
+# Version control
+.git/
+.gitignore
+
+# Dev/planning artifacts
+_bmad/
+_bmad-output/
+design-artifacts/
+docs/
+prototypes/
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
