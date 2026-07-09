@@ -2,10 +2,10 @@
 project_name: 'AI-Powered-Personal-Finance-Analyzer'
 user_name: 'ALPHA'
 date: '2026-07-09'
-sections_completed: ['technology_stack', 'architecture_boundaries', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'workflow_rules', 'critical_dont_miss', 'party_seams', 'agent_misread_guards', 'general_engineering_standards', 'usage_guidelines']
+sections_completed: ['technology_stack', 'architecture_boundaries', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'workflow_rules', 'critical_dont_miss', 'party_seams', 'agent_misread_guards', 'wds_ui_baseline_and_story_workflow', 'general_engineering_standards', 'usage_guidelines']
 existing_patterns_found: 14
 status: 'complete'
-rule_count: 41
+rule_count: 53
 general_standards_added: true
 optimized_for_llm: true
 ---
@@ -101,6 +101,34 @@ _These are the "technically complied but actually wrong" traps an AI coding agen
 - 🔁 **Normalize before dedup keying.** Canonicalize each key component first — ISO-normalized `date`, trimmed/whitespace-collapsed `description_raw`, `abs(amount)` — before comparing. Un-normalized keys let `"30/06/2026"` vs `"2026-06-30"` (or `" SWIGGY "` vs `"SWIGGY"`) slip duplicates through while the dedup test stays green. (sharpens AD-6 seam)
 - 📊 **Chart axes and tooltips must route through `formatINR`/`formatDate` too.** `rx.plotly` formats numbers itself by default and will render raw `125000.0` on donut/bar labels, silently bypassing AD-13. Feed charts pre-formatted strings or configure their tick/tooltip formatters explicitly. (sharpens AD-13)
 - 🍪 **SSE auth uses the httpOnly cookie — never a URL/query-param token.** `EventSource` can't send custom headers, so the lazy fix is a token in the `/copilot/chat` URL, which leaks into server logs and browser history. The cookie is sent automatically; rely on it. AD-5 and AD-11 each pass alone — the leak is at their seam. (guards AD-5 × AD-11)
+
+---
+
+## UI/UX Baseline & Story-Implementation Workflow
+
+_Added 2026-07-09 (product directive). Binding for all UI work and for every story. The WDS prototype set is the approved design baseline; these rules keep the build aligned to it._
+
+### WDS Prototypes Are the UI Source of Truth
+- The generated **WDS prototypes** at `prototypes/01-priyas-first-honest-morning-Prototype/` are the **approved UI/UX baseline**. Review the matching prototype screen **before** implementing (or changing) any screen.
+- Do **NOT** redesign, regenerate, or replace a screen from **BMAD-UX** outputs when a WDS prototype already exists. Reuse its layout, navigation patterns, page structure, labels, spacing, visual hierarchy, and user flow.
+- Implementation adds **functionality, responsiveness, validation, and integrations** *on top of* the WDS design — it does not restyle it. If the implementation diverges from the prototype, **align the implementation to the prototype** unless an approved requirement explicitly requires the change (and that override must be recorded — see the no-auto-login Register decision as the precedent).
+- **Reuse mechanism (already in place):** the prototype's own `shared/styles.css` is served verbatim as `assets/wds.css`; pages render the prototype markup with the **same class names** (`.auth-card`, `.page--flow`, `.upload-zone`, `.side-nav`, `.btn--primary`, …). New screens follow this pattern — do not hand-roll new styling systems.
+- **Screen ↔ page map:** 01.2 Login → `pages/auth.py` (`/`, `/login`); 01.1 Register → `register.py`; 01.3 Statement Upload → `upload.py`; 01.5 Dashboard → `dashboard.py`; 01.4 Transactions → `transactions.py`; 01.6 AI Insights → `insights.py`; 01.7 Copilot → `copilot.py`; 02.1 Commitments is reached from the Dashboard, **not** the sidebar. The four sidebar screens share the prototype's left-nav (`nav.js` → `.side-nav`).
+
+### Story Implementation Process (before starting ANY story)
+1. Read `_bmad-output/planning-artifacts/epics.md` completely; review the **epic that owns** the story.
+2. Understand the epic's goals, story sequence, dependencies, acceptance criteria, and MVP boundaries.
+3. Confirm the story aligns with the epic's objectives **before** touching code.
+4. Do **not** implement functionality that belongs to a future story or a future epic.
+5. Always implement the **smallest** solution that satisfies the story's acceptance criteria (KISS — reinforces the General Standards).
+6. If a story conflicts with the epic definition **or** with the WDS prototype, **raise the conflict before implementing** — do not silently resolve it.
+
+### Context to Review Before Development
+Before writing code for a story, review in order: (1) this `project-context.md`, (2) `epics.md` + the owning epic, (3) the current story file, (4) the related WDS prototype screen(s), (5) any completed stories it depends on. Only then begin implementation.
+
+### UI Consistency Rule
+- New pages must follow the corresponding WDS prototype; already-implemented pages must **stay** visually consistent with the WDS prototype set.
+- Do not introduce new layouts, navigation patterns, component structures, or page flows unless explicitly approved.
 
 ---
 

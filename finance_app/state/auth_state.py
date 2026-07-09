@@ -35,8 +35,15 @@ from sqlmodel import Session, select
 AUTH_SESSION_EXPIRATION_DELTA = datetime.timedelta(days=7)
 #: Auth computed-var refresh cadence (matches reflex-local-auth's default).
 AUTH_REFRESH_DELTA = datetime.timedelta(minutes=10)
-#: Route the user lands on immediately after auto-login (FR-1.2).
-POST_REGISTER_ROUTE = "/upload"
+#: Post-authentication landing page (Statement Upload). The WDS prototype routes both a
+#: fresh login and the existing-user path here (README: Login → Upload).
+HOME_ROUTE = "/upload"
+#: Back-compat alias. Registration itself no longer auto-logs-in (the WDS prototype shows a
+#: "Registration successful → Return to Login" screen instead — product decision 2026-07-09),
+#: so this is now only the post-*login* destination.
+POST_REGISTER_ROUTE = HOME_ROUTE
+#: Login route (reused from reflex-local-auth so links stay consistent app-wide).
+LOGIN_ROUTE = "/login"
 #: Minimum password length (matches the prototype's "8+ characters" hint).
 MIN_PASSWORD_LENGTH = 8
 #: Maximum password length in UTF-8 bytes. bcrypt rejects secrets longer than 72 bytes
@@ -156,12 +163,23 @@ class AuthState(rx.State):
 
 
 class RegisterState(AuthState):
-    """Handles the registration form: create account, auto-login, redirect to Upload."""
+    """Registration form state, mirroring the WDS prototype (01.1-register.html).
 
+    Flow matches the approved prototype: client-side per-field validation → server-side
+    create → **no auto-login** → a "Registration successful → Return to Login" success
+    screen (product decision 2026-07-09; supersedes the earlier FR-1.2 auto-login).
+    """
+
+    # Per-field inline errors (prototype shows each empty/invalid field its own message).
+    email_error: str = ""
+    password_error: str = ""
+    confirm_error: str = ""
+    # Form-level error for network/unexpected failures (prototype toast).
     error_message: str = ""
     email_taken: bool = False  # True when the submitted email is already registered (AC #8)
     show_password: bool = False  # drives the show/hide password toggle (AC #5)
     show_confirm: bool = False  # show/hide for the confirm-password field
+    registration_success: bool = False  # swaps the form for the success panel (no auto-login)
 
     @rx.event
     def toggle_password(self):
@@ -174,18 +192,136 @@ class RegisterState(AuthState):
         self.show_confirm = not self.show_confirm
 
     @rx.event
+    def reset_form(self):
+        """Clear inline errors and the success panel (used when the page mounts)."""
+        self.email_error = self.password_error = self.confirm_error = self.error_message = ""
+        self.email_taken = False
+        self.registration_success = False
+
+    def _validate(self, email: str, password: str, confirm: str) -> bool:
+        """Client-side validation matching the prototype; sets every field's message."""
+        self.email_error = self.password_error = self.confirm_error = ""
+        email = (email or "").strip()
+        if not email:
+            self.email_error = "Please enter your email address"
+        elif not is_valid_email(email):
+            self.email_error = "That doesn't look like a valid email"
+        if not password:
+            self.password_error = "Please create a password"
+        elif len(password) < MIN_PASSWORD_LENGTH:
+            self.password_error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters"
+        if not confirm:
+            self.confirm_error = "Please confirm your password"
+        elif confirm != password:
+            self.confirm_error = "Passwords don't match"
+        return not (self.email_error or self.password_error or self.confirm_error)
+
+    @rx.event
     def handle_registration(self, form_data: dict[str, Any]):
-        """Register + auto-login + redirect to /upload (FR-1.2). Replaces the stock
-        reflex-local-auth flow, which does not auto-login and redirects to /login."""
+        """Validate → create account → show the success screen (no auto-login, no redirect)."""
         self.error_message = ""
         self.email_taken = False
+        email = form_data.get("email") or ""
         password = form_data.get("password") or ""
-        with rx.session() as session:
-            result = register_new_user(session, form_data.get("email"), password)
-        if not result.ok:
-            self.error_message = result.error
-            self.email_taken = result.email_taken
+        confirm = form_data.get("confirm_password") or ""
+        if not self._validate(email, password, confirm):
             return
-        # Auto-login: write a LocalAuthSession keyed on our cookie token.
-        self._login(result.user_id)
-        return rx.redirect(POST_REGISTER_ROUTE)
+        with rx.session() as session:
+            result = register_new_user(session, email, password)
+        if not result.ok:
+            # Duplicate email surfaces on the email field (with an inline "Log in instead?"
+            # link, AC #8); anything else is a form-level message.
+            if result.email_taken:
+                self.email_error = result.error
+                self.email_taken = True
+            else:
+                self.error_message = result.error
+            return
+        # Success: DO NOT create a session or redirect. Show "Return to Login" (prototype).
+        self.registration_success = True
+
+
+class LoginState(AuthState):
+    """Login form state, mirroring the WDS prototype (01.2-login.html): validate credentials,
+    open a cookie-backed session, redirect to the Upload landing page."""
+
+    email_error: str = ""
+    password_error: str = ""
+    form_error: str = ""  # invalid-credentials / server error (prototype's form-level banner)
+    show_password: bool = False
+    reset_notice: str = ""  # success toast after a password reset (prototype)
+
+    # Forgot-password modal (prototype's in-page reset dialog).
+    forgot_open: bool = False
+    forgot_email_error: str = ""
+    forgot_password_error: str = ""
+    forgot_confirm_error: str = ""
+
+    @rx.event
+    def toggle_password(self):
+        self.show_password = not self.show_password
+
+    @rx.event
+    def reset_form(self):
+        self.email_error = self.password_error = self.form_error = ""
+        self.reset_notice = ""
+
+    @rx.event
+    def open_forgot(self):
+        self.forgot_email_error = self.forgot_password_error = self.forgot_confirm_error = ""
+        self.forgot_open = True
+
+    @rx.event
+    def set_forgot_open(self, is_open: bool):
+        self.forgot_open = is_open
+
+    @rx.event
+    def handle_forgot(self, form_data: dict[str, Any]):
+        """Demo reset: set a new password directly (production would email a signed link)."""
+        self.forgot_email_error = self.forgot_password_error = self.forgot_confirm_error = ""
+        email = (form_data.get("email") or "").strip().lower()
+        new_password = form_data.get("new_password") or ""
+        confirm = form_data.get("confirm_password") or ""
+        if not email or not is_valid_email(email):
+            self.forgot_email_error = "Enter your account email"
+        if len(new_password) < MIN_PASSWORD_LENGTH:
+            self.forgot_password_error = f"At least {MIN_PASSWORD_LENGTH} characters"
+        elif len(new_password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            self.forgot_password_error = f"Password is too long (max {MAX_PASSWORD_BYTES} characters)"
+        if confirm != new_password:
+            self.forgot_confirm_error = "Passwords don't match"
+        if self.forgot_email_error or self.forgot_password_error or self.forgot_confirm_error:
+            return
+        with rx.session() as session:
+            user = session.exec(select(LocalUser).where(LocalUser.username == email)).one_or_none()
+            if user is None:
+                self.forgot_email_error = "No account found for that email"
+                return
+            user.password_hash = LocalUser.hash_password(new_password)
+            session.add(user)
+            session.commit()
+        self.forgot_open = False
+        self.reset_notice = "Password updated — please log in with your new password."
+
+    @rx.event
+    def handle_login(self, form_data: dict[str, Any]):
+        """Validate, verify the bcrypt hash, open a session, and go to Upload."""
+        self.email_error = self.password_error = self.form_error = ""
+        email = (form_data.get("email") or "").strip().lower()
+        password = form_data.get("password") or ""
+        if not email:
+            self.email_error = "Please enter your email"
+        elif not is_valid_email(email):
+            self.email_error = "That doesn't look like a valid email"
+        if not password:
+            self.password_error = "Please enter your password"
+        if self.email_error or self.password_error:
+            return
+        with rx.session() as session:
+            user = session.exec(select(LocalUser).where(LocalUser.username == email)).one_or_none()
+        # Uniform message whether the email is unknown or the password is wrong (no user enumeration).
+        if user is None or not user.enabled or not user.verify(password):
+            self.form_error = "Invalid email or password. Please try again."
+            return
+        self._login(user.id)
+        return rx.redirect(HOME_ROUTE)

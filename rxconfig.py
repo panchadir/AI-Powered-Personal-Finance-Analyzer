@@ -15,6 +15,17 @@ config = rx.Config(
         rx.plugins.TailwindV4Plugin(),
         # Explicit Radix Themes enablement (implicit enablement deprecated in 0.9.0,
         # removed in 1.0). The skeleton pages use Radix components (rx.heading, etc.).
-        rx.plugins.RadixThemesPlugin(),
+        # Theme configured here (App(theme=...) is deprecated in 0.9.0): harmonize Radix
+        # components with the WDS palette while wds.css owns the branded look. accent=teal
+        # ≈ brand --primary #10796b; has_background=False lets wds.css's page bg show through.
+        rx.plugins.RadixThemesPlugin(
+            theme=rx.theme(
+                appearance="light",
+                accent_color="teal",
+                gray_color="sage",
+                radius="large",
+                has_background=False,
+            ),
+        ),
     ],
 )
