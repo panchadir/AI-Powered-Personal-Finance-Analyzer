@@ -180,9 +180,6 @@ class RegisterState(AuthState):
         self.error_message = ""
         self.email_taken = False
         password = form_data.get("password") or ""
-        if password != (form_data.get("confirm_password") or ""):
-            self.error_message = "Passwords don't match."
-            return
         with rx.session() as session:
             result = register_new_user(session, form_data.get("email"), password)
         if not result.ok:

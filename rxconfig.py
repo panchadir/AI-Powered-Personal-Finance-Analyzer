@@ -1,9 +1,15 @@
+import os
+
 import reflex as rx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 config = rx.Config(
     app_name="finance_app",
-    # Phase-1 local SQLite store (ARCHITECTURE-SPINE Stack; Postgres deferred to Phase 2).
-    db_url="sqlite:///reflex.db",
+    db_url=os.environ["DATABASE_URL"],
+    # Bind backend to all interfaces so it's reachable inside Docker.
+    backend_host="0.0.0.0",
     plugins=[
         rx.plugins.SitemapPlugin(),
         rx.plugins.TailwindV4Plugin(),
