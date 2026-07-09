@@ -23,7 +23,7 @@ Register, auto-authenticate, upload a real bank statement, and move through the 
 ## User & Situation (Q3)
 
 **Persona:** Priya — The Overwhelmed Earner (Primary)
-**Situation:** 32, salaried marketing executive in Mumbai, ~₹65,000/month, EMI-carrying. A colleague just told her "you have to try this one — it's actually honest with you." She's trying it on a quiet evening at home, phone in hand, having just downloaded her bank statement.
+**Situation:** 32, salaried marketing executive in Mumbai, ~₹65,000/month, EMI-carrying. A colleague just told her "you have to try this one — it's actually honest with you." She's trying it on a quiet evening at home, at her laptop, having just downloaded her bank statement.
 
 ---
 
@@ -37,8 +37,8 @@ Register, auto-authenticate, upload a real bank statement, and move through the 
 
 ## Device & Starting Point (Q5 + Q6)
 
-**Device:** Mobile (Android budget device, responsive web browser)
-**Entry:** After a friend's word-of-mouth recommendation, she downloads her bank statement PDF from her banking app, then opens the AI Financial Copilot in her phone's browser to create an account.
+**Device:** Desktop (localhost web app, single-user browser session)
+**Entry:** After a friend's word-of-mouth recommendation, she downloads her bank statement PDF from her banking app, then opens the AI Financial Copilot in her laptop's browser to create an account.
 
 ---
 
@@ -57,9 +57,9 @@ WoZ comprehension gate hit — Safe-to-Spend understood correctly — plus the a
 1. **Register** — Priya creates her account (email + password)
 2. **Login** — auto-authentication confirmation; account ready, no credential re-entry; auto-redirects to Statement Upload
 3. **Statement Upload** — she uploads her bank statement PDF and watches honest parsing progress
-4. **Transactions Table** — she reviews her categorized transactions, corrects one merchant via "Teach Me"
-5. **Dashboard** — she sees her first Safe-to-Spend number, Confidence Score, and plain-language briefing, explained
-6. **AI Insights & Recommendations** — she sees a proactive, honestly-framed observation about her spending
+4. **Dashboard** — parsing complete lands her here directly (changed 2026-07-09, was Transactions Table): she sees her first Safe-to-Spend number, Confidence Score, and plain-language briefing, explained
+5. **Transactions Table** — from the Dashboard's "View All Transactions" CTA, she reviews her categorized transactions, corrects one merchant via "Teach Me," then returns to her Dashboard
+6. **AI Insights & Recommendations** — from the Dashboard, she sees a proactive, honestly-framed observation about her spending
 7. **Copilot Chat** — curious, she asks her first question and gets a real, reasoned answer traced to her own data ✓
 
 ---
@@ -82,11 +82,12 @@ WoZ comprehension gate hit — Safe-to-Spend understood correctly — plus the a
 |------|--------|---------|-------------|
 | 01.1 | `01.1-register/` | Create her account | Submits registration form → auto-redirect to 01.2 |
 | 01.2 | `01.2-login/` | Auto-authentication confirmation (no user action needed) | Auto-redirects to 01.3 |
-| 01.3 | `01.3-statement-upload/` | Upload her bank statement | Uploads PDF, sees honest parsing progress |
-| 01.4 | `01.4-transactions-table/` | Review categorized transactions | Corrects a merchant via "Teach Me" |
-| 01.5 | `01.5-dashboard/` | See her first honest Safe-to-Spend briefing | Views her Insights |
+| 01.3 | `01.3-statement-upload/` | Upload her bank statement | Uploads PDF, sees honest parsing progress → lands on Dashboard |
+| 01.5 | `01.5-dashboard/` | See her first honest Safe-to-Spend briefing (default landing page after upload) | Views All Transactions, or her Insights |
+| 01.4 | `01.4-transactions-table/` | Review categorized transactions (reached from the Dashboard) | Corrects a merchant via "Teach Me" → returns to Dashboard |
 | 01.6 | `01.6-ai-insights-recommendations/` | See a proactive, honest observation about her spending | Opens the Copilot, curious |
 | 01.7 | `01.7-copilot-chat/` | Ask her first real question and get a reasoned answer | Final — scenario success ✓ |
 
 **First step** (01.1) includes full entry context (Q3 + Q4 + Q5 + Q6).
 **On-step interactions** (that don't leave the step) are documented as storyboard items within each page spec.
+**Navigation note (2026-07-09, updated same day):** Steps 01.5 and 01.4 are listed in walkthrough order (Dashboard is the post-upload landing page; Transactions is one click away from it), and all four sidebar screens (Dashboard, Transactions, Insights, Copilot) are reachable from one another at any time via the persistent left sidebar — this scenario is not a strict one-way funnel past Statement Upload. Commitments Management is **not** a sidebar item; it's reached solely via the Dashboard's "+ Add a commitment" CTA (corrected same day — an earlier pass had briefly added it to the sidebar as a 5th item, which over-corrected past FR-6.4's actual 4-screen nav).

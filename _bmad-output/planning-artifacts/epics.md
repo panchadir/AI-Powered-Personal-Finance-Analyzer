@@ -43,7 +43,7 @@ FR-3.3: Every transaction stores category_source (rule|llm|user) and category_co
 FR-3.4: Tier-3 ("Teach Me") — user correction writes a merchant-level rule; "Re-apply to all matching merchants" toggle defaults ON; persists for future uploads.
 FR-3.5: Confidence badge system: needs_review → amber "?" badge; ai_categorised → blue "AI" badge; rule_categorised → no badge. Raw confidence percentages must never be shown.
 FR-3.6: Filter chips dynamically generated from actual parsed categories; "Needs review" chip always present when count > 0.
-FR-3.7: Transaction list uses virtual scroll — standard DOM list not acceptable for 100–300 rows on budget Android.
+FR-3.7: Transaction list uses virtual scroll — standard DOM list not acceptable for 100–300 rows without layout thrash on a standard developer machine.
 FR-3.8: "Needs review" banner uses amber tone, not error red.
 FR-3.9: "See my Dashboard" CTA always enabled (sticky) — user never blocked in review loop.
 FR-3.10: Credit/income rows visually distinguished with green treatment.
@@ -412,6 +412,8 @@ So that I know exactly what happened to my data.
 **And** 4 named real-server-state progress steps fire in sequence: `"Reading PDF"` → `"Identifying Transactions"` → `"Categorising by Rules"` → `"AI Assist"` — steps 3 and 4 are skeleton events in this story; they are completed with real data in Epic 3 (S3.1, S3.2)
 **And** progress events are delivered via WebSocket push (or 1-second polling fallback)
 
+**Definition of Done:** Steps 3–4 firing as skeleton/placeholder events is sufficient to mark **this story** done. Epic 2 as a whole is not done until S3.1 and S3.2 land and steps 3–4 carry real categorization data — do not treat Epic 2's completion as blocking on Epic 3, but do not report the upload flow as fully honest/real until both are merged.
+
 **Given** parsing completes successfully
 **When** the completion summary renders
 **Then** it shows `"{n} categorized by rules · {n} by AI · {n} need your help"` derived from real parse output — not placeholder text
@@ -526,9 +528,11 @@ So that I understand the quality of categorization at a glance.
 
 ## Epic 4: Financial Engine — Safe-to-Spend & Confidence Score
 
-The deterministic engine computes Safe-to-Spend and Confidence Score with a full pytest suite passing across all 12 scenarios. No LLM touches these numbers. This is the product's honesty spine and non-negotiable quality gate.
+The deterministic engine computes Safe-to-Spend and Confidence Score with a full pytest suite passing across all 13 scenarios. No LLM touches these numbers. This is the product's honesty spine and non-negotiable quality gate.
 
 ⚠️ **HIGH-RISK EPIC** — Largest epic by FR count. If bleeding into Day-3 morning, invoke scope-guard cut order immediately. `pytest tests/engine/` green is the gate before Epic 5 is wired.
+
+**Developer note:** This epic has **no user-visible output of its own** — `services/engine/` is a pure backend module with no UI. Its only observable artifact is a green `pytest tests/engine/` run. Don't expect anything to look different in the app after finishing Epic 4; the payoff shows up in Epic 5 when the Dashboard wires to it.
 
 ### Story 4.1: Engine Pre-Flight — Read & Lock the Scenario Contract
 
@@ -540,7 +544,7 @@ So that the implementation targets the exact contract the pytest suite will asse
 
 **Given** `_bmad-output/planning-artifacts/safe-to-spend-scenarios.md` exists
 **When** this story is complete
-**Then** the developer has read all 12 scenarios (7 core + 3 boundary + scenario 11 over-conservatism guard + scenario 12 salary-not-detected) and documented the expected output for each evidence-pack field in a comment block at the top of `tests/engine/test_safe_to_spend.py`
+**Then** the developer has read all 13 scenarios (7 core + 3 boundary + scenario 11 over-conservatism guard + scenario 12 salary-not-detected + scenario 13 days=0 payday-is-today ÷0 guard) and documented the expected output for each evidence-pack field in a comment block at the top of `tests/engine/test_safe_to_spend.py`
 **And** the Reservation Rule (DD-1) — four sub-rules for known/predicted/variable/income-day commitments — is understood and documented in `services/engine/safe_to_spend.py` as a docstring before any logic is written
 **And** the buffer decision (DD-2, default ₹2,000) is confirmed
 **And** this story is marked done before S4.2 begins — no engine code before the contract is locked
@@ -566,23 +570,24 @@ So that the dashboard can display an honest, traceable Safe-to-Spend that never 
 **And** no file in `services/engine/` imports from `reflex` or any `rx.*` namespace
 **And** `services/engine/` has no import of `services/narrate/` — the hard boundary (AD-1) is enforced
 
-### Story 4.3: Safe-to-Spend pytest Suite — All 12 Scenarios
+### Story 4.3: Safe-to-Spend pytest Suite — All 13 Scenarios
 
 As a developer,
-I want a table-driven pytest suite asserting every field of the engine output across all 12 scenarios,
+I want a table-driven pytest suite asserting every field of the engine output across all 13 scenarios,
 So that the honesty spine is machine-verified and no edge case can silently regress.
 
 **Acceptance Criteria:**
 
 **Given** `tests/engine/test_safe_to_spend.py` is implemented
 **When** `pytest tests/engine/` is run
-**Then** all 12 scenarios pass: 7 core + 3 boundary + scenario 11 (over-conservatism guard) + scenario 12 (salary-not-detected)
+**Then** all 13 scenarios pass: 7 core + 3 boundary + scenario 11 (over-conservatism guard) + scenario 12 (salary-not-detected, `days` undefined) + scenario 13 (payday-is-today, `days=0`)
 **And** the test fixture injects an LLM client that **raises on construction or use** — any accidental LLM call fails loudly, never silently passes
 **And** every field of the evidence pack is asserted by name: `reserved_total`, `spendable_pool`, `days_to_income`, `safe_to_spend_today`, `safe_to_spend_after_income`, `prediction_confidence`, `safety_ok`
-**And** `safety_ok` is `True` for scenarios 1–9, 11, 12 and `False` with honest shortfall for scenario 10
+**And** `safety_ok` is `True` for scenarios 1–9, 11, 12, 13 and `False` with honest shortfall for scenario 10
 **And** scenario 10 returns `safe_to_spend_today=Decimal('0')` with a shortfall message — not a negative value or crash
 **And** scenario 11 returns a non-zero STS on a commitment-free, buffer-covered balance (over-conservatism guard)
 **And** scenario 12 returns `safe_to_spend_after_income=None` plus `"no_income_detected"` in `data_quality_flags`
+**And** scenario 13 (`days_until_next_confirmed_income=0`) returns `safe_to_spend_today=Decimal('18000')` via the reserved-only fallback — never a `ZeroDivisionError`, never `Infinity`/`NaN`; this and scenario 12 together are the full test of the ÷0 guard required by AC line above and by `project-context.md`'s Seams section
 **And** all STS figures in passing scenarios end in `0` (₹1,250 not ₹1,254) — rounding verified by assertion
 **And** `pytest services/engine/` runs in < 10 seconds with zero network calls
 
@@ -665,6 +670,7 @@ So that I understand my money in 2–4 sentences without jargon or judgment.
 **And** the system prompt is marked `cache_control: {"type": "ephemeral"}`; volatile per-turn context is placed after the cache breakpoint
 **And** `services/narrate/` does not import `services/engine/` — it receives the evidence pack as input only
 **And** the briefing snapshot is fixed at generation time; the hero card figures are live — this divergence is intentional
+**And** (FR-8.6) when at least one active, non-dismissed insight exists in the `insights` table, the briefing weaves in a reference to the single highest-priority one — sourced verbatim from that insight's `observation` field, never invented or recomputed by `services/narrate/` (AD-1: narrate emits only figures/text present in what it's handed). When no insight exists yet (e.g. first upload, insufficient data, or Epic 7 not yet run), the briefing simply omits the insight sentence — this is graceful degradation, not an error state
 
 ### Story 5.4: Dashboard Charts & Spending Breakdown
 
@@ -820,7 +826,7 @@ So that the user sees relevant observations without asking.
 
 **Given** the insight engine runs (triggered after every successful ingestion or categorisation batch)
 **When** it evaluates the current user's transaction history
-**Then** all five detectors execute in sequence: `RecurringSpendDetector`, `SpendingSpikeDetector`, `SalaryNotDetectedDetector`, `BufferDrainDetector`, `UnusualMerchantDetector`
+**Then** all five detectors execute in sequence, one class per FR-8.1 named pattern: `PostPaydaySpikeDetector` (post-payday spike), `DeathBySmallPurchasesDetector` (death-by-small-purchases), `ZombieSubscriptionDetector` (zombie subscriptions), `WeekendWeekdayPaceDetector` (weekend-vs-weekday pace), `UpcomingCommitmentCollisionDetector` (upcoming-commitment collision) — class names are 1:1 with FR-8.1's pattern list; no detector class exists without a named FR-8.1 pattern and vice versa
 **And** each detector is a class implementing the `InsightDetector` protocol (method: `detect(user_id, db_session) → list[InsightCandidate]`)
 **And** detectors live in `services/engine/insights/` — no Reflex imports
 **And** `pytest services/engine/insights/` covers every detector with at least one true-positive and one true-negative fixture
@@ -861,6 +867,7 @@ So that my Insights page stays useful over time.
 **Then** a dedicated Insights page is shown — separate from the Dashboard; reachable from the persistent left nav
 **And** each insight card shows: pattern name (title), O→E→E→A prose, a "Dismiss" button, and an "Ask Copilot" button
 **And** insights are ordered newest-first within severity tier (critical → important → flexible)
+**And** (FR-8.5) when `data_months < 3` (fewer than 3 months of statement history), a footer note reads exactly: `"More data sharpens these patterns."` — hidden once 3+ months of history exist
 
 **Given** I tap "Dismiss" on an insight
 **When** the dismiss action processes

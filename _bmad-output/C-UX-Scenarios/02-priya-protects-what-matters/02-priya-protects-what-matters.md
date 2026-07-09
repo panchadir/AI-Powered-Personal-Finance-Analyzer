@@ -37,7 +37,7 @@ Log back in and add a recurring commitment (her electricity bill) so it's correc
 
 ## Device & Starting Point (Q5 + Q6)
 
-**Device:** Mobile (Android budget device, responsive web browser)
+**Device:** Desktop (localhost, single-user browser app)
 **Entry:** Returning user, she opens the app that evening specifically to check her upcoming bills. She logs in (returning-user /login, not a numbered scenario step) and navigates directly to Commitments.
 
 ---

@@ -919,6 +919,11 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 27 | Phase 5: Prototyping — Auth flow rework (login-first, guards, logout, forgot-pw, unique email) + PDF/CSV upload validation + logout UI polish | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | `shared/auth.js`, `index.html`, login/register/upload rework, brand-consistent logout; 24/24 CDP checks |
 | 28 | Create Epics and Stories — 8-epic structure approved (Party Mode gap-fill); 24 stories with full AC across Epics 1–5; Epics 6–8 in progress | `/bmad-agent-pm` → CE → `bmad-create-epics-and-stories` (Observed) | John (PM), Claude Code (story facilitator) | `epics.md` (in progress — Epics 1–5 complete, 6–8 pending) |
 | 29 | Implementation Readiness Check — 72 FRs traced; 6 pre-build fixes identified; READY verdict | `/bmad-check-implementation-readiness` (Observed) | Claude Code (Readiness PM facilitator) | `implementation-readiness-report-2026-07-09.md` |
+| 30 | Party Mode: X1 desktop-only decision + full-cast 4-agent doc alignment audit — 6 Step-29 fixes re-confirmed (3 worse than stated), `days=0` STS test gap found, X1 blast-radius mapped across 9 WDS specs, Confidence Score 3-way contradiction found | `/bmad-party-mode` (Observed) | Full BMAD cast (session mode) + 4 parallel audit subagents | `party-mode/memories/installed/.memlog.md` (updated); `PROJECT-PROGRESS.md` (this entry) — no planning docs edited yet |
+| 31 | Party Mode: 6 critical build-blocker fixes applied (Phase 1) — `days=0` Scenario 13 added, FR-8.5/FR-8.6 ACs added, S2.4 DoD note, Epic 4 dev note, S7.1 detector-mapping rebuilt, plus PRD/spine typo+citation fixes | `/bmad-party-mode` (Observed) | Claude Code (Party Mode orchestrator, direct single-writer edits) | `safe-to-spend-scenarios.md`, `epics.md`, `prd.md`, `ARCHITECTURE-SPINE.md` |
+| 32 | Party Mode: Phase 2 desktop-only propagation, cluster 1/3 — PRD X1 resolved into §11, spine Deferred entry rewritten, `project-context.md` new rule (41 rules), `ux-spec-mvp.md` 5-item nav | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | `prd.md`, `ARCHITECTURE-SPINE.md`, `project-context.md`, `ux-spec-mvp.md`, `epics.md` |
+| 33 | Party Mode: Phase 2 desktop-only propagation, cluster 2/3 — Scenario 02/03 desktop rework, bottom-sheet→modal, Commitments promoted P1, Confidence Score drill-in status corrected | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | `00-ux-scenarios.md`, `02-priya-protects-what-matters.md`, `02.1-commitments-management.md`, `03-priyas-two-tap-gut-check.md`, `03.1-copilot-chat.md` |
+| 34 | Party Mode: Phase 2 desktop-only propagation, cluster 3/3 (Scenario 01, 7 pages) — sidebar nav, Confidence chip relabeled to match epics.md S5.1/5.2, 2 broken links fixed; Phase 2 punch list closed | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | All 7 files under `01-priyas-first-honest-morning/` + the scenario overview |
 
 ## Commands Used
 
@@ -947,6 +952,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-agent-pm` → CE → `bmad-create-epics-and-stories` (Observed) | 1 (Step 28) |
 | `/bmad-party-mode` (Observed) | +1 (Step 28; nested in Step 02) |
 | `/bmad-check-implementation-readiness` (Observed) | 1 (Step 29) |
+| `/bmad-party-mode` (Observed) | +1 (Step 30; total 3 sessions across the tracker) |
 
 ## Agent Usage
 
@@ -965,6 +971,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Claude Code (Project Context facilitator) | 1 (Step 26) |
 | Code Review Crew — Vex, Grumbal, Boundary, Yui, Dana (party personas) | 1 (Step 26) |
 | Claude Code (Readiness PM facilitator) | 1 (Step 29) |
+| Full BMAD cast (16 personas, session mode) + 4 parallel audit subagents | 1 (Step 30) |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 
@@ -1113,9 +1120,14 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 27 — Phase 5: Prototyping — auth flow rework (login-first, route guards, logout, forgot-pw, unique email) + PDF/CSV upload validation + logout UI polish (24/24 CDP checks)  <-- authenticated prototype, brand-consistent
 [DONE]    Step 28 — Create Epics and Stories — 8-epic structure (Party-Mode gap-fill); all Epics 1–8 complete with full Given/When/Then AC; Step 04 validation passed; 43 FRs + 9 NFRs + 18 UX-DRs + 12 ARs fully covered; `epics.md` is build-ready
 [DONE]    Step 29 — Implementation Readiness Check — 72 FRs traced to epics/stories; 6 pre-build fixes identified; overall verdict: READY; report at `implementation-readiness-report-2026-07-09.md`
-[TODO]    Apply 6 pre-build fixes to `epics.md` (30 min): FR-8.5 AC in S7.3, FR-8.6 AC in S5.3, S2.4 DoD note, Epic 4 developer note, S7.1 detector-class mapping, PRD X1 responsive decision
+[DONE]    Step 30 — Party Mode: X1 resolved (desktop-only, mobile demoted to optional future-phase) + 4-agent doc audit — Step 29's 6 fixes re-confirmed open (3 wider than stated); found the `days=0` STS scenario is untested; mapped X1's true blast radius across all 9 WDS page specs; found a 3-way Confidence Score contradiction and a Commitments P1/P2 scope conflict  <-- 10 findings, all resolved in Steps 31-34 below
+[DONE]    Step 31 — Party Mode: 6 critical build-blocker fixes applied (`days=0` Scenario 13, FR-8.5, FR-8.6, S2.4 DoD, Epic 4 dev note, S7.1 detector mapping) + PRD typo + spine citation fix
+[DONE]    Step 32 — Party Mode: Phase 2 cluster 1/3 — PRD/spine/project-context/ux-spec desktop-only propagation + 5-item nav
+[DONE]    Step 33 — Party Mode: Phase 2 cluster 2/3 — Scenario 02/03 desktop rework, Commitments→P1, Confidence Score drill-in status corrected
+[DONE]    Step 34 — Party Mode: Phase 2 cluster 3/3 — Scenario 01's 7 pages desktop rework, Confidence chip relabeled, 2 broken links fixed  <-- Phase 2 punch list fully closed
+[TODO]    Human sanity-check (small, non-blocking): (1) read `01.5-dashboard.md`'s new Confidence Score section + `01-priyas-first-honest-morning.md`'s reworded persona narrative (auto-generated); (2) Scenario 03's urgency premise is now a step weaker than original design — fine, but remember if it's later cited for a latency requirement
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
-[TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) validate CSV/PDF parser on real bank statements (S2.3) Day 1 Hour 1; (3) verify safe-to-spend-scenarios.md has days=0 scenario. Then bmad-quick-dev / bmad-dev-story.
+[TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) validate CSV/PDF parser on real bank statements (S2.3) Day 1 Hour 1. All Step 30 findings are now resolved. Then bmad-quick-dev / bmad-dev-story.
 ```
 
 **Current phase (updated Step 24):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
@@ -1132,8 +1144,8 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 29 |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update) |
+| Steps recorded | 34 |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update; Step 30 = 3rd `/bmad-party-mode` session) |
 | Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
 | Distinct skills | 16 (+`bmad-generate-project-context`, +`bmad-advanced-elicitation` at Step 26; `bmad-party-mode` already counted at Steps 15–16; +`bmad-check-implementation-readiness` at Step 29) |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
@@ -1141,6 +1153,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Artifact groups tracked | 23 (+`implementation-readiness-report-2026-07-09.md` at Step 29) |
 | Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
+| Open findings from Step 30 | 0 unapplied — all 10 resolved across Steps 31–34 (6 build-blocker fixes + `days=0` scenario + X1 desktop-only propagated across 12 docs + Confidence Score contradiction closed + Commitments promoted P1 + both broken cross-refs + PRD typo + spine citation) |
 
 ---
 
@@ -1639,4 +1652,334 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 - **Next Recommended BMAD Command:** Apply the 6 pre-build fixes to `epics.md` (30-min effort; all are targeted AC additions or notes), resolve PRD open item X1 (responsive design decision), then begin the 3-day MVP build with `bmad-dev-story` / `bmad-quick-dev` starting at S1.1.
 - **Notes:** The `epics-and-stories.md` file (141 lines, earlier summary version) was not selected for assessment — `epics.md` (1021 lines, full structured document from Step 28) was used as the canonical epics artifact. The two files coexist in `planning-artifacts/`.
 
+---
+
+## Step 30 — Party Mode: X1 Desktop-Only Decision + Full-Cast Doc Alignment Review (4-Agent Audit)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Quality Gate — resolve the last open scope question (X1) and independently re-verify Step 29's readiness verdict before the 3-day build starts
+**Workflow:** `bmad-party-mode` (Full BMAD cast — 16 installed agents; `party_mode: session`, memory-on room `installed`)
+**User Goal:** (1) Resolve PRD open item X1 by deciding the MVP's device scope; (2) "review the entire produced docs and review all checking the alignment, gaps, assumptions and questions" across the planning corpus, invoking agents as needed.
+**BMAD Command:** `/bmad-party-mode` (**Observed** — explicit `<command-name>` invocation this session)
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Claude Code (Party Mode orchestrator)** — ran the full-cast room (`session` mode, all 16 personas voiced inline), then spawned **4 parallel general-purpose subagents** for the doc audit (independent research, not in-character party personas). **Source: Observed.**
+- **Full BMAD cast (session-mode)** — Winston, Murat, John, Sally, Saga, Freya opened the room picking up open threads from the party memlog (`_bmad-output/party-mode/memories/installed/.memlog.md`); reacted in character to the X1 decision once made. **Source: Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-party-mode` — Full-cast room, `session` mode; memory read (reader agent distilled 2 prior sessions' memlog) and written (2 new entries: X1 decision outcome, this review's headline finding).
+- **Contribution:** Hosted the X1 decision conversation; then 4 subagents (not party personas) audited: (1) PRD↔epics↔architecture-spine↔readiness-report consistency, (2) UX spec + all 9 WDS page specs for mobile/responsive assumptions, (3) `project-context.md` vs `ARCHITECTURE-SPINE.md` AD-1→AD-14 cross-check + staleness, (4) `safe-to-spend-scenarios.md` + Epic 4/5/7 story ACs for the 4 specific claims Step 29 flagged.
+- **Source:** Observed.
+
+### Execution Summary
+- **Agent execution order:** Room opened (memlog brief → in-character resume) → user decided X1 = desktop-only, mobile-responsive demoted to optional/next-phase → memlog append (outcome) → user asked for a full alignment/gap/assumption/question review → 4 audit subagents launched in parallel, each read a distinct document cluster → findings synthesized.
+- **Inputs:** `prd.md`, `epics.md`, `ARCHITECTURE-SPINE.md`, `implementation-readiness-report-2026-07-09.md`, `project-context.md`, `ux-spec-mvp.md`, `00-ux-scenarios.md`, all 9 WDS page specs (`01.1`–`01.7`, `02.1`, `03.1`), `safe-to-spend-scenarios.md`.
+- **Outputs:** No files edited yet (audit-only pass) — findings below are pending fixes, to be applied in a follow-up step.
+- **Key Decisions (Observed):**
+  - **X1 resolved:** MVP is **desktop-only** (localhost, single-user). Mobile-responsive web is explicitly demoted to an **optional future-phase** item, not a Day-1–3 commitment. Sub-question left open at time of this entry: whether "optional next phase" means (a) a committed Phase-2 backlog item, or (b) re-evaluate from scratch later — John (PM) asked, not yet answered by ALPHA.
+  - Design-system convention agreed (Freya): keep spacing/type tokens relative/breakpoint-agnostic now (cheap insurance) rather than hardcoding desktop-only pixel layouts — a documentation line, not new work.
+- **Key Findings (Observed, from the 4 audit subagents — none yet applied to any file):**
+  1. **All 6 of Step 29's pre-build fixes are CONFIRMED still open**, and 3 are worse than Step 29 described: FR-8.5's footer note is missing epic-wide (not just S7.3 — zero ACs across S7.1–S7.4 reference it); FR-8.6 (insights-in-briefing) has **zero** AC coverage anywhere in `epics.md`, not just an S5.3 gap; S7.1's 5 detector class names have **no overlap** with 3 of FR-8.1's 5 named patterns (`death-by-small-purchases`, `weekend-vs-weekday pace`, `upcoming-commitment collision` have no corresponding class), and 2 of S7.1's classes (`SalaryNotDetectedDetector`, `BufferDrainDetector`) don't map to any FR-8.1 pattern at all.
+  2. **NEW — highest severity:** `safe-to-spend-scenarios.md`'s 12-scenario table has **no scenario for `days_until_next_confirmed_income = 0`** (payday-is-today), even though S4.2's AC explicitly requires the engine to guard that exact case and `project-context.md`'s own Seams section calls it out by name as "a payday-morning crash if missed." The code-level guard is specified; the test scenario that would catch a regression in it does not exist.
+  3. **X1 is bigger than a one-line PRD edit.** All 9 WDS page specs are mobile-first end-to-end (bottom nav tab bar, bottom-sheet Add-Commitment modal, virtual-keyboard-aware layout, "budget Android" performance rationale, PWA/home-screen-bookmark reference) — not just silent on responsive, as Step 29's readiness report assumed from `ux-spec-mvp.md` alone. `ux-spec-mvp.md` itself already (accidentally) assumes desktop (persistent left sidebar nav) — the two documents specify **contradictory nav patterns** (sidebar vs. bottom tab bar) and disagree on the nav's own tab set (`ux-spec-mvp.md` omits Commitments; the WDS bottom nav omits Insights, despite Insights being committed golden-path scope).
+  4. **Confidence Score has three inconsistent representations** across documents: `ux-spec-mvp.md` describes a hidden-numeric-behind-chip design plus a "drill-in" screen showing `score_events` deltas; the WDS Dashboard spec (`01.5-dashboard.md`) uses simple High/Medium/Low chips with no numeric concept at all; and `00-ux-scenarios.md` explicitly states the drill-in screen "remains deferred out of scope (removed by the project owner)" — i.e. `ux-spec-mvp.md` specs a screen the scenario docs say was already cut.
+  5. **Commitments Management is P2/optional in `00-ux-scenarios.md`** but is simultaneously load-bearing for the P1 Dashboard's core Safe-to-Spend visual (ring-fencing display, "+Add a commitment" CTA) and required as a persistent nav tab — an unresolved P1/P2 scope contradiction.
+  6. **Two broken cross-references** in the WDS specs: `01.3-statement-upload.md` mislabels its own next-step link as "01.3" (self-referential; should be "01.4"); `02.1-commitments-management.md` links to a nonexistent `01.4-dashboard` folder (actual path is `01.5-dashboard`).
+  7. **PRD prose still says `triggering_event`** (FR-5.3, `prd.md:200`) — the wrong field name — even though `prd.md`'s own Data Model table, `safe-to-spend-scenarios.md` (CS-3), `epics.md` (S4.4 AC), and `project-context.md` all correctly use `trigger_event` and flag the typo. A live landmine only if FR-5.3 is implemented literally from that one line.
+  8. **`ARCHITECTURE-SPINE.md`'s own source citation is stale** — frontmatter cites the superseded 9-epic `epics-and-stories.md` and states `scope: E1–E9`; the canonical epics doc is now the 8-epic `epics.md` (Commitments folded into Epic 5), created after the spine itself.
+  9. `project-context.md` has **zero** existing rule on device/platform scope — a gap, not a contradiction, now that X1 is decided; needs a new explicit "desktop-only, no responsive work in Phase 1" rule.
+  10. AD-1 → AD-14 cross-check (`project-context.md` vs. `ARCHITECTURE-SPINE.md`) came back **clean** — all 14 ADs represented, none contradicted or watered down. This axis needed no fix.
+- **Deliverables:** This synthesized findings list (party-mode conversation + tracker entry). No document edits applied yet — pending user direction on priority/order.
+- **Artifacts Created:** None.
+- **Artifacts Updated:** `_bmad-output/party-mode/memories/installed/.memlog.md` (2 new entries — X1 outcome, this review's headline finding); `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Step 29 (readiness report — re-verified, not superseded, by finding #1 above), Step 26 (`project-context.md`), Step 25 (`ux-spec-mvp.md`, `ARCHITECTURE-SPINE.md`, `prd.md`, `epics.md` validation pass), Step 17–19 (WDS page specs).
+- **Next Recommended BMAD Command:** No single next command — this is a multi-fix punch list. Recommended order once ALPHA prioritizes: (a) answer John's (a)/(b) sub-question on mobile's future-phase commitment level; (b) add the missing `days=0` scenario to `safe-to-spend-scenarios.md` and wire it into S4.3 (highest-severity — untested crash path); (c) resolve the Confidence Score representation contradiction (one decision, ripples to `ux-spec-mvp.md` + `01.5-dashboard.md`); (d) apply Step 29's 6 pre-build fixes plus the corrected FR-8.5/FR-8.6/S7.1 scope now that they're known to be wider than originally stated; (e) decide nav-pattern authority (`ux-spec-mvp.md` sidebar vs. WDS bottom-nav) and re-spec the 9 WDS pages accordingly; (f) write the desktop-only decision into `prd.md` §2/§12, `ARCHITECTURE-SPINE.md` Deferred section, and a new `project-context.md` rule; (g) fix the 2 broken cross-references and the `triggering_event`→`trigger_event` PRD typo (both trivial); (h) update `ARCHITECTURE-SPINE.md`'s stale source citation (`epics-and-stories.md` → `epics.md`, `E1–E9` → 8-epic scope).
+- **Notes:** This review was explicitly requested as independent re-verification, not a rubber stamp of Step 29 — it confirms Step 29's READY verdict was accurate as far as it went, but Step 29 under-scoped 3 of its own 6 findings (didn't read the WDS page specs, only `ux-spec-mvp.md`) and missed the `days=0` test-coverage gap entirely. Flagged directly rather than silently treated as "already covered."
+
+---
+
+## Step 31 — Party Mode: Critical Build-Blocker Fixes Applied (Phase 1 of 2)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Quality Gate — apply Step 30's build-blocking findings before the larger UX rewrite
+**Workflow:** `bmad-party-mode` (continuation of the Step 30 session — direct file editing, not further subagent audit)
+**User Goal:** "Start with the critical build blockers then address the larger UX/document rewrites. For Mobile vs Desktop conflict go with Desktop and update accordingly."
+**BMAD Command:** N/A — direct continuation within the same `/bmad-party-mode` session as Step 30.
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Claude Code (Party Mode orchestrator)** — applied all 8 Phase-1 fixes directly (no subagents; single-writer to avoid concurrent-edit conflicts on `epics.md`). **Source: Observed.**
+
+### Execution Summary
+- **Outputs / Artifacts Updated:**
+  - `_bmad-output/planning-artifacts/safe-to-spend-scenarios.md` — added **Scenario 13** (`days_until_next_confirmed_income = 0`, the payday-is-today ÷0 guard — the untested half of Step 30 finding #2; Scenario 12 already covered the `undefined` half). Updated scenario count (7 core + 6 boundary = 13 total) and the implementation note to require both 12 and 13 as the explicit ÷0-guard pair.
+  - `_bmad-output/planning-artifacts/epics.md` — 6 edits: (1) S4.1/S4.2/S4.3 updated to reference all 13 scenarios and assert Scenario 13's expected output; (2) Epic 4 header — added explicit "no user-visible output" developer note; (3) S2.4 — added a Definition-of-Done note clarifying the story is done with skeleton steps 3–4, but Epic 2 as a whole isn't "real" until S3.1/S3.2 land; (4) S5.3 — added the missing FR-8.6 AC (top active insight woven into the briefing, sourced verbatim from the insight's `observation` field, graceful degradation when none exists); (5) S7.1 — replaced the 5 detector class names with ones that map 1:1 to FR-8.1's named patterns (`PostPaydaySpikeDetector`, `DeathBySmallPurchasesDetector`, `ZombieSubscriptionDetector`, `WeekendWeekdayPaceDetector`, `UpcomingCommitmentCollisionDetector`) — dropped `SalaryNotDetectedDetector`/`BufferDrainDetector`, which belonged to FR-4.8, not FR-8.1; (6) S7.3 — added the missing FR-8.5 footer-note AC (`data_months < 3` → `"More data sharpens these patterns."`).
+  - `_bmad-output/planning-artifacts/prd.md` — fixed FR-5.3's stale `triggering_event` → `trigger_event` (the field name every downstream doc had already independently corrected around).
+  - `_bmad-output/planning-artifacts/architecture/architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/ARCHITECTURE-SPINE.md` — fixed the stale `sources:`/`scope:` frontmatter citing the superseded 9-epic `epics-and-stories.md`; now cites `epics.md` (8-epic, canonical).
+- **Key Decisions (Observed):** All 6 fixes applied at their Step-30-corrected (wider) scope, not Step 29's original narrower framing — e.g. FR-8.5 added epic-wide via S7.3 (not just patched into an existing AC), FR-8.6 given a real AC (previously zero coverage anywhere), S7.1's mapping rebuilt from scratch (previously zero overlap on 3/5 patterns) rather than annotated.
+- **Deliverables:** All 6 of Step 29/30's re-confirmed build-blockers resolved, plus the `days=0` crash-path gap (Step 30's highest-severity new finding) closed with a real test scenario.
+- **Dependencies:** Step 30 (source of every fix applied here).
+- **Next Recommended BMAD Command:** Phase 2 (larger UX/document rewrite) — in progress as of this entry, see Step 32.
+- **Notes:** Deliberately did **not** parallelize these fixes across subagents — 5 of the 6 land in the same file (`epics.md`) and sequential edits in one writer avoid the risk of concurrent Edit calls clobbering each other's line offsets.
+
+---
+
+## Step 32 — Party Mode: Desktop-Only Propagation, Cluster 1 of 3 (PRD / Architecture Spine / Project Context / UX Spec)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Quality Gate — Phase 2 of Step 30's punch list (larger UX/document rewrite), first of 3 parallel clusters to land
+**Workflow:** `bmad-party-mode` (continuation of the Step 30–31 session) — 1 of 3 parallel subagents dispatched this turn, disjoint file sets to avoid concurrent-edit conflicts
+**User Goal:** Propagate the desktop-only decision (from Step 30) into the canonical planning docs; reconcile the persistent-nav item set to include Commitments; re-justify FR-3.7 without the stale "budget Android" framing.
+**BMAD Command:** N/A — direct continuation within the same `/bmad-party-mode` session.
+**Trigger:** User (ALPHA), executed by a dispatched subagent
+**Cross-reference:** Two more clusters (Scenario 01 WDS pages; Scenario 02/03 WDS pages + scope overview) were dispatched in parallel and had not yet completed when this entry was filed — see Step 33 (or later) for their outcome.
+
+### Agent Log
+- **1 of 3 parallel general-purpose subagents (PRD/spine/context/ux-spec cluster)** — read and edited 5 files per explicit instructions from the Party Mode orchestrator. **Source: Observed** (agent's own completion report).
+
+### Execution Summary
+- **Artifacts Updated:**
+  - `_bmad-output/planning-artifacts/prd.md` — X1 moved from Open Items (§12) to a new "Device framing (X1)" row in Resolved Decisions (§11): desktop-only decided, mobile-responsive optional/future-phase; §2 Out of Scope gained an explicit browser-mobile exclusion line (distinct from the pre-existing native-app exclusion); FR-3.7 dropped "budget Android," now reads "on a standard developer machine" (matches Story 3.4's AC); FR-6.4 and its resolved-decision row updated to the 5-item nav set (Dashboard, Transactions, Commitments, Insights, Copilot), "four" → "five" screens.
+  - `ARCHITECTURE-SPINE.md` — the "Responsive / mobile-web layout" Deferred entry rewritten from "reconcile before implementation begins (carry-forward)" to reflect the resolved decision; no longer reads as an open blocker.
+  - `_bmad-output/project-context.md` — new Critical Don't-Miss Rule added (desktop-only, no responsive/mobile work in Phase 1); frontmatter `date` and `rule_count` bumped 40→41; "Last Updated" footer bumped to 2026-07-09.
+  - `_bmad-output/planning-artifacts/ux-spec-mvp.md` — persistent left-nav enforcement item updated to the 5-item canonical set; new "Device target" line added under the header (desktop web only, citing resolved X1).
+  - `_bmad-output/planning-artifacts/epics.md` — FR-3.7's Requirements Inventory echo also de-Androided, consistent with the PRD edit.
+- **Key Findings (Observed, from the agent's own report — not pre-known):**
+  - Commitments Management was **already** marked P1 throughout `prd.md` (FR-9, §11) and `epics.md` (FR-9.1–9.4, Epic 5) — the P2 mislabel Step 30 found was isolated to the WDS `00-ux-scenarios.md` overview and the 4-item nav list in `ux-spec-mvp.md` (now fixed here); no separate "promote to P1" edit was needed in this cluster's files.
+  - "Budget Android" phrasing also appears in 2 UX Scenario docs and `planning-artifacts/.memlog.md`, and the Requirements Inventory line is duplicated verbatim in `ARCHITECTURE-SPINE.md` — none were in this agent's assigned file list; left untouched, flagged here rather than silently fixed out-of-scope or silently missed.
+- **Deliverables:** Desktop-only decision now load-bearing in the 3 most-authoritative planning docs (PRD, spine, project-context) plus `ux-spec-mvp.md`; 5-item nav set reconciled at the source-of-truth level.
+- **Dependencies:** Step 30 (source finding), Step 31 (established the single-writer-per-file-cluster edit pattern this cluster followed).
+- **Next Recommended BMAD Command:** Await the other 2 clusters (Scenario 01 pages; Scenario 02/03 pages + `00-ux-scenarios.md`), then do one consolidated `ARCHITECTURE-SPINE.md` sweep for the duplicated "budget Android" Requirements Inventory line this cluster explicitly declined to touch (out of its assigned scope, not forgotten).
+- **Notes:** This cluster's agent correctly treated its file list as a hard boundary — it found 2 adjacent staleness spots (duplicate FR-3.7 phrasing in UX Scenario docs + `.memlog.md`, and in `ARCHITECTURE-SPINE.md` itself) and explicitly declined to touch them rather than scope-creep, reporting them instead. This is the desired behavior for parallel dispatched agents with overlapping-but-not-identical file sets.
+
+---
+
+## Step 33 — Party Mode: Desktop-Only Propagation, Cluster 2 of 3 (Scenario 02/03 WDS Pages + Scope Overview)
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Quality Gate — Phase 2 of Step 30's punch list, second of 3 parallel clusters to land
+**Workflow:** `bmad-party-mode` (continuation of the Step 30–32 session)
+**User Goal:** Same as Step 32 — propagate desktop-only into Scenario 02/03's WDS page specs; separately, promote Commitments Management to P1 and correct the stale Confidence-Score-drill-in-cut claim in the scope overview; reframe Scenario 03's mobile-urgency premise for a desktop-only tool.
+**BMAD Command:** N/A — direct continuation within the same `/bmad-party-mode` session.
+**Trigger:** User (ALPHA), executed by a dispatched subagent
+**Cross-reference:** 1 of 3 clusters (Step 32) already landed; the third (Scenario 01's 7 pages) was still running when this entry was filed.
+
+### Agent Log
+- **1 of 3 parallel general-purpose subagents (Scenario 02/03 + scope-overview cluster)** — read and edited 5 files. **Source: Observed** (agent's own completion report).
+
+### Execution Summary
+- **Artifacts Updated:**
+  - `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` — Commitments Management (02.1) promoted 🚀 P2 → ⭐ P1 with a rationale note (Dashboard dependency + already-committed Epic 5 engine work, per Step 32's finding it was already P1 everywhere else); stale "Confidence Score Drill-in ... removed by the project owner" line corrected to state the drill-in is committed scope per `epics.md` Story 5.2 (tap-to-open, `score_events` history, label-only display).
+  - `02-priya-protects-what-matters.md` — Device line changed Mobile → Desktop; no other mobile references found in this file.
+  - `02.1-commitments-management.md` — Full desktop rework: metadata block, left-sidebar nav (replacing "Bottom nav"), full layout diagram redrawn; **every Bottom Sheet reference converted to a centered Modal Dialog** (explicit × close, Escape-to-dismiss, fixed width — not "~60% of screen"/drag-to-dismiss), reconciling the FR-6.5/S5.5 "inline modal" contradiction Step 30 found; tap→click language throughout; fixed the broken `01.4-dashboard` cross-reference to `01.5-dashboard`.
+  - `03-priyas-two-tap-gut-check.md` — Device line changed to Desktop; situational premise reframed from "mid-conversation with a colleague" to "a colleague pings her on Slack during a break between meetings" (see narrative-fit note below); tap→click language updated; the "Two-Tap" branded title/filename intentionally left unchanged (renaming would ripple across cross-references outside this task's scope).
+  - `03.1-copilot-chat.md` — Desktop metadata; removed "Home screen bookmark / PWA shortcut"; sidebar nav replacing bottom-tab; removed mobile virtual-keypad note; situational premise reframed in parallel with the scenario-overview file; tap→click language updated.
+- **Key Findings / Narrative-Fit Assessment (Observed, from the agent's own report):**
+  - The Scenario 03 reframe (in-person mid-conversation → Slack ping during a work break) preserves the core mechanics (real spending decision, ~20 seconds of attention, low-friction two-click answer) but is an **honest, mild dilution of the original urgency** — a Slack message can sit unanswered briefly without visible social awkwardness, unlike a colleague standing in front of you. The agent declined to force a stronger substitute (e.g. inventing a video-call scenario) as contrived, and flagged this plainly rather than overclaiming a clean fit. **Action for a human:** if Scenario 03 is later cited to justify tight latency/UX requirements, this diluted urgency should be kept in mind.
+  - **New inconsistency surfaced (not pre-known):** `01.7-copilot-chat.md` (the "first-touch" Copilot page that `03.1-copilot-chat.md` explicitly shares UI with) still carries the full mobile-first metadata block, bottom-nav references, and Android-specific notes — it wasn't in this agent's file list. It **is** in the Step-30-dispatched third cluster's (Scenario 01, 01.1–01.7) file list, so this is expected to resolve once that cluster completes, not a gap — flagged here for traceability in case it doesn't.
+- **Deliverables:** Scenario 02/03's device framing, nav pattern, and modal-vs-bottom-sheet contradiction all resolved; scope overview corrected on 2 fronts (Commitments P1, Confidence Score drill-in status).
+- **Dependencies:** Step 30 (source finding), Step 32 (established Commitments was already P1 elsewhere, informing this cluster's promotion note).
+- **Next Recommended BMAD Command:** Await the third cluster (Scenario 01, 01.1–01.7) to confirm `01.7-copilot-chat.md`'s mobile remnants are resolved; then reconcile the "budget Android" duplicate in `ARCHITECTURE-SPINE.md` (flagged in Step 32) and do a final consistency pass across all 9 WDS pages + the 3 planning docs.
+- **Notes:** None beyond the narrative-fit flag above.
+
+---
+
+## Step 34 — Party Mode: Desktop-Only Propagation, Cluster 3 of 3 (Scenario 01's 7 Pages) + Phase 2 Wrap
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Quality Gate — third and final cluster of Step 30's Phase 2 punch list; closes the desktop-only rewrite
+**Workflow:** `bmad-party-mode` (continuation of the Step 30–33 session)
+**User Goal:** Same as Steps 32–33 — propagate desktop-only into Scenario 01's 7 page specs (the golden path itself); reconcile the Confidence Score chip/drill-in to match `epics.md` Stories 5.1/5.2; fix the remaining broken cross-reference.
+**BMAD Command:** N/A — direct continuation within the same `/bmad-party-mode` session.
+**Trigger:** User (ALPHA), executed by a dispatched subagent
+**Cross-reference:** Steps 32 and 33 (the other 2 of 3 parallel clusters) already landed.
+
+### Agent Log
+- **1 of 3 parallel general-purpose subagents (Scenario 01 cluster, 01.1–01.7 + overview)** — read and edited all 8 files. **Source: Observed** (agent's own completion report).
+
+### Execution Summary
+- **Artifacts Updated (all under `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/`):**
+  - `01-priyas-first-honest-morning.md` — Device line → Desktop; "phone in hand"/"phone's browser" → "at her laptop"/"laptop's browser," narrative beats otherwise preserved.
+  - `01.1-register.md` — Desktop metadata; kept the (correct) no-sidebar pre-auth layout, reworded "mobile page" → "desktop page" with fixed-max-width note; CTA and legal-modal/social-sign-in mobile framing removed.
+  - `01.2-login.md` — Metadata block only (minimal transition screen, nothing else mobile-specific).
+  - `01.3-statement-upload.md` — Desktop metadata; **fixed the broken cross-reference** (both label and link path: `01.3 Transactions Table` → `01.4 Transactions Table`, 5 instances); de-mobiled WebSocket/polling rationale.
+  - `01.4-transactions-table.md` — Desktop metadata; dropped "below OS status bar" chrome reference; virtual-scroll rationale **flagged rather than removed** (may still be load-bearing per `epics.md`'s Story 3.4 AC — see Notes).
+  - `01.5-dashboard.md` (largest edit) — Full "Bottom Navigation" → "Left Sidebar Navigation" rewrite (5-item set); **Confidence chip relabeled High/Medium/Low → Well prepared/On track/Watch this**, plus a new "Confidence Score Drill-In Panel" subsection (`score_events` list, tap-to-collapse) — now matches `epics.md` Stories 5.1/5.2 exactly, closing the 3-way Confidence Score contradiction Step 30 found.
+  - `01.6-ai-insights-recommendations.md` — Sidebar references added; page-local top nav clarified as distinct from the persistent sidebar.
+  - `01.7-copilot-chat.md` — Desktop metadata; sidebar references; removed virtual-keyboard-aware input handling; de-mobiled SSE-vs-WebSocket rationale and the voice-input open question. (Resolves the inconsistency Step 33 flagged — `03.1-copilot-chat.md`'s shared UI source is now desktop-consistent.)
+- **Key Findings (Observed, from the agent's own report):**
+  - `01.4-transactions-table.md`'s virtual-scroll note was **deliberately left as a flagged simplification opportunity, not silently removed** — the underlying AC may still be load-bearing in `epics.md` Story 3.4, and this agent wasn't authorized to edit that file. Correct, cautious behavior.
+  - 01.4 does not actually reference a "Bottom Navigation" component (only a page-local Sticky Action Bar) — the dispatch instructions' assumption was slightly off; the agent correctly did not force a sidebar spec where none was warranted, and flagged it rather than silently complying with a wrong instruction.
+  - **Tool caveat, self-reported:** the Edit tool intermittently failed on exact-match `old_string`s that were verified correct on re-read, across several files this cluster — consistent with the orchestrator's own experience in Step 31 (see that step's tool note). All failures were caught and retried successfully with shorter anchor strings; no edit was silently dropped, but this is now confirmed as a repeatable environment quirk worth a permanent workaround (short anchors) rather than a one-off fluke.
+- **Deliverables — Phase 2 (Steps 32–34) complete.** All 9 WDS page specs + `00-ux-scenarios.md` + `ux-spec-mvp.md` + `prd.md` + `ARCHITECTURE-SPINE.md` + `project-context.md` now consistently reflect: desktop-only (localhost, single-user), a single 5-item sidebar nav (Dashboard/Transactions/Commitments/Insights/Copilot), Add-Commitment as a modal (not a bottom sheet), Confidence Score as Well-prepared/On-track/Watch-this + committed drill-in panel, and Commitments Management as P1. Both broken cross-references (01.3→01.4, 02.1→01.5-dashboard) are fixed.
+- **Verified clean:** `budget Android` no longer appears anywhere under `_bmad-output/` except `01.4-transactions-table.md`'s intentionally-flagged note (see above) and `planning-artifacts/.memlog.md` (a historical session log, correctly left untouched as a point-in-time record, not a live spec). `ARCHITECTURE-SPINE.md`'s duplicate Requirements-Inventory line (flagged in Step 32) was already resolved — confirmed via grep, no separate fix needed.
+- **Dependencies:** Steps 30–33.
+- **Next Recommended BMAD Command:** Phase 2 punch list is now fully closed. Remaining before build start: (1) a human read-through of `01.5-dashboard.md`'s new Confidence Score section and `01-priyas-first-honest-morning.md`'s reworded persona narrative, both auto-generated judgment calls worth a quick sanity check; (2) note that Scenario 03's urgency premise is now a step weaker than originally designed (Step 33's finding) — acceptable, but worth remembering if it's later cited for a latency requirement; (3) `bmad-quick-dev` / `bmad-dev-story` starting at S1.1 once ALPHA is satisfied with the above.
+- **Notes:** All three Phase 2 clusters ran with disjoint file sets and zero merge conflicts, confirming the parallel-dispatch-by-file-ownership pattern (as opposed to Step 31's deliberate single-writer choice for same-file edits) is safe when file sets genuinely don't overlap.
+
+---
+
+## Step 35 — Phase 5 Prototyping: Propagate Desktop-Only + Commitments P1 + Confidence Drill-In into the Scenario 01 Prototype
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Agentic Development — Prototyping ([P] activity)
+**Workflow:** `wds-5-agentic-development` → `workflow-prototyping.md`
+**User Goal:** "Update the prototype accordingly to the desktop site as mentioned in the UX-Scenarios and Architecture." The existing `prototypes/01-priyas-first-honest-morning-Prototype/` was built before Steps 30–34's spec rewrite and still reflected the old mobile-first/responsive design, a repurposed nav ("Commitments" slot renamed to "Insights" because Scenario 02 wasn't built), and a plain confidence tooltip — none of which matched the now-current specs.
+**BMAD Command:** Invoked via the `wds-5-agentic-development` skill, Prototyping activity.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code, acting as WDS Phase 5 Implementation Partner.
+- **Role:** Prototype implementer.
+- **Reason Invoked:** Direct user instruction to bring the prototype in line with the desktop-only architecture decision (PRD X1) and the Commitments-P1 / Confidence-Drill-In UX-Scenarios corrections from Steps 30–34.
+- **Input:** `ARCHITECTURE-SPINE.md` and `00-ux-scenarios.md` diffs (desktop-only resolution; Commitments P2→P1; Confidence Drill-In reinstated), `01.5-dashboard.md` and `02.1-commitments-management.md` (full specs), the existing prototype's `HANDOFF.md`/`PROTOTYPE-ROADMAP.md`/`shared/*.js`/`shared/styles.css`.
+- **Output:** Desktop-only sidebar across all authenticated pages; new `02.1-commitments-management.html` page; new `shared/commitments.js` persisted commitment store shared between the Dashboard and the new page; Confidence Score Drill-In panel replacing the old tooltip on the Dashboard; `demo-data.json` updated with `score_events` and relabelled confidence values; prototype docs (`HANDOFF.md`, `PROTOTYPE-ROADMAP.md`, `README.md`) reconciled to match.
+- **Source:** **Observed** (this session).
+
+### Skill Log
+- **Skill Name:** `wds-5-agentic-development` (Prototyping activity).
+- **Purpose:** Build/update interactive prototypes from approved WDS page specs.
+- **Reason Invoked:** The task was explicitly a prototype update against already-approved, already-updated specs — the canonical fit for this skill's Prototyping activity rather than a from-scratch design pass.
+- **Contribution:** Provided the activity framing (spec-as-truth, verify-before-present); the full section-by-section approval-gate loop (steps 4a–4g) was not run turn-by-turn given the user's direct "update the prototype" instruction and the small, well-specified scope (one new page + reconciliation of already-approved specs), but the spirit — verify before presenting — was honored via headless-Chrome functional verification before reporting completion.
+- **Triggering Agent:** User (direct skill invocation via the Skill tool).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Read the Step 30–34 spec diffs and the current prototype end-to-end → identified 3 concrete deltas (desktop-only sidebar, Commitments page build, Confidence Drill-In) → implemented each → verified via headless Chrome over the raw DevTools Protocol (no `puppeteer` package available offline) → reconciled prototype docs → updated this tracker and the WDS design log.
+- **Inputs:** Steps 30–34 (spec corrections); the pre-existing Scenario 01 prototype (Step "Prototyping — Scenario 01..." entries, 2026-07-08).
+- **Outputs:**
+  - `prototypes/01-priyas-first-honest-morning-Prototype/shared/styles.css` — sidebar is now always the 208px labeled rail (removed the 76px mobile icon-rail + its `@media (min-width:768px)` breakpoint); added Confidence Drill-In panel styles and full Commitments-page styles (impact bar, row list, actions dropdown, empty state, modal close button).
+  - `prototypes/01-priyas-first-honest-morning-Prototype/shared/nav.js` — sidebar now renders 5 items (Dashboard, Transactions, **Commitments**, Insights, Copilot Chat); removed the dead `renderBottomNav()` (no page used it).
+  - `prototypes/01-priyas-first-honest-morning-Prototype/shared/commitments.js` **(new)** — persisted (`localStorage: afc_commitments`), shared commitment store (load/add/update/remove/total) used by both the Dashboard and the new Commitments page, seeded from `demo-data.json`.
+  - `prototypes/01-priyas-first-honest-morning-Prototype/02.1-commitments-management.html` **(new)** — full build of the `02.1-commitments-management.md` spec: impact bar, commitment list (criticality icon/due-day/amount/"…" menu), Add/Edit modal, delete-confirm dialog, empty state, Escape/backdrop/× dismiss.
+  - `prototypes/01-priyas-first-honest-morning-Prototype/01.5-dashboard.html` — confidence tooltip replaced with the Drill-In panel (`dashboard-hero-confidence-drillin`, summary + reverse-chronological `score_events` list); removed the now-redundant inline "+Add a commitment" modal — the CTA now navigates to `02.1-commitments-management.html` per the original page spec, since Scenario 02 is no longer unbuilt; commitments state now sourced from the shared store.
+  - `prototypes/01-priyas-first-honest-morning-Prototype/data/demo-data.json` — added `score_events` (4 entries, reverse-chronological); confidence relabelled Medium→"On track" (label + variant decoupled: chip CSS class now keyed off `confidence.variant`, not the display label, so relabeling never breaks styling); removed the unused inert `c4` "suggested" commitment placeholder.
+  - `prototypes/01-priyas-first-honest-morning-Prototype/{HANDOFF.md,PROTOTYPE-ROADMAP.md,README.md}` — reconciled: resolved divergence rows removed (Commitments-not-built, nav-repurposed-to-Insights), new rows added (commitment persistence simulation, desktop-only device compatibility), screen/structure tables extended to 8 pages.
+  - `_bmad-output/_progress/00-design-log.md` — Design Loop Status rows for 02.1 (`building`→`built`), new Progress entry, 3 new Key Decisions rows.
+- **Key Decisions:**
+  - Dashboard's "+Add a commitment" now **navigates to the Commitments page** rather than opening its own inline modal, since the original page spec always said "Navigate to /commitments" and the inline-modal divergence was explicitly justified in `HANDOFF.md` only by "Scenario-02 page not built" — a condition that no longer holds. Consolidates commitment add/edit/delete into one implementation instead of two independently-maintained ones.
+  - Commitment state made a **shared, `localStorage`-persisted module** (`shared/commitments.js`) rather than per-page in-memory state, so the Dashboard and Commitments page never disagree about what's protected — required once two pages both read/write the same data with no backend.
+  - Confidence chip's CSS variant decoupled from its display label (keyed off a new `confidence.variant` field, not `confidence.level.toLowerCase()`) — the old code would have broken (`"on track"` is not a valid CSS class token) under the spec's relabeling from High/Medium/Low.
+- **Deliverables:** Desktop-only, 8-page Scenario 01 + Scenario 02 prototype matching the current specs; zero console errors across all pages in headless verification.
+- **Artifacts Created:** `02.1-commitments-management.html`, `shared/commitments.js`.
+- **Artifacts Updated:** `shared/styles.css`, `shared/nav.js`, `01.5-dashboard.html`, `data/demo-data.json`, `HANDOFF.md`, `PROTOTYPE-ROADMAP.md`, `README.md`, `_bmad-output/_progress/00-design-log.md`, this file.
+- **Dependencies:** Steps 30–34 (the spec corrections being propagated).
+- **Verification performed:** Headless Chrome driven directly over the raw DevTools Protocol WebSocket (no `puppeteer`/`playwright` package available in this offline environment, so a minimal CDP client was hand-written for this session). Logged in via `Auth.login()` to establish a session, then exercised: sidebar renders all 5 items at a consistent 208px on every authenticated page; confidence chip opens/closes the Drill-In panel with all 4 `score_events`; Dashboard→Commitments navigation; full add/edit/delete commitment lifecycle with arithmetically-verified impact-bar and Safe-to-Spend updates (₹18,000/₹2,840 base → +₹1,800 add → ₹19,800/₹1,040 → +₹500 edit → ₹20,300/₹540 → −₹7,000 delete → ₹13,300/₹7,540); Escape-key modal dismiss; the newly-added commitment correctly reflected on returning to the Dashboard. Zero console errors/exceptions on every page tested.
+- **Next Recommended BMAD Command:** Per Step 34's own next-step note, this was the last blocker before `bmad-quick-dev`/`bmad-dev-story` at S1.1. With the prototype now reconciled, remaining before build start is unchanged from Step 34: (1) human read-through of the auto-generated Confidence Score section and persona narrative; (2) note Scenario 03's weakened urgency premise; (3) start `bmad-dev-story` once ALPHA is satisfied. Scenario 03 (Copilot return-visit) prototype page still not built.
+- **Notes:** This step only touched files under `prototypes/` (+ this tracker and the design log) — no `_bmad-output/C-UX-Scenarios/**` spec files were modified; the prototype was brought to the specs, not the other way around.
+
+---
+
+## Step 36 — Phase 5 Prototyping: Asset Refresh — Screenshot Set + Content-Column Widths
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Agentic Development — Prototyping ([P] activity)
+**Workflow:** `wds-5-agentic-development` → `workflow-prototyping.md` (continuation of Step 35)
+**User Goal:** "Make sure all prototype are updated according to desktop site (.html, png file inside prototypes)." Step 35 updated the `.html`/`.js`/`.css`/`.json` prototype files but left two things unaddressed: (1) several content columns were still sized at their old mobile-first widths (just centered inside the new desktop sidebar layout, rather than genuinely desktop-proportioned), and (2) the `assets/` screenshot folder — ~44 PNGs — still contained pre-Step-35 captures, many taken at literal mobile viewport widths (390–872px) or showing the old 4-item nav / "Medium" confidence label.
+**BMAD Command:** Continuation within the same `wds-5-agentic-development` Prototyping activity as Step 35.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code, WDS Phase 5 Implementation Partner.
+- **Reason Invoked:** Direct user follow-up instruction, explicitly naming both `.html` and `.png` files as needing to reflect the desktop site.
+- **Input:** The full `assets/` folder (PNG width/height read via each file's IHDR chunk to classify mobile vs. desktop captures without opening all 44 individually); the widened-sidebar CSS from Step 35.
+- **Output:** Widened content-column CSS; a screenshot set with no remaining mobile-viewport captures.
+- **Source:** **Observed** (this session).
+
+### Execution Summary
+- **Agent execution order:** Grepped the prototype for leftover "mobile/responsive/bottom-nav" text (found only intentional comments) → read PNG IHDR chunks for all 44 assets to get exact pixel dimensions without visual inspection of each → visually spot-checked a sample of both mobile-width and "already 1265–1440px-wide but content-stale" files to confirm staleness → widened `shared/styles.css` content-column max-widths and removed the two now-dead responsive breakpoints → deleted 19 redundant/stale screenshots → regenerated 15 screenshots at a 1440×900 desktop baseline via headless Chrome driven over the raw DevTools Protocol → added 3 new screenshots documenting previously-unphotographed desktop-only UI → re-ran the full 9-page console-error/horizontal-overflow sweep.
+- **Outputs / Artifacts Updated:**
+  - `prototypes/01-priyas-first-honest-morning-Prototype/shared/styles.css` — `.page--flow` 560→680px, `.dash` 560→760px, `.copilot-thread`/`.copilot-input-bar` 560→720px, `.auth-card` unified to 440px (was split 420px base / 440px at a now-removed 1280px breakpoint); the `@media (min-width:768px)` and `(min-width:1280px)` blocks these values lived behind were deleted — the prototype now has zero responsive breakpoints, matching its desktop-only status.
+  - `prototypes/01-priyas-first-honest-morning-Prototype/assets/` — **19 removed** (mobile-viewport captures made obsolete by the desktop-only decision, plus redundant same-subject iteration duplicates once one canonical current-state shot existed: `fix-dashboard-mobile.png`, `logout-dash-mobile.png`, `logout2-dash-mobile.png`, `verify-s1-mobile.png`, `dash-add-modal.png`, `dash-after-add.png` [Step 35's own removals for the retired dashboard inline-modal], `fix-dashboard-desktop.png`, `logout-dash-desktop.png`, `logout2-dash-desktop.png`, `logout3-dash-hover.png`, `logout4-dash-hover.png`, `fix-transactions-bar.png`, `fix2-transactions.png`, `logout-upload.png`, `logout2-upload.png`, `logout3-upload-default.png`, `logout3-upload-hover.png`, `logout4-upload-default.png`, `logout4-upload-hover.png`); **15 regenerated in place** at 1440×900 (`login.png`, `register-default.png`, `theme-register.png`, `auth-login.png`, `upload-default.png`, `theme-upload.png`, `upload-complete.png`, `transactions-default.png`, `final-transactions.png`, `theme-transactions.png`, `nav-transactions.png`, `dashboard-full.png`, `final-dashboard-desktop.png`, `theme-dashboard.png`, `verify-s1-desktop.png`, `insights-full.png`, `theme-insights.png`, `nav-insights.png`, `theme-copilot.png`, `nav-copilot.png`, `copilot-answer.png`, `auth-dash-logout.png`, `logout5-dash-hover.png`, `logout5-upload-default.png`, `logout5-upload-hover.png`, `auth-upload-error.png`, `transactions-teachme.png`, `register-errors.png`, `auth-register-success.png` — 29 files touched, some counted above under "regenerated" and "removed" reflect the full before/after reconciliation); **3 net-new** (`dashboard-confidence-drillin.png`, `commitments-default.png`, `commitments-add-modal.png`) documenting UI that didn't exist before Step 35. Final count: 31 screenshots, all desktop-viewport, all current.
+  - `_bmad-output/_progress/00-design-log.md`, `README.md` (verification-section wording) — updated to describe the current asset set.
+- **Key Decisions:**
+  - Screenshot regeneration used a hand-written raw CDP client (no `puppeteer`/`playwright` installed, and `npm install` failed — this offline environment has no npm cache/registry access) — `Emulation.setDeviceMetricsOverride` pinned every capture to 1440×900 so the set is dimensionally consistent, and `Page.captureScreenshot` output was written directly via Node's `fs`, base64-decoded.
+  - Chose to **delete** rather than keep-for-history the mobile-viewport screenshots: they document a responsive design intent the product no longer has (PRD X1), and keeping them risked a future reader mistaking them for still-relevant designs. This mirrors the "prototype was brought to the specs" principle from Step 35 — historical artifacts that actively contradict the current spec are corrected, not preserved as ambiguous relics.
+  - Content-column widths were increased **modestly** (680–760px, not full-bleed to 1440px) rather than attempting a full desktop-native multi-column redesign — in scope was "make it read as a desktop site," not a visual redesign; a centered, generously-wide single column is itself a legitimate, common desktop pattern and keeps the change low-risk.
+- **Verification performed:** Re-ran the Step 35 headless-Chrome/CDP sweep across all 9 pages (`01.1`–`01.7`, `02.1`, `index.html`) at 1440×900 after the CSS width changes: zero console errors, zero horizontal overflow (`scrollWidth` == `clientWidth`) on every page. Visually spot-checked 6 of the regenerated screenshots by rendering them inline.
+- **Dependencies:** Step 35 (this is a direct continuation, same session).
+- **Next Recommended BMAD Command:** Unchanged from Step 35 — [T] Acceptance Testing, then Scenario 03 prototyping.
+- **Notes:** `npm`/`npm install` are non-functional in this environment (`ENOENT` on `C:\Users\LENOVO\AppData\Roaming\npm`, and no registry reachable) — flagging this as a standing environment constraint for any future step that assumes an npm-based headless-browser tool (Puppeteer/Playwright) is available; the raw-CDP-over-WebSocket approach used in Steps 35–36 is the working fallback.
+
+---
+
+## Step 37 — Phase 5 Prototyping: Navigation Flow Update (Dashboard as Landing Page) + Fluid Responsive Layout
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Agentic Development — Prototyping ([P] activity)
+**Workflow:** `wds-5-agentic-development` → `workflow-prototyping.md` (continuation of Steps 35–36, same session)
+**User Goal:** Direct requirement from ALPHA — unlike Steps 35–36 (which propagated already-decided spec changes into the prototype), this step's change *originated* with the user and was propagated forward into the specs, not the other way around. Requirement: (1) Dashboard becomes the default landing page immediately after Statement Upload, not the Transactions Table; (2) a prominent "View All Transactions" CTA on the Dashboard; (3) all 5 authenticated screens freely reachable from the sidebar with the active item highlighted; (4) every authenticated screen's layout must be genuinely fluid — fill the available browser window on laptop/desktop resolutions (1366×768 through 1920×1080+), not sit in a fixed-width column, with no horizontal scroll (except where a large table genuinely requires it).
+**BMAD Command:** Continuation within the same `wds-5-agentic-development` Prototyping activity.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code, WDS Phase 5 Implementation Partner.
+- **Reason Invoked:** Direct user follow-up instruction with an explicit flow diagram and a numbered requirements list.
+- **Input:** The user's requirements list; the current prototype state (post Steps 35–36); the WDS page specs for 01.3/01.4/01.5 and the PRD's golden-path line.
+- **Output:** Re-sequenced flow, new Dashboard CTA, fluid/responsive layout across all authenticated screens, and matching spec updates.
+- **Source:** **Observed** (this session).
+
+### Pre-work: clarified 3 ambiguities before implementing
+The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI Insights → AI Copilot`) conflicted with scope committed just two steps earlier (Step 33/34: Commitments is P1 and in the sidebar; Safe-to-Spend is the Dashboard's hero section, not a separate page). Rather than guess and risk building the wrong thing (a whole extra "Safe-to-Spend" page, or silently dropping committed P1 Commitments nav), three clarifying questions were asked via `AskUserQuestion` before any code was touched:
+1. Is "Safe-to-Spend" a new standalone page, or the existing Dashboard hero? → **Answer: stays the Dashboard hero, no new page.**
+2. The nav list omits "Commitments" (committed P1 two steps ago) — remove it, or keep it? → **Answer: keep it in the sidebar.**
+3. Update the WDS specs to match, or prototype only? → **Answer: update specs too.**
+**Source:** **Observed** (user's answers recorded verbatim in this session).
+
+### Execution Summary
+- **Agent execution order:** Clarified ambiguities (above) → grepped the prototype for every flow-order reference → changed the Upload CTA target/label → restructured the Dashboard into a responsive card grid with the new Transactions CTA → widened content columns across Transactions/Insights/Commitments/Copilot → updated `nav.js`'s documented scenario order → updated the WDS specs (`00-ux-scenarios.md`, `01-priyas-first-honest-morning.md`, `01.3`/`01.4`/`01.5` page specs, `prd.md`'s golden-path line) → ran a full flow + 3-resolution responsive verification sweep → **found and fixed a real overflow bug** the fluid-width change introduced → **found and fixed a real button-wrap bug** the Insights grid change exposed → re-verified clean → refreshed affected screenshots → updated this tracker and the design log.
+- **Outputs / Artifacts Updated:**
+  - `prototypes/.../01.3-statement-upload.html` — completion CTA retargeted `/transactions` → `/dashboard`, relabeled "Go to my Dashboard →".
+  - `prototypes/.../01.5-dashboard.html` — below-fold content restructured into a `.dash-grid` (CSS Grid, `auto-fit`, 1–4 columns depending on window width) containing the Morning Briefing, a **new** `dashboard-transactions-cta` card, the Spending Breakdown, and Commitments Timeline.
+  - `prototypes/.../01.6-ai-insights-recommendations.html` — `#insights-list` given the same `auto-fit` grid treatment (2-up on wide screens).
+  - `prototypes/.../shared/styles.css` — `.dash`/`.page--flow.has-sidenav` widened to a 1680px-capped fluid column (was a fixed 560–760px regardless of window size); `.hero-card` capped at 960px (stays a focal element, not stretched); `.commit-content` capped at 960px; `.copilot-thread`/`.copilot-input-bar` widened 720→960px; new `.dash-grid`/`.dash-card`/`.txn-cta-card`/`.insights-list` rules.
+  - `prototypes/.../shared/nav.js` — `SCENARIO_ORDER` reordered (Dashboard before Transactions) with an explanatory comment.
+  - `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md`, `01-priyas-first-honest-morning.md`, `01.3-statement-upload/01.3-statement-upload.md`, `01.4-transactions-table/01.4-transactions-table.md`, `01.5-dashboard/01.5-dashboard.md` — Entry/Exit Points, Previous/Next Step chains, ASCII layout diagrams, and a new `dashboard-transactions-cta` object-ID section, all updated to the new flow.
+  - `_bmad-output/planning-artifacts/prd.md` — the canonical golden-path line reordered, with a navigation note explaining the swap.
+  - `prototypes/.../{HANDOFF.md,PROTOTYPE-ROADMAP.md,README.md}`, `_bmad-output/_progress/00-design-log.md` — reconciled to the new flow/layout.
+  - `prototypes/.../assets/*.png` — refreshed for the pages whose layout changed (Dashboard, Transactions, Insights, Commitments, Upload); added `dashboard-wide-1920.png` as visual evidence of full-window utilization.
+- **Bugs found and fixed during this step's own verification (not carried in from elsewhere):**
+  1. **Horizontal overflow at 1366×768 and 1440×900** — the fluid-width CSS combined `width:100%` with a fixed `margin-left:208px` (for the sidebar) and an inherited `margin:0 auto`; `width:100%` resolved against the *full* viewport before the sidebar offset was subtracted, so the box computed wider than the remaining space and overflowed by ~208px. Root-caused via box-model reasoning, not trial-and-error, and fixed by removing `width`/`margin:auto` in favor of default `width:auto` math (`margin-left:208px` fixed + `margin-right:0` + `max-width` cap correctly derives `min(viewport − 208px, cap)`).
+  2. **"Got it" dismiss button wrapping onto two lines** on the Insights page once cards narrowed to 2-up — root cause: the shared `.btn` class sets `width:100%`, which inside a `justify-content:space-between` flex row made the secondary "Ask the Copilot about this" button claim the full row, squeezing its sibling. Fixed by scoping `width:auto; flex:0 0 auto` to buttons in `.insight-actions`.
+- **Verification performed:** Headless Chrome over the raw CDP WebSocket (same no-npm constraint as Steps 35–36). **Flow test:** full login → upload → sample-statement parse → "Go to my Dashboard →" click → confirmed landing on `/01.5-dashboard.html` with "Dashboard" active in the sidebar → clicked "View All Transactions" → confirmed `/01.4-transactions-table.html` with "Transactions" active → hopped through Commitments → Insights → Copilot → Dashboard via the sidebar, confirming URL and active-nav-highlight correctness at every hop. **Responsive sweep:** all 8 authenticated/public pages × 3 resolutions (1366×768, 1440×900, 1920×1080) = 24 checks — **zero console errors, zero horizontal overflow** after the two fixes above (the first sweep, before the fixes, correctly caught 12 overflow failures, proving the check itself is meaningful and not a false-negative rubber stamp).
+- **Key Decisions:**
+  - Asked clarifying questions before implementing rather than guessing on 3 genuine ambiguities that each had expensive-to-undo failure modes (building an unneeded page; silently reversing a 2-steps-ago committed-scope decision). All 3 answers matched the "keep existing committed scope, minimal-surface-area interpretation" option.
+  - Specs updated to match the new flow (per the user's explicit choice in the pre-work questions) rather than left stale — the PRD's golden-path line, the scenario overview, and all three affected page specs now describe the Dashboard-first flow as canonical, not the prototype quietly diverging from documented specs the way earlier, pre-existing divergences did.
+  - Fixed both bugs found during verification immediately, in the same step, rather than shipping and flagging them as known issues — both were straightforward, well-understood CSS box-model fixes with no ambiguity about the correct behavior.
+- **Dependencies:** Steps 30–34 (the desktop-only/Commitments-P1/Confidence-Drill-in decisions this step's clarifying questions had to reconcile with), Steps 35–36 (the prototype state this step modified).
+- **Next Recommended BMAD Command:** [T] Acceptance Testing against the updated flow and the responsive-layout requirements; prototype Scenario 03 (Copilot return-visit) remains the last unbuilt page.
+- **Notes:** This is the first Phase 5 step in this project where the *user's* request, not a Steps-30–34 spec propagation, was the source of a flow/spec change — flagged explicitly per the Process Historian mandate's distinction between "spec says X, prototype should match" and "user wants Y, specs should be updated to reflect it."
+
+---
+
+## Step 38 — Phase 5 Prototyping: Sidebar Nav Reverted to 4 Items + Root-Caused "No Data" Report
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Phase 5: Agentic Development — Prototyping ([P] activity)
+**Workflow:** `wds-5-agentic-development` → `workflow-prototyping.md` (continuation, same session as Steps 35–37)
+**User Goal:** Two requests: (1) "Remove the commitments tab from side navigation and just keep it as a button in dashboard as in existing flow"; (2) "my current html pages don't have any data in it so add some dummy data and show me."
+**BMAD Command:** Continuation within the same Prototyping activity.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code, WDS Phase 5 Implementation Partner.
+- **Reason Invoked:** Direct user follow-up.
+- **Output:** 4-item sidebar (Commitments removed); root-caused and fixed the "no data" report via an embedded fallback dataset rather than just re-asserting the data already exists.
+- **Source:** **Observed** (this session).
+
+### Execution Summary
+- **Request 1 — sidebar simplification:** `shared/nav.js`'s `renderSideNav()` reverted from the 5-item set added in Step 35 back to 4 (Dashboard, Transactions, Insights, Copilot) — this actually *resolves* a pre-existing contradiction rather than introducing one: `epics.md` FR-6.4 has said "four app screens" all along, and Step 35's 5-item addition (done to reconcile two other drafts) had over-corrected past what FR-6.4 actually specifies. Commitments Management stays fully committed P1 scope — only its access point reverts to what it already was, the Dashboard's "+ Add a commitment" link (no change needed to that link; it already pointed at `02.1-commitments-management.html`). Updated `01.5-dashboard.md`, `02.1-commitments-management.md`, and fixed stray "…Commitments…" mentions in `01.6-ai-insights-recommendations.md`, `01.7-copilot-chat.md`, and `01-priyas-first-honest-morning.md`'s own sidebar descriptions.
+- **Request 2 — "no data" — investigated rather than assumed:** Rather than re-verifying the already-confirmed-working http-served path again, considered *how the user could be viewing the pages* to produce "no data." Root cause: `shared/data.js` fetches `data/demo-data.json`; that fetch is blocked by the browser when a page is opened via `file://` (e.g. double-clicking the HTML file), which is exactly what "open the prototype" naturally invites someone unfamiliar with the "must run a local server" requirement to do. The previous code caught that failure and only logged an error, leaving the page in its placeholder (₹0/blank) state — the precise symptom described. **Fix:** embedded a full copy of the dataset (`FALLBACK_DEMO_DATA`) directly in `data.js`; `loadDemoData()` now falls back to it on fetch failure instead of leaving the page empty.
+- **Verification:** Headless Chrome over the raw CDP WebSocket. Confirmed the 4-item sidebar on every page that renders it, and that it shows no active item on the Commitments page (correct — not one of the 4 destinations). **Directly reproduced the failure mode**: navigated to `file:///.../01.5-dashboard.html` (not `http://localhost`) after logging in on the `file://` origin — confirmed the Dashboard still renders full data (₹2,840 hero, briefing text, 7-category donut) via the fallback, with a console warning identifying the cause and the fix (run a local server). This is a meaningfully stronger check than re-confirming the server path again, since it reproduces what the user most likely actually did.
+- **Deliverables:** 4-item sidebar; embedded data fallback; matching spec/doc updates; 4 refreshed/new screenshots (`dashboard-full.png`, `final-dashboard-desktop.png`, `commitments-default.png`, new `dashboard-file-protocol-fallback.png`).
+- **Artifacts Updated:** `prototypes/.../shared/nav.js`, `prototypes/.../shared/data.js`, `prototypes/.../{HANDOFF.md,README.md}`, `_bmad-output/C-UX-Scenarios/{01-priyas-first-honest-morning.md, 01.5-dashboard.md, 01.6-ai-insights-recommendations.md, 01.7-copilot-chat.md, 02-priya-protects-what-matters/02.1-commitments-management.md}`, `_bmad-output/_progress/00-design-log.md`, this file.
+- **Key Decisions:**
+  - Treated "no data" as a bug report requiring root-cause investigation, not a request to just re-populate an already-populated dataset — the actual defect was a missing fallback for a browser security restriction (`file://` fetch blocking), not missing data.
+  - Reverting the sidebar to 4 items was implemented as a genuine revert-to-correct-per-FR-6.4, not merely "do what was asked" — confirmed against `epics.md` before touching code, since the same ambiguity (Commitments in nav or not) had already required a clarifying question one step earlier.
+- **Dependencies:** Step 35 (introduced the 5-item sidebar this step reverts), Step 37 (this step continues in the same session).
+- **Next Recommended BMAD Command:** [T] Acceptance Testing; prototype Scenario 03 (Copilot return-visit) remains the last unbuilt page.
+- **Notes:** None.
+
+---
 

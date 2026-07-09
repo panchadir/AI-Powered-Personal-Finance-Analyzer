@@ -48,11 +48,19 @@
   },
 
   "confidence": {
-    "level": "Medium",
+    "level": "On track",
     "variant": "amber",
     "months_of_data": 1,
-    "tooltip": "Medium confidence: we have one month of data. More months = higher confidence in your patterns."
+    "tooltip": "On track: we have one month of data. More months = higher confidence in your patterns.",
+    "note": "Label only — the raw Confidence Score is never rendered (epics.md Story 5.1 / FR-5.5)."
   },
+
+  "score_events": [
+    { "id": "se1", "delta": "+4", "explanation": "3 EMIs matched against your commitments", "when": "2 hours ago" },
+    { "id": "se2", "delta": "+3", "explanation": "First bank statement parsed — 24 transactions categorised", "when": "5 hours ago" },
+    { "id": "se3", "delta": "+2", "explanation": "Account verified and statement upload completed", "when": "1 day ago" },
+    { "id": "se4", "delta": "0", "explanation": "Confidence Score starts at a neutral baseline for new accounts", "when": "1 day ago" }
+  ],
 
   "briefing": {
     "greeting_name": "Priya",
@@ -72,8 +80,7 @@
   "commitments": [
     { "id": "c1", "date": "2026-07-15", "date_label": "15 Jul", "name": "HDFC EMI", "amount": 8500, "criticality": "Critical" },
     { "id": "c2", "date": "2026-07-05", "date_label": "5 Jul", "name": "Car Loan EMI", "amount": 6500, "criticality": "Critical" },
-    { "id": "c3", "date": "2026-07-10", "date_label": "10 Jul", "name": "Personal Loan EMI", "amount": 3000, "criticality": "Critical" },
-    { "id": "c4", "date": "2026-07-08", "date_label": "8 Jul", "name": "Rent", "amount": 0, "note": "Not yet added", "criticality": "Important", "suggested": true }
+    { "id": "c3", "date": "2026-07-10", "date_label": "10 Jul", "name": "Personal Loan EMI", "amount": 3000, "criticality": "Critical" }
   ],
 
   "transactions": [

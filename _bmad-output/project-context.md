@@ -1,11 +1,11 @@
 ---
 project_name: 'AI-Powered-Personal-Finance-Analyzer'
 user_name: 'ALPHA'
-date: '2026-07-08'
+date: '2026-07-09'
 sections_completed: ['technology_stack', 'architecture_boundaries', 'language_rules', 'framework_rules', 'testing_rules', 'code_quality', 'workflow_rules', 'critical_dont_miss', 'party_seams', 'agent_misread_guards', 'general_engineering_standards', 'usage_guidelines']
 existing_patterns_found: 14
 status: 'complete'
-rule_count: 40
+rule_count: 41
 general_standards_added: true
 optimized_for_llm: true
 ---
@@ -79,6 +79,7 @@ _Source of truth: `_bmad-output/planning-artifacts/architecture/architecture-AI-
 - **Prompt caching:** mark stable system prompts (persona, tone, taxonomy, tool defs) `cache_control: {"type":"ephemeral"}`; put volatile per-turn context after the cache breakpoint.
 
 ### Critical Don't-Miss Rules (anti-patterns · security · gotchas)
+- 🖥️ **MVP is desktop-only** (localhost, single-user; PRD X1). No responsive/mobile work in Phase 1 — don't spend time on breakpoints, touch targets, or mobile CSS.
 - ❌ **LLM computing any financial figure** (STS, CS, reservation, shortfall) — always deterministic in `services/engine/` with an audit trail.
 - 🔒 **Every DB query in `services/` MUST include an explicit `user_id` filter** (AD-4) — no query returns rows it can't prove belong to the authenticated user.
 - 🔒 **STS is never negative:** `max(0, …)` is non-negotiable (AD-8). `safety_ok = True` only when every commitment due on/before next confirmed income is fully covered by ring-fenced `reserved_total`.
@@ -184,4 +185,4 @@ _Baseline standards, translated to this project's Python 3.11 / Reflex / sqlmode
 - It is a projection of `ARCHITECTURE-SPINE.md` (AD-1 → AD-14) plus review-surfaced seams — keep the two in sync; the spine is the source of truth for the ADs.
 - Review after each epic; delete rules that become obvious or are enforced by tooling (import-linter, structured output, etc.).
 
-_Last Updated: 2026-07-08_
+_Last Updated: 2026-07-09_

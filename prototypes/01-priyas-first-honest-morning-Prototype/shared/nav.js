@@ -1,16 +1,20 @@
 /* ============================================================================
-   nav.js — bottom navigation + linear scenario routing (Scenario 01 prototype)
-   Stubbed/available in Section 1 (Register is a public page, no bottom nav).
-   Used by the authenticated views (Dashboard, Transactions, Commitments, Copilot).
+   nav.js — left sidebar navigation + linear scenario routing (prototype)
+   Desktop-only left sidebar, used by all authenticated views
+   (Dashboard, Transactions, Insights, Copilot).
+   Commitments is NOT a sidebar item (2026-07-09) — reached only via the
+   Dashboard's "+ Add a commitment" button, matching FR-6.4's 4-screen nav.
    ============================================================================ */
 
-/* Linear golden-path order (page file names). */
+/* Linear golden-path order (page file names). Dashboard is the landing page
+   immediately after Upload; Transactions is reached from the Dashboard's
+   "View All Transactions" CTA or the sidebar, not automatically post-upload. */
 const SCENARIO_ORDER = [
   '01.1-register.html',
   '01.2-login.html',
   '01.3-statement-upload.html',
-  '01.4-transactions-table.html',
   '01.5-dashboard.html',
+  '01.4-transactions-table.html',
   '01.6-ai-insights-recommendations.html',
   '01.7-copilot-chat.html'
 ];
@@ -27,35 +31,19 @@ function goNext(currentPage) {
 function goTo(page) { window.location.href = page; }
 
 /**
- * Render the persistent bottom nav into #bottom-nav-slot on authenticated pages.
- * activeTab: 'home' | 'transactions' | 'commitments' | 'copilot'
- */
-function renderBottomNav(activeTab) {
-  const slot = document.getElementById('bottom-nav-slot');
-  if (!slot) return;
-  const tabs = [
-    { key: 'transactions', label: 'Transactions', page: '01.4-transactions-table.html' },
-    { key: 'dashboard',    label: 'Dashboard',    page: '01.5-dashboard.html' },
-    { key: 'insights',     label: 'Insights',     page: '01.6-ai-insights-recommendations.html' },
-    { key: 'copilot',      label: 'Copilot Chat', page: '01.7-copilot-chat.html' }
-  ];
-  slot.innerHTML = tabs.map(t => `
-    <button class="bottom-nav__tab${t.key === activeTab ? ' is-active' : ''}"
-            ${t.key === activeTab ? 'aria-current="page"' : ''}
-            onclick="goTo('${t.page}')">${t.label}</button>
-  `).join('');
-}
-
-/**
- * Render a persistent LEFT side nav into #side-nav-slot.
- * activeTab: 'home' | 'transactions' | 'commitments' | 'copilot'
+ * Render the persistent LEFT sidebar nav into #side-nav-slot.
+ * Nav order per ux-spec-mvp.md FR-6.4 / epics.md: Dashboard, Transactions, Insights, Copilot.
+ * Commitments is intentionally not a sidebar item — reached via the Dashboard's
+ * "+ Add a commitment" button (02.1-commitments-management.html renders this same
+ * sidebar with no active tab, since it isn't one of the 4 primary destinations).
+ * activeTab: 'dashboard' | 'transactions' | 'insights' | 'copilot'
  */
 function renderSideNav(activeTab) {
   var slot = document.getElementById('side-nav-slot');
   if (!slot) return;
   var tabs = [
-    { key: 'transactions', label: 'Transactions', icon: '📄', page: '01.4-transactions-table.html' },
     { key: 'dashboard',    label: 'Dashboard',    icon: '📊', page: '01.5-dashboard.html' },
+    { key: 'transactions', label: 'Transactions', icon: '📄', page: '01.4-transactions-table.html' },
     { key: 'insights',     label: 'Insights',     icon: '💡', page: '01.6-ai-insights-recommendations.html' },
     { key: 'copilot',      label: 'Copilot Chat', icon: '💬', page: '01.7-copilot-chat.html' }
   ];
@@ -74,5 +62,4 @@ function renderSideNav(activeTab) {
 
 window.goNext = goNext;
 window.goTo = goTo;
-window.renderBottomNav = renderBottomNav;
 window.renderSideNav = renderSideNav;

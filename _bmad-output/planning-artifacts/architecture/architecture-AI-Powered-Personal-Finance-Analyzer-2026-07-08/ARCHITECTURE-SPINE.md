@@ -4,7 +4,7 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: layered-modular-monolith with ports-and-adapters at ingestion and LLM edges
-scope: all Phase 1 MVP capabilities (E1–E9; FR-1 through FR-9)
+scope: all Phase 1 MVP capabilities (8-epic structure per epics.md, Commitments folded into Epic 5; FR-1 through FR-9)
 status: final
 created: '2026-07-08'
 updated: '2026-07-08'
@@ -12,7 +12,7 @@ binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, NFR-1, NFR-2, NFR-
 sources:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/research/technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md
-  - _bmad-output/planning-artifacts/epics-and-stories.md
+  - _bmad-output/planning-artifacts/epics.md (canonical, 8-epic; supersedes the earlier epics-and-stories.md)
   - _bmad-output/planning-artifacts/safe-to-spend-scenarios.md
 companions:
   - _bmad-output/planning-artifacts/ux-spec-mvp.md
@@ -313,4 +313,4 @@ erDiagram
 - **Streamlit escape hatch** — if Reflex `rx.State` reactivity is still blocking at Day 2 noon, the pre-agreed fallback is Streamlit; services/ layer is the reason this swap is cheap. This decision point is the Day 2 noon go/no-go.
 - **Commitment auto-detection tuning** — the heuristic (similar amount ±10%, ~monthly cadence) is an MVP approximation; production-quality detection deferred.
 - **Vernacular statement parsing at scale** — Indian regional language statements: Phase 2+.
-- **Responsive / mobile-web layout** — PRD open item X1: UX spec is silent on responsive; reconcile before implementation begins (carry-forward).
+- **Responsive / mobile-web layout** — PRD X1 resolved: MVP is desktop-only (localhost, single-user browser app). Mobile-responsive web is optional/future-phase, not a carry-forward blocker for Phase 1.

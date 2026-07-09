@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>02.1 Commitments — AI Financial Copilot</title>
+  <link rel="stylesheet" href="shared/styles.css">
+  <script>
+  (function () {
+    function ok() { try { var s = JSON.parse(sessionStorage.getItem('afc_session') || 'null'); return !!(s && s.email && (!s.exp || Date.now() < s.exp)); } catch (e) { return false; } }
+    if (!ok()) location.replace('01.2-login.html');
+    window.addEventListener('pageshow', function () { if (!ok()) location.replace('01.2-login.html'); });
+  })();
+  </script>
+</head>
+<body>
+  <!-- Section: Left Sidebar Navigation -->
+  <nav class="side-nav" id="side-nav-slot" aria-label="Primary"></nav>
+
+  <main class="dash has-sidenav">
+    <div class="commit-content">
+
+    <!-- Page Header / Title -->
+    <h1 id="commitments-page-title" class="commit-page-title">Commitments</h1>
+
+    <!-- Section: Safe-to-Spend Impact Bar -->
+    <div id="commitments-impact-bar" class="commit-impact-bar" aria-live="polite">
+      <div class="commit-impact-chip">
+        <span class="commit-impact-label">Protecting this month</span>
+        <span id="commitments-impact-bar-chip" class="commit-impact-amount">₹0</span>
+      </div>
+      <div class="commit-impact-chip">
+        <span class="commit-impact-label">Safe to spend</span>
+        <span id="commitments-impact-bar-remaining" class="commit-impact-amount">₹0</span>
+      </div>
+    </div>
+
+    <!-- Section: Commitments List -->
+    <div id="commitments-empty" class="commit-empty hidden">No commitments yet. Add your recurring bills and EMIs so they're always protected.</div>
+    <ul id="commitments-list" class="commit-list"></ul>
+
+    <!-- Section: Add Commitment CTA -->
+    <div id="commitments-add-cta">
+      <button id="commitments-add-cta-btn" class="btn btn--primary">+ Add a commitment</button>
+    </div>
+
+    </div>
+  </main>
+
+  <!-- Section: Add/Edit Commitment Modal -->
+  <div id="commitments-add-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="commitments-add-modal-header">
+    <div class="modal modal--commit">
+      <button type="button" class="modal-close" id="commit-modal-close" aria-label="Close">&times;</button>
+      <h3 id="commitments-add-modal-header" style="margin:0 0 var(--space-md);">What's this commitment?</h3>
+      <form id="commit-form" novalidate>
+        <div class="field">
+          <label for="commit-name">Name</label>
+          <input id="commit-name" type="text" maxlength="50" placeholder="e.g. Electricity bill, HDFC EMI, Netflix" autocomplete="off">
+          <span class="error" id="commit-name-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label for="commit-amount">Amount</label>
+          <input id="commit-amount" type="number" inputmode="numeric" min="1" placeholder="₹0">
+          <span class="error" id="commit-amount-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label for="commit-due-day">Due day of the month</label>
+          <input id="commit-due-day" type="number" min="1" max="31" placeholder="e.g. 15">
+          <span class="error" id="commit-due-day-error" role="alert"></span>
+        </div>
+        <div class="field" style="margin-top:var(--space-md);">
+          <label>How critical is this?</label>
+          <div class="chip-group chip--wrap" id="commit-criticality">
+            <button type="button" class="chip" data-crit="Critical" title="EMIs, rent, loan repayments — missing this would have serious consequences">Critical</button>
+            <button type="button" class="chip is-active" data-crit="Important" title="Regular bills, subscriptions — missing this would be inconvenient">Important</button>
+            <button type="button" class="chip" data-crit="Flexible" title="Savings, gym memberships — you'd prefer to pay but it's not an emergency">Flexible</button>
+          </div>
+        </div>
+        <div style="margin-top:var(--space-lg);">
+          <button type="submit" class="btn btn--primary" id="commitments-add-modal-save">
+            <span id="commit-save-spinner" class="spinner hidden" aria-hidden="true"></span>
+            <span id="commit-save-label">Protect this commitment</span>
+          </button>
+          <button type="button" class="link" id="commitments-add-modal-cancel" style="display:block; text-align:center; width:100%; margin-top:var(--space-md); background:none; border:none;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Section: Delete confirmation dialog -->
+  <div id="commit-delete-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="commit-delete-title">
+    <div class="modal">
+      <h3 id="commit-delete-title" style="margin:0 0 var(--space-sm);">Remove this commitment?</h3>
+      <p id="commit-delete-body" class="text-muted" style="font-size:var(--text-sm); margin:0 0 var(--space-lg);"></p>
+      <div style="display:flex; gap:var(--space-sm);">
+        <button type="button" class="btn btn--secondary" id="commit-delete-cancel" style="flex:1;">Cancel</button>
+        <button type="button" class="btn btn--primary" id="commit-delete-confirm" style="flex:1; background:var(--danger);">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="commitments-toast" class="toast hidden" role="status"></div>
+
+  <script src="shared/format.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/auth.js"></script>
+  <script src="shared/commitments.js"></script>
+  <script src="shared/nav.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    console.log('📄 02.1 Commitments Management loaded');
+
+    var CRIT_ICON = { Critical: '🔴', Important: '🟠', Flexible: '⚪' };
+
+    var list = [];              // current commitments (shared, persisted store)
+    var baseline = 0;           // current_balance - ring_fenced_recurring (everything else the impact bar's Safe-to-Spend chip is computed from)
+    var editingId = null;       // commitment id being edited, or null when adding
+    var deleteId = null;
+
+    var demoRef = null;
+    var toastTimer;
+    function showToast(msg) {
+      var t = document.getElementById('commitments-toast');
+      t.textContent = msg; t.classList.remove('hidden');
+      clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 3500);
+    }
+
+    function protectedTotal() { return Commitments.total(list); }
+    function safeToSpend() { return Math.max(0, baseline - protectedTotal()); }
+
+    function renderImpactBar() {
+      document.getElementById('commitments-impact-bar-chip').textContent = formatINR(protectedTotal());
+      document.getElementById('commitments-impact-bar-remaining').textContent = formatINR(safeToSpend());
+    }
+
+    function dueDayLabel(day) {
+      var d = Number(day);
+      if (d === 31) return 'Due end of month';
+      var suffix = (d === 1 || d === 21 || d === 31) ? 'st' : (d === 2 || d === 22) ? 'nd' : (d === 3 || d === 23) ? 'rd' : 'th';
+      return 'Due ' + d + suffix + ' every month';
+    }
+
+    function renderList() {
+      var empty = document.getElementById('commitments-empty');
+      var ul = document.getElementById('commitments-list');
+      empty.classList.toggle('hidden', list.length > 0);
+      var sorted = list.slice().sort(function (a, b) { return a.due_day - b.due_day; });
+      ul.innerHTML = sorted.map(function (c, i) {
+        var n = i + 1;
+        return '' +
+        '<li id="commitments-list-row-' + n + '" class="commit-row" data-id="' + c.id + '">' +
+          '<span id="commitments-list-row-' + n + '-icon" class="commit-row-icon" aria-label="' + c.criticality + '">' + (CRIT_ICON[c.criticality] || '⚪') + '</span>' +
+          '<span id="commitments-list-row-' + n + '-meta" class="commit-row-meta">' +
+            '<span class="commit-row-name">' + c.name + '</span>' +
+            '<span class="commit-row-due">' + dueDayLabel(c.due_day) + '</span>' +
+          '</span>' +
+          '<span id="commitments-list-row-' + n + '-amount" class="commit-row-amount">' + formatINR(c.amount) + '</span>' +
+          '<span id="commitments-list-row-' + n + '-actions" class="commit-row-actions">' +
+            '<button type="button" class="commit-menu-btn" data-id="' + c.id + '" aria-label="Options for ' + c.name + '">&hellip;</button>' +
+          '</span>' +
+        '</li>';
+      }).join('');
+    }
+
+    function closeAllMenus() {
+      Array.prototype.forEach.call(document.querySelectorAll('.commit-menu-dropdown'), function (m) { m.remove(); });
+    }
+
+    document.getElementById('commitments-list').addEventListener('click', function (e) {
+      var menuBtn = e.target.closest('.commit-menu-btn');
+      if (menuBtn) {
+        e.stopPropagation();
+        var already = menuBtn.parentElement.querySelector('.commit-menu-dropdown');
+        closeAllMenus();
+        if (already) return; // toggle off
+        var id = menuBtn.getAttribute('data-id');
+        var dd = document.createElement('div');
+        dd.className = 'commit-menu-dropdown';
+        dd.innerHTML = '<button type="button" data-action="edit">Edit</button><button type="button" class="danger" data-action="delete">Delete</button>';
+        dd.addEventListener('click', function (ev) {
+          var action = ev.target.getAttribute('data-action');
+          if (action === 'edit') openModal(id);
+          if (action === 'delete') openDeleteConfirm(id);
+          closeAllMenus();
+        });
+        menuBtn.parentElement.appendChild(dd);
+        return;
+      }
+      var row = e.target.closest('.commit-row');
+      if (row) openModal(row.getAttribute('data-id'));
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.commit-row-actions')) closeAllMenus();
+    });
+
+    // ---------- Add / Edit modal ----------
+    var modal = document.getElementById('commitments-add-modal');
+    var form = document.getElementById('commit-form');
+    var fName = document.getElementById('commit-name');
+    var fAmount = document.getElementById('commit-amount');
+    var fDueDay = document.getElementById('commit-due-day');
+    var criticality = 'Important';
+    var saveBtn = document.getElementById('commitments-add-modal-save');
+    var saveSpinner = document.getElementById('commit-save-spinner');
+    var saveLabel = document.getElementById('commit-save-label');
+
+    function setCriticality(val) {
+      criticality = val;
+      Array.prototype.forEach.call(document.querySelectorAll('#commit-criticality .chip'), function (c) {
+        var on = c.getAttribute('data-crit') === val;
+        c.classList.toggle('is-active', on);
+        c.setAttribute('aria-pressed', String(on));
+      });
+    }
+
+    function clearErrors() {
+      ['name', 'amount', 'due-day'].forEach(function (k) { document.getElementById('commit-' + k + '-error').textContent = ''; });
+    }
+
+    function openModal(id) {
+      editingId = id || null;
+      form.reset(); clearErrors(); setCriticality('Important');
+      if (editingId) {
+        var c = list.filter(function (x) { return x.id === editingId; })[0];
+        if (!c) return;
+        document.getElementById('commitments-add-modal-header').textContent = 'Edit commitment';
+        saveLabel.textContent = 'Save changes';
+        fName.value = c.name; fAmount.value = c.amount; fDueDay.value = c.due_day;
+        setCriticality(c.criticality);
+      } else {
+        document.getElementById('commitments-add-modal-header').textContent = "What's this commitment?";
+        saveLabel.textContent = 'Protect this commitment';
+      }
+      modal.classList.remove('hidden');
+      setTimeout(function () { fName.focus(); }, 30);
+    }
+    function closeModal() { modal.classList.add('hidden'); editingId = null; }
+
+    document.getElementById('commitments-add-cta-btn').addEventListener('click', function () { openModal(null); });
+    document.getElementById('commit-modal-close').addEventListener('click', closeModal);
+    document.getElementById('commitments-add-modal-cancel').addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+      if (e.key === 'Escape' && !document.getElementById('commit-delete-modal').classList.contains('hidden')) closeDeleteConfirm();
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('#commit-criticality .chip'), function (chip) {
+      chip.addEventListener('click', function () { setCriticality(chip.getAttribute('data-crit')); });
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = fName.value.trim();
+      var amount = parseInt(fAmount.value, 10);
+      var dueDay = parseInt(fDueDay.value, 10);
+      var ok = true;
+      document.getElementById('commit-name-error').textContent = name ? (name.length <= 50 ? '' : (ok = false, 'Keep the name under 50 characters')) : (ok = false, 'Please name this commitment');
+      document.getElementById('commit-amount-error').textContent = (amount > 0) ? '' : (ok = false, 'Amount must be greater than ₹0');
+      document.getElementById('commit-due-day-error').textContent = (dueDay >= 1 && dueDay <= 31) ? '' : (ok = false, 'Due day must be between 1 and 31');
+      if (!ok) return;
+
+      saveBtn.disabled = true; saveSpinner.classList.remove('hidden');
+      setTimeout(function () {
+        if (editingId) {
+          list = Commitments.update(list, editingId, { name: name, amount: amount, due_day: dueDay, criticality: criticality });
+          showToast('Updated ' + name);
+        } else {
+          list = Commitments.add(list, { name: name, amount: amount, due_day: dueDay, criticality: criticality });
+          showToast('Protected ' + formatINR(amount) + ' for ' + name + ' — Safe-to-Spend updated');
+        }
+        renderList(); renderImpactBar();
+        saveBtn.disabled = false; saveSpinner.classList.add('hidden');
+        closeModal();
+        var row = document.querySelector('.commit-row[data-id]');
+        if (row) { row.classList.add('flash'); setTimeout(function () { row.classList.remove('flash'); }, 700); }
+      }, 350); // simulated latency, matches the rest of the prototype's save flows
+    });
+
+    // ---------- Delete confirm ----------
+    var delModal = document.getElementById('commit-delete-modal');
+    function openDeleteConfirm(id) {
+      deleteId = id;
+      var c = list.filter(function (x) { return x.id === id; })[0];
+      if (!c) return;
+      document.getElementById('commit-delete-body').textContent = 'Remove ' + c.name + '? Your Safe-to-Spend will update.';
+      delModal.classList.remove('hidden');
+    }
+    function closeDeleteConfirm() { delModal.classList.add('hidden'); deleteId = null; }
+    document.getElementById('commit-delete-cancel').addEventListener('click', closeDeleteConfirm);
+    delModal.addEventListener('click', function (e) { if (e.target === delModal) closeDeleteConfirm(); });
+    document.getElementById('commit-delete-confirm').addEventListener('click', function () {
+      if (!deleteId) return;
+      var c = list.filter(function (x) { return x.id === deleteId; })[0];
+      list = Commitments.remove(list, deleteId);
+      renderList(); renderImpactBar();
+      closeDeleteConfirm();
+      if (c) showToast('Removed ' + c.name + ' — Safe-to-Spend updated');
+    });
+
+    // ---------- Load ----------
+    loadDemoData().then(function (demo) {
+      demoRef = demo;
+      baseline = demo.safe_to_spend.current_balance - demo.safe_to_spend.ring_fenced_recurring;
+      list = Commitments.load(demo.commitments);
+      renderList();
+      renderImpactBar();
+      window.__commitLoaded = true;
+    }).catch(function (e) { console.error('commitments load failed', e); });
+
+    renderSideNav('commitments');
+
+    // expose for verification
+    window.__commitState = function () { return { count: list.length, protected: protectedTotal(), safeToSpend: safeToSpend() }; };
+  })();
+  </script>
+</body>
+</html>

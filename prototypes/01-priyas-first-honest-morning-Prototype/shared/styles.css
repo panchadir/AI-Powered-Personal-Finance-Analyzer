@@ -1,8 +1,10 @@
 /* ============================================================================
    Shared Styles — Scenario 01 Prototype
    Branded theme (upgraded from Gray Model): calm teal fintech identity.
-   Dependency-free design tokens + primitives. Mobile-first, responsive.
-   Reused by all 7 pages — retheme the whole prototype from the :root tokens.
+   Dependency-free design tokens + primitives.
+   Desktop web only (1280px+ baseline, non-responsive) — PRD X1 resolved:
+   mobile/responsive layout is optional/future-phase, not Phase-1 scope.
+   Reused by all pages — retheme the whole prototype from the :root tokens.
    ============================================================================ */
 
 /* ============================================================================
@@ -96,12 +98,12 @@ a { color: inherit; }
 }
 .auth-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-xl) var(--space-lg);
 }
 
 /* ---- Register header ---- */
@@ -179,11 +181,20 @@ a { color: inherit; }
 }
 
 /* ---- Flow / full pages (Upload, Transactions, etc.) ---- */
+/* Base: a focused single-step task screen (Upload) — stays comfortably narrow, not full-bleed. */
 .page--flow {
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 auto;
   padding: var(--space-md);
   padding-bottom: var(--space-xl);
+}
+/* Data-heavy authenticated screens (Transactions) get the same fluid, wide column as the Dashboard.
+   No `width` set here — default `width:auto` correctly fills (viewport - sidebar margin), capped at
+   max-width; setting `width:100%` would compute against the full viewport and overflow past the sidebar. */
+.page--flow.has-sidenav {
+  max-width: 1680px;
+  margin-right: 0; /* cancel the auto right-margin from .page--flow's `margin: 0 auto` */
+  padding: 0 var(--space-xl) var(--space-xl);
 }
 .flow-topbar {
   display: flex;
@@ -373,7 +384,12 @@ a { color: inherit; }
 .btn--secondary:hover { background: var(--gray-100); }
 
 /* ---- Dashboard ---- */
-.dash { max-width: 560px; margin: 0 auto; padding: 0 var(--space-md) calc(64px + var(--space-xl)); }
+/* Fluid content column — fills the browser window on laptop/desktop widths
+   (1366-1920px+) instead of a fixed narrow column; capped generously so
+   ultra-wide monitors don't stretch text/cards past a readable width. */
+/* No `width`/`margin:auto` here — .dash is always paired with .dash--sidenav/.has-sidenav (below),
+   whose fixed margin-left plus this max-width is what correctly fills (viewport - sidebar) without overflow. */
+.dash { max-width: 1680px; padding: 0 var(--space-xl) calc(64px + var(--space-xl)); }
 .dash-topnav {
   display: flex; align-items: center; justify-content: space-between;
   padding: var(--space-md) 0;
@@ -385,6 +401,8 @@ a { color: inherit; }
 }
 
 .hero-card {
+  /* The hero number is meant to dominate as a focal point, not stretch edge-to-edge on wide monitors. */
+  max-width: 960px;
   background: linear-gradient(160deg, #ffffff 0%, var(--primary-tint) 100%);
   border: 1px solid #d6ebe6;
   border-radius: var(--radius); padding: var(--space-lg);
@@ -403,27 +421,50 @@ a { color: inherit; }
   border: none; border-radius: 999px; padding: 3px 12px;
   font-size: var(--text-sm); font-weight: 600; cursor: pointer;
 }
-.conf-chip--high { background: #dff0e3; color: #2f7d4f; }
-.conf-chip--medium { background: #fbedcf; color: #9a6b16; }
-.conf-chip--low { background: #f7ddd6; color: #a33b25; }
-.conf-tooltip {
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 10;
-  background: var(--gray-900); color: #fff; font-size: var(--text-xs);
-  padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
+.conf-chip--green { background: #dff0e3; color: #2f7d4f; }
+.conf-chip--amber { background: #fbedcf; color: #9a6b16; }
+.conf-chip--red-amber { background: #f7ddd6; color: #a33b25; }
+
+/* Confidence Score Drill-In Panel (epics.md Story 5.2) — replaces the plain tooltip */
+.conf-drillin {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 10;
+  width: 320px; max-width: calc(100vw - 2 * var(--space-md));
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-md);
 }
+.conf-drillin-summary { font-size: var(--text-sm); color: var(--gray-800); margin: 0 0 var(--space-sm); line-height: 1.5; }
+.conf-drillin-events { list-style: none; margin: 0; padding: var(--space-sm) 0 0; border-top: 1px solid var(--line); }
+.conf-drillin-event { display: flex; align-items: baseline; gap: var(--space-sm); padding: var(--space-xs) 0; }
+.conf-drillin-delta { flex: 0 0 auto; font-size: var(--text-sm); font-weight: 700; color: var(--primary); min-width: 28px; }
+.conf-drillin-body { flex: 1 1 auto; min-width: 0; }
+.conf-drillin-explanation { display: block; font-size: var(--text-sm); color: var(--gray-800); line-height: 1.4; }
+.conf-drillin-when { display: block; font-size: var(--text-xs); color: var(--muted); margin-top: 1px; }
 .hero-why { margin-top: var(--space-md); }
 .hero-why-trigger { background: none; border: none; padding: 0; font-size: var(--text-sm); font-weight: 500; color: var(--gray-700); text-decoration: underline; cursor: pointer; }
 .hero-why-content { font-size: var(--text-sm); color: var(--gray-700); margin: var(--space-sm) 0 0; line-height: 1.5; }
 
-.briefing-card {
+/* Shared card shell for the below-fold dashboard grid (briefing / transactions CTA / chart / commitments) */
+.dash-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: var(--space-lg); margin-top: var(--space-lg); box-shadow: var(--shadow);
+  padding: var(--space-lg); box-shadow: var(--shadow);
 }
 .briefing-text { font-size: var(--text-md); color: var(--gray-800); margin: 0 0 var(--space-md); line-height: 1.55; }
 
-.dash-section { margin-top: var(--space-xl); }
+/* Responsive card grid — more columns fill in as the window widens, one column on a narrow laptop. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+  align-items: start;
+}
 .dash-section h2 { font-size: var(--text-md); font-weight: 600; margin: 0 0 var(--space-md); }
+
+.txn-cta-card { display: flex; flex-direction: column; }
+.txn-cta-text { font-size: var(--text-sm); color: var(--muted); margin: 0 0 var(--space-md); line-height: 1.5; }
+.txn-cta-card .btn { margin-top: auto; }
 
 /* Donut chart */
 .donut-wrap { display: flex; align-items: center; gap: var(--space-lg); flex-wrap: wrap; }
@@ -447,47 +488,27 @@ a { color: inherit; }
 @keyframes flashAmount { 0% { color: var(--primary); } 100% { color: var(--ink); } }
 .add-commitment { display: inline-block; margin-top: var(--space-md); font-size: var(--text-sm); }
 
-/* Left side nav (Dashboard) */
+/* Left side nav — desktop-only, always the full labeled rail (no mobile icon-only variant). */
 .side-nav {
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 30;
-  width: 76px;
+  width: 208px;
   background: var(--surface); border-right: 1px solid var(--line);
-  display: flex; flex-direction: column; gap: var(--space-xs);
-  padding-top: var(--space-md);
+  display: flex; flex-direction: column; gap: var(--space-xs); align-items: stretch;
+  padding: var(--space-md) var(--space-sm);
 }
 .side-nav__tab {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 10px 4px; background: none; border: none; cursor: pointer;
-  font-size: 10px; color: var(--muted); line-height: 1.15; text-align: center;
+  display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: var(--space-md);
+  padding: 12px var(--space-md); background: none; border: none; cursor: pointer;
+  font-size: var(--text-sm); color: var(--muted); line-height: 1.15; text-align: left;
+  border-radius: var(--radius-sm);
   transition: background .12s ease, color .12s ease;
 }
 .side-nav__tab:not(.is-active):hover { color: var(--ink); background: var(--gray-100); }
 .side-nav__tab .ico { font-size: 18px; }
 .side-nav__tab.is-active { color: var(--primary); font-weight: 600; background: var(--primary-tint); }
-.dash--sidenav { margin-left: 76px; padding-bottom: var(--space-xl); }
+.dash--sidenav { margin-left: 208px; padding-bottom: var(--space-xl); }
 /* Reusable sidebar offset — apply to any authenticated screen's main container. */
-.has-sidenav { margin-left: 76px; }
-
-@media (min-width: 768px) {
-  .side-nav { width: 208px; align-items: stretch; padding: var(--space-md) var(--space-sm); }
-  .side-nav__tab {
-    flex-direction: row; justify-content: flex-start; gap: var(--space-md);
-    padding: 12px var(--space-md); font-size: var(--text-sm); border-radius: var(--radius-sm);
-    text-align: left;
-  }
-  .dash--sidenav, .has-sidenav { margin-left: 208px; }
-}
-
-/* Bottom nav */
-.bottom-nav {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
-  display: flex; background: var(--surface); border-top: 1px solid var(--line);
-}
-.bottom-nav__tab {
-  flex: 1 1 0; padding: 10px 4px 14px; background: none; border: none;
-  font-size: var(--text-xs); color: var(--muted);
-}
-.bottom-nav__tab.is-active { color: var(--primary); font-weight: 600; }
+.has-sidenav { margin-left: 208px; }
 
 /* ---- Simple top nav (Insights, Copilot) ---- */
 .topnav {
@@ -502,9 +523,15 @@ a { color: inherit; }
 .insights-header { padding: var(--space-lg) 0 var(--space-md); }
 .insights-headline { font-size: var(--text-xl, 24px); font-weight: 600; margin: 0 0 var(--space-xs); }
 .insights-subline { font-size: var(--text-md); color: var(--muted); margin: 0; line-height: 1.5; }
+/* Responsive card grid — same pattern as the Dashboard, so Insights fills the window instead of one narrow stacked column. */
+.insights-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: var(--space-lg);
+}
 .insight-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: var(--space-lg); margin-bottom: var(--space-lg); box-shadow: var(--shadow);
+  padding: var(--space-lg); box-shadow: var(--shadow);
 }
 .insight-card.is-dismissed { opacity: 0.5; }
 .insight-card-head { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
@@ -516,18 +543,17 @@ a { color: inherit; }
 .evidence-block li { font-size: var(--text-sm); color: var(--gray-700); padding: 2px 0; }
 .insight-explanation { font-size: var(--text-sm); color: var(--muted); margin: 0 0 var(--space-md); line-height: 1.5; }
 .insight-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
-.insight-dismiss { background: none; border: none; color: var(--muted); font-size: var(--text-sm); cursor: pointer; }
+/* Override .btn's width:100% — in this flex row it would otherwise claim the whole row and wrap "Got it" onto two lines. */
+.insight-actions .btn { width: auto; flex: 0 0 auto; }
+.insight-dismiss { background: none; border: none; color: var(--muted); font-size: var(--text-sm); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 .insights-footer { text-align: center; padding: var(--space-md) 0 0; }
 .insights-footer p { font-size: var(--text-xs); color: var(--muted); margin: 0; }
 
 /* ---- Copilot Chat ---- */
 .copilot-page { display: flex; flex-direction: column; height: 100vh; }
-/* On the Copilot page the bottom nav is part of the flex column (not fixed),
-   so the input bar always sits directly above it — no overlap. */
-.copilot-page .bottom-nav { position: static; flex: 0 0 auto; }
 .copilot-thread {
   flex: 1 1 auto; overflow-y: auto; min-height: 0;
-  max-width: 560px; width: 100%; margin: 0 auto;
+  max-width: 960px; width: 100%; margin: 0 auto;
   padding: var(--space-md) var(--space-md) var(--space-lg);
   display: flex; flex-direction: column; gap: var(--space-md);
 }
@@ -566,7 +592,7 @@ a { color: inherit; }
 .copilot-input-bar {
   flex: 0 0 auto; z-index: 25;
   display: flex; gap: var(--space-sm); align-items: flex-end;
-  max-width: 560px; width: 100%; margin: 0 auto;
+  max-width: 960px; width: 100%; margin: 0 auto;
   padding: var(--space-sm) var(--space-md);
   background: var(--surface); border-top: 1px solid var(--line);
 }
@@ -777,13 +803,67 @@ a { color: inherit; }
   width: 100%; max-width: 420px;
   background: var(--surface); border-radius: var(--radius);
   padding: var(--space-lg); box-shadow: var(--shadow);
+  position: relative;
+}
+.modal--commit { max-width: 480px; }
+.modal-close {
+  position: absolute; top: var(--space-md); right: var(--space-md);
+  width: 28px; height: 28px; border-radius: 50%;
+  background: none; border: none; color: var(--muted); font-size: 18px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: var(--gray-100); color: var(--ink); }
+
+/* ---- Commitments Management (02.1) ---- */
+/* Keeps the commitment list/form a focused reading width even inside the wide .dash column. */
+.commit-content { max-width: 960px; }
+.commit-page-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-lg) 0 var(--space-md); }
+.commit-impact-bar {
+  display: flex; flex-wrap: wrap; gap: var(--space-md);
+  background: var(--primary-tint); border: 1px solid #d6ebe6; border-radius: var(--radius);
+  padding: var(--space-md); margin-bottom: var(--space-lg);
+}
+.commit-impact-chip { flex: 1 1 200px; }
+.commit-impact-label { display: block; font-size: var(--text-sm); font-weight: 500; color: var(--gray-600); }
+.commit-impact-amount { display: block; font-size: var(--text-xl); font-weight: 700; color: var(--ink); margin-top: 2px; transition: color .2s ease; }
+
+.commit-list { list-style: none; padding: 0; margin: 0 0 var(--space-lg); }
+.commit-row {
+  display: flex; align-items: center; gap: var(--space-md);
+  width: 100%; text-align: left; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: var(--space-md); margin-bottom: var(--space-sm);
+  cursor: pointer; transition: border-color .12s ease, background .6s ease;
+}
+.commit-row:hover { border-color: var(--gray-400); }
+.commit-row.flash { background: var(--primary-tint); }
+.commit-row-icon { flex: 0 0 auto; font-size: 18px; }
+.commit-row-meta { flex: 1 1 auto; min-width: 0; }
+.commit-row-name { display: block; font-size: var(--text-md); font-weight: 500; color: var(--ink); }
+.commit-row-due { display: block; font-size: var(--text-sm); color: var(--muted); }
+.commit-row-amount { flex: 0 0 auto; font-size: var(--text-md); font-weight: 600; color: var(--ink); }
+.commit-row-actions { flex: 0 0 auto; position: relative; }
+.commit-menu-btn {
+  width: 32px; height: 32px; border-radius: 50%; background: none; border: none;
+  color: var(--muted); font-size: 18px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.commit-menu-btn:hover { background: var(--gray-100); color: var(--ink); }
+.commit-menu-dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 15;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg); min-width: 120px; overflow: hidden;
+}
+.commit-menu-dropdown button {
+  display: block; width: 100%; text-align: left; padding: 10px var(--space-md);
+  background: none; border: none; font-size: var(--text-sm); color: var(--ink);
+}
+.commit-menu-dropdown button:hover { background: var(--gray-100); }
+.commit-menu-dropdown button.danger { color: var(--danger); }
+
+.commit-empty {
+  text-align: center; padding: var(--space-xl) var(--space-md);
+  border: 1px dashed var(--gray-300); border-radius: var(--radius);
+  color: var(--muted); font-size: var(--text-sm); margin-bottom: var(--space-lg);
 }
 
-/* ---- Responsive ---- */
-@media (min-width: 768px) {
-  .app-name { font-size: var(--text-2xl); }
-  .auth-card { padding: var(--space-xl) var(--space-lg); }
-}
-@media (min-width: 1280px) {
-  .auth-card { max-width: 440px; }
-}

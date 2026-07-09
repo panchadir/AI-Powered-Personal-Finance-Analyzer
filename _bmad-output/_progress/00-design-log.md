@@ -52,6 +52,8 @@
 | 01-priyas-first-honest-morning | 01.5 | Dashboard | built | 2026-07-08 |
 | 01-priyas-first-honest-morning | 01.6 | AI Insights & Recommendations | built | 2026-07-08 |
 | 01-priyas-first-honest-morning | 01.7 | Copilot Chat | built | 2026-07-08 |
+| 02-priya-protects-what-matters | 02.1 | Commitments Management | building | 2026-07-09 |
+| 02-priya-protects-what-matters | 02.1 | Commitments Management | built | 2026-07-09 |
 
 **Status values:** `discussed` → `wireframed` → `specified` → `explored` → `building` → `built` → `approved` | `removed`
 
@@ -313,6 +315,85 @@
 
 ---
 
+### 2026-07-09 — Phase 5: Prototyping — Desktop-Only Reconciliation + Scenario 02 (Commitments Management) Built
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Activity:** [P] Prototyping — updating the existing Scenario 01 prototype to match two spec changes made the same day: the architecture spine resolving PRD open item X1 (MVP is desktop-only, non-responsive — mobile/responsive deferred to an optional future phase), and `00-ux-scenarios.md`'s scope correction promoting Commitments Management (02.1) from P2 to committed P1 (the Dashboard already depended on it for Safe-to-Spend ring-fencing and the "+Add a commitment" CTA), plus reinstating the Confidence Score Drill-In Panel as committed scope (epics.md Story 5.2 — it had been marked deferred in the Phase 3 scenario outline, but was never actually cut from the build backlog).
+
+**Changes:**
+1. **Desktop-only sidebar** — `shared/styles.css` / `shared/nav.js`: removed the 76px mobile icon-rail variant and its `@media (min-width:768px)` breakpoint; the left sidebar is now always the full 208px labeled rail. Added "Commitments" as a fifth persistent nav item (Dashboard · Transactions · Commitments · Insights · Copilot), reconciling the mobile-bottom-nav set (missing Insights) and the `ux-spec-mvp.md` sidebar draft (missing Commitments) per `01.5-dashboard.md`'s `dashboard-sidebar-nav` note.
+2. **Commitments Management built** (`02.1-commitments-management.html`, new) — full page per the `02.1-commitments-management.md` spec: Safe-to-Spend impact bar ("Protecting ₹X" / "Safe to spend ₹Y"), commitment list with criticality icon/due-day/amount/"…" actions menu, Add/Edit modal (name, amount, due-day, criticality — "Protect this commitment"), delete confirmation dialog, empty state, Escape/backdrop/× dismiss, focus-to-first-field on open.
+3. **Shared commitment state** (`shared/commitments.js`, new) — commitments now persist in `localStorage` (`afc_commitments`), seeded from `demo-data.json`, and are read/written by both the Dashboard and the Commitments page, so adding/editing/deleting a commitment on one page is reflected on the other. Reconciles the prior HANDOFF.md divergence where the Dashboard's "+Add a commitment" opened an inline modal because Scenario 02 wasn't built yet — it now navigates to `/commitments` per the original page spec, and the Dashboard's inline modal was removed (superseded by the dedicated page).
+4. **Confidence Score Drill-In Panel** (`01.5-dashboard.html`) — replaced the plain tooltip with a panel (`dashboard-hero-confidence-drillin`) showing the Prediction Confidence summary plus a reverse-chronological `score_events` list (delta, explanation, time elapsed), per the updated `01.5-dashboard.md` spec. Confidence labels relabelled per spec: High/Medium/Low → Well prepared/On track/Watch this (demo data currently exercises "On track"); the raw score is still never rendered.
+5. **Demo data** (`data/demo-data.json`) — added `score_events` (4 entries); relabelled `confidence.level`/`.tooltip` to the new label set; removed the unused inert `c4` "suggested" commitment placeholder.
+
+**Verification:** headless Chrome + raw DevTools Protocol (no `puppeteer` package available offline, so driven directly over the CDP WebSocket) — logged in via `Auth.login()`, then exercised: sidebar renders all 5 items at 208px on every authenticated page; confidence chip opens/closes the Drill-In panel showing all 4 `score_events`; Dashboard → Commitments navigation; add/edit/delete commitment flows (impact bar and Safe-to-Spend chip update correctly: base ₹18,000/₹2,840 → +₹1,800 add → ₹19,800/₹1,040 → edit +₹500 → ₹20,300/₹540 → delete −₹7,000 → ₹13,300/₹7,540, all arithmetically consistent); Escape-key modal dismiss; newly-added commitment reflected in the Dashboard's Safe-to-Spend and timeline on return. Zero console errors/exceptions across every page tested.
+
+**Docs updated:** `HANDOFF.md` (divergence table reconciled — Commitments/nav rows resolved and removed, new commitment-persistence and API rows added), `PROTOTYPE-ROADMAP.md` (device compatibility → desktop-only, 02.1 added to build sequence), `README.md` (8 screens, desktop-only framing, structure, honesty-layer wording).
+
+**Next:** [T] Acceptance Testing against the 02.1 spec's acceptance criteria and the resolved desktop-only decision; prototype Scenario 03 (Copilot return-visit).
+
+---
+
+### 2026-07-09 — Phase 5: Prototyping — Asset Refresh (Screenshots + Content-Column Widths)
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Activity:** [P] Prototyping — follow-up to the same-day desktop-only reconciliation, closing the loop on the prototype's `assets/` screenshot set and remaining mobile-viewport-shaped layout.
+
+**Changes:**
+1. **Content columns widened** for a genuine desktop reading width instead of a stretched mobile layout: `.page--flow` 560→680px, `.dash` 560→760px, `.copilot-thread`/`.copilot-input-bar` 560→720px, `.auth-card` 420→440px (unifying the two prior breakpoint-gated values into one). Removed the now-dead `@media (min-width:768px)` / `(min-width:1280px)` rules these values used to live behind — the prototype has no breakpoints left.
+2. **Screenshot set refreshed** (`assets/`) — of the pre-existing ~44 screenshots, 19 were mobile-viewport captures (390–872px wide) or showed the old 4-item nav / "Medium" confidence label; all were either regenerated at the 1440×900 desktop baseline or removed as redundant historical iteration duplicates once a canonical current-state shot existed. Added 3 new screenshots for previously-undocumented desktop-only UI: `dashboard-confidence-drillin.png`, `commitments-default.png`, `commitments-add-modal.png`.
+3. **Verification:** re-ran the headless-Chrome/CDP sweep across all 9 pages at 1440×900 after the width changes — zero console errors, zero horizontal overflow on every page.
+
+**Artifacts Updated:** `shared/styles.css`, `assets/*.png` (regenerated/removed set), `README.md` (verification note).
+**Next:** Unchanged from the prior entry — [T] Acceptance Testing, then Scenario 03.
+
+---
+
+### 2026-07-09 — Phase 5: Prototyping — Navigation Flow Update (Dashboard as Landing Page) + Fluid Responsive Layout
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Activity:** [P] Prototyping — direct user requirement, not a Steps-30–34 spec propagation this time (the request originated the change; specs were updated afterward to match, per the user's explicit choice).
+**Requested by:** ALPHA
+
+**Requirement:** Re-sequence the golden path so the Dashboard, not the Transactions Table, is the default landing page immediately after Statement Upload; add a prominent "View All Transactions" CTA on the Dashboard; keep all 5 authenticated screens freely reachable from the sidebar with the active item highlighted; and make every authenticated screen's layout genuinely fluid — filling the available browser window on laptop/desktop resolutions (1366×768–1920×1080+) rather than sitting in a fixed-width column, with dashboard/table/chart content resizing responsively and no horizontal scroll.
+
+**Clarified via 3 questions before starting** (since the request's own nav diagram conflicted with recently-committed scope): (1) "Safe-to-Spend" stays the Dashboard's hero section, not a new standalone page; (2) Commitments stays in the sidebar (the request's nav list omitting it was an oversight, not a request to cut committed P1 scope); (3) update the WDS specs to match, not just the prototype code.
+
+**Changes:**
+1. **Flow re-sequenced** — `01.3-statement-upload.html`'s completion CTA retargeted from `/transactions` to `/dashboard`, relabeled "Go to my Dashboard →" (was "Review my transactions"). `shared/nav.js`'s `SCENARIO_ORDER` updated to match.
+2. **New Dashboard CTA** — `dashboard-transactions-cta` card ("Review your transactions" / dynamic transaction-count text / "View All Transactions →" button → `/transactions`), added to the below-fold grid.
+3. **Dashboard restructured into a responsive card grid** — Morning Briefing, the new Transactions CTA, Spending Breakdown, and Commitments Timeline now render as `.dash-card`s in a `.dash-grid` (`display:grid; grid-template-columns: repeat(auto-fit, minmax(340px,1fr))`), reflowing from 1 to 4 columns as the window widens — instead of one stacked column. The hero card keeps a contained 960px max-width (it's a focal number, not a data panel); the below-fold grid fills the rest.
+4. **Insights page** — `#insights-list` given the same `auto-fit` grid treatment (`minmax(420px,1fr)`) so cards sit 2-up on wide screens instead of one narrow stacked column.
+5. **Fluid content columns everywhere** — `.dash`/`.page--flow.has-sidenav` (Dashboard, Transactions, Insights, Commitments) now cap at 1680px and fill the window between the sidebar and that cap; `.copilot-thread`/`.copilot-input-bar` widened 720→960px; `.commit-content` (Commitments page) capped at 960px so its list/form stays a focused reading width even inside the wide `.dash` column. `.page--flow` (Upload only, no sidebar) stays at 720px — a single-step task screen, deliberately not full-bleed.
+6. **Bug found and fixed during verification:** the first pass of the fluid-width change (`width:100%` + `margin:0 auto` combined with a fixed `margin-left:208px` for the sidebar offset) caused horizontal overflow at 1366×768 and 1440×900 — the `width:100%` computed against the *full* viewport before the sidebar margin was subtracted, double-counting the 208px. Fixed by removing `width`/`margin:auto` and relying on default `width:auto` box-model math (`margin-left:208px` fixed, `margin-right:0`, `max-width` cap) — this correctly derives width as `min(viewport − 208px, cap)` with no overflow possible.
+7. **Second bug found and fixed:** narrowing the Insights cards (via the new 2-column grid) exposed a pre-existing latent issue — `.btn`'s `width:100%` caused the "Ask the Copilot about this" secondary button to claim its entire flex row, wrapping the sibling "Got it" dismiss button onto two lines. Fixed with `.insight-actions .btn { width:auto; flex:0 0 auto; }` and `white-space:nowrap` on `.insight-dismiss`.
+
+**Verification:** headless Chrome over the raw CDP WebSocket. **Flow:** logged in → Upload → sample statement → parse completes → clicked "Go to my Dashboard →" → landed on `/01.5-dashboard.html` with "Dashboard" highlighted in the sidebar → clicked "View All Transactions" → landed on `/01.4-transactions-table.html` with "Transactions" highlighted → hopped freely through Commitments → Insights → Copilot → Dashboard via the sidebar, confirming correct URL and active-item highlighting at every stop. **Responsive sweep:** all 8 authenticated+public pages at 1366×768, 1440×900, and 1920×1080 — **zero console errors, zero horizontal overflow** at every page/resolution combination (24 checks total) after the two bug fixes above. Visually confirmed via screenshot that the Dashboard's 4-card grid fills a single row at 1920px and reflows to 3 columns at 1440px / narrower at 1366px.
+
+**Docs/specs updated:** `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md`, `01-priyas-first-honest-morning.md` (Q8 shortest path + Scenario Steps table), `01.3-statement-upload.md` (Exit Points, CTA object spec, ASCII diagram, Related Pages, Page States), `01.4-transactions-table.md` (Entry Points, Previous/Next Step, Related Pages, Technical Notes), `01.5-dashboard.md` (Entry/Exit Points, new `dashboard-transactions-cta` + `dashboard-below-fold-grid` sections, ASCII layout diagram, Technical Notes), `_bmad-output/planning-artifacts/prd.md` (golden-path line). Prototype docs: `HANDOFF.md`, `PROTOTYPE-ROADMAP.md`, `README.md`. Screenshot set in `assets/` refreshed to match (new grid layout, new CTA card, updated button label; added `dashboard-wide-1920.png`).
+
+**Next:** [T] Acceptance Testing against the updated flow/layout requirements; prototype Scenario 03 (Copilot return-visit).
+
+---
+
+### 2026-07-09 — Phase 5: Prototyping — Sidebar Nav Simplified to 4 Items + Embedded Fallback Data
+
+**Agent:** Claude Code (WDS Phase 5 Implementation Partner)
+**Requested by:** ALPHA — two requests: (1) remove Commitments from the sidebar, keep it as the existing Dashboard button/link; (2) "my current html pages don't have any data in it" — add dummy data and show the result.
+
+**Change 1 — Commitments removed from the sidebar:** `shared/nav.js`'s `renderSideNav()` reverted to the 4-item set (Dashboard, Transactions, Insights, Copilot) — matching `epics.md` FR-6.4 exactly, which had said 4 screens all along. This reverts the 5th-item addition made earlier the same day (in the desktop-only reconciliation step), which had over-corrected past what FR-6.4 actually specifies. Commitments Management remains fully committed P1 scope, unchanged — only its navigation entry point changes back to what it always was: the Dashboard's "+ Add a commitment" link (`dashboard-commitments-add`, already pointed at `02.1-commitments-management.html`, no change needed there). `01.5-dashboard.md` and `02.1-commitments-management.md` updated to match (Entry/Exit Points, sidebar-nav object spec, ASCII diagrams); `01.6`/`01.7`/`01-priyas-first-honest-morning.md`'s stray "…Commitments…" mentions in their own sidebar descriptions corrected too.
+
+**Change 2 — root-caused the "no data" report:** Investigated rather than guessed. Root cause: `shared/data.js`'s `loadDemoData()` fetches `data/demo-data.json`, which only works when the prototype is served over http — if a page is opened directly from disk (`file://`, e.g. double-clicking the HTML in File Explorer), the browser blocks that `fetch()` and the previous code just logged an error and left the page showing its default placeholder state (₹0, empty lists) — exactly the "no data" symptom described. **Fix:** `loadDemoData()` now catches the fetch failure and falls back to `FALLBACK_DEMO_DATA`, an embedded copy of the same dataset living directly in `data.js`, so every page shows full data regardless of how it's opened. Confirmed via headless Chrome: navigated directly to `file:///.../01.5-dashboard.html` (bypassing the local server entirely) and verified the hero (₹2,840), briefing text, and 7-category donut legend all populate correctly from the fallback, with a console warning (not error) explaining what happened and how to get the real fetch path (`python -m http.server 8000`).
+
+**Verification:** headless Chrome/CDP. Confirmed the 4-item sidebar renders identically on all pages that use it; confirmed `dashboard-commitments-add` still navigates to the Commitments page; confirmed the Commitments page itself renders the same 4-item sidebar with no active item (correct, since it isn't one of the 4 destinations); confirmed data renders identically whether fetched over http or served from the `file://` fallback path. Screenshots refreshed: `dashboard-full.png`, `final-dashboard-desktop.png`, `commitments-default.png`; added `dashboard-file-protocol-fallback.png` as evidence of the fallback working.
+
+**Docs updated:** `HANDOFF.md`, `README.md` (nav description, `Run it` section documents the fallback behavior, `data.js` line in Structure). `_bmad-output/C-UX-Scenarios/{01-priyas-first-honest-morning.md, 01.5-dashboard.md, 01.6-ai-insights-recommendations.md, 01.7-copilot-chat.md, 02-priya-protects-what-matters/02.1-commitments-management.md}`.
+
+**Next:** [T] Acceptance Testing; prototype Scenario 03 (Copilot return-visit).
+
+---
+
 ## Key Decisions
 
 | Date | Decision | Phase | By |
@@ -336,6 +417,11 @@
 | 2026-07-08 | Dashboard "+ Add a commitment" realized as an inline modal form that updates Safe-to-Spend live — brings Scenario-02's "protection payoff" moment onto the Dashboard prototype | Phase 5: Prototyping | Claude Code + ALPHA |
 | 2026-07-08 | Auth reworked to login-first: `index.html`→Login landing; register no longer auto-logs in (success → "Return to Login"); mock auth backend in `shared/auth.js` (localStorage DB + sessionStorage session); protected routes guarded; logout added | Phase 5: Prototyping | Claude Code + ALPHA |
 | 2026-07-08 | Statement upload accepts PDF **and CSV** (was PDF-only) with full client-side validation (type/MIME/size/empty/corrupt/format) + friendly errors; server must re-validate in production | Phase 5: Prototyping | Claude Code + ALPHA |
+| 2026-07-09 | PRD open item X1 resolved: Phase 1 MVP is **desktop-only** (localhost, single-user, 1280px+, non-responsive); mobile-responsive web moved to optional/future-phase, no longer a Phase-1 carry-forward blocker | Architecture | ALPHA |
+| 2026-07-09 | Commitments Management (02.1) promoted from P2 to **committed P1 scope**; Confidence Score Drill-In Panel (epics.md Story 5.2) reinstated as committed scope (had been marked deferred in the Phase 3 outline, but was never actually cut from the build backlog) | UX-Scenarios scope correction | ALPHA |
+| 2026-07-09 | Prototype updated to match: sidebar is desktop-only 208px rail everywhere (mobile icon-rail variant removed); Commitments Management built as a full page with shared, `localStorage`-persisted commitment state; Dashboard's confidence tooltip replaced with the Drill-In panel | Phase 5: Prototyping | Claude Code |
+| 2026-07-09 | Golden path re-sequenced: Dashboard (not Transactions Table) is now the default landing page immediately after Statement Upload; Transactions is reached via a new "View All Transactions" Dashboard CTA. PRD/UX-Scenarios/page specs updated to match, at ALPHA's explicit direction, rather than leaving the specs stale | Phase 5: Prototyping | Claude Code + ALPHA |
+| 2026-07-09 | Authenticated-screen layouts made fluid (fill the window up to a 1680px cap) instead of fixed-width; Dashboard and Insights below-fold content laid out as a responsive CSS Grid card layout (`auto-fit`) instead of one stacked column | Phase 5: Prototyping | Claude Code + ALPHA |
 
 ---
 
