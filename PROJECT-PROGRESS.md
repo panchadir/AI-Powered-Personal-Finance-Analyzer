@@ -918,6 +918,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 26 | Generate Project Context — agent-facing rules file distilled from spine; hardened via Party Mode (4 Seams) + Advanced Elicitation (6 Guards) | `/bmad-generate-project-context` (Observed); invoked `/bmad-party-mode` + `/bmad-advanced-elicitation` | Claude Code (Project Context facilitator); Code Review Crew (party) | `_bmad-output/project-context.md` (40 rules, status: complete) |
 | 27 | Phase 5: Prototyping — Auth flow rework (login-first, guards, logout, forgot-pw, unique email) + PDF/CSV upload validation + logout UI polish | `/wds-5-agentic-development` `[P]` (Observed) | Claude Code (WDS Phase 5 Implementation Partner) | `shared/auth.js`, `index.html`, login/register/upload rework, brand-consistent logout; 24/24 CDP checks |
 | 28 | Create Epics and Stories — 8-epic structure approved (Party Mode gap-fill); 24 stories with full AC across Epics 1–5; Epics 6–8 in progress | `/bmad-agent-pm` → CE → `bmad-create-epics-and-stories` (Observed) | John (PM), Claude Code (story facilitator) | `epics.md` (in progress — Epics 1–5 complete, 6–8 pending) |
+| 29 | Implementation Readiness Check — 72 FRs traced; 6 pre-build fixes identified; READY verdict | `/bmad-check-implementation-readiness` (Observed) | Claude Code (Readiness PM facilitator) | `implementation-readiness-report-2026-07-09.md` |
 
 ## Commands Used
 
@@ -945,6 +946,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-advanced-elicitation` (Observed) | 1 (Step 26; nested) |
 | `/bmad-agent-pm` → CE → `bmad-create-epics-and-stories` (Observed) | 1 (Step 28) |
 | `/bmad-party-mode` (Observed) | +1 (Step 28; nested in Step 02) |
+| `/bmad-check-implementation-readiness` (Observed) | 1 (Step 29) |
 
 ## Agent Usage
 
@@ -962,6 +964,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 2 parallel subagents (rubric-walker, consistency-checker) | 1 (Step 25) |
 | Claude Code (Project Context facilitator) | 1 (Step 26) |
 | Code Review Crew — Vex, Grumbal, Boundary, Yui, Dana (party personas) | 1 (Step 26) |
+| Claude Code (Readiness PM facilitator) | 1 (Step 29) |
 | Freya (WDS Phase 4 UX Designer) | 3 (Steps 17–19) |
 | Saga | 2 |
 
@@ -987,6 +990,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-validate-prd` (shim) → `bmad-prd` Validate | 1 |
 | `bmad-agent-pm` | 1 |
 | `bmad-create-epics-and-stories` | 1 |
+| `bmad-check-implementation-readiness` | 1 |
 
 ## Agent → Skill Mapping
 
@@ -1058,6 +1062,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `_bmad-output/planning-artifacts/ux-spec-mvp.md` | Step 13 | Step 25 (Copilot scope label; score chip FR-5.5 compliant; enforcement checklist 5→7 items) |
 | `_bmad-output/project-context.md` | Step 26 | — (40 rules; projection of ARCHITECTURE-SPINE + 4 Party Seams + 6 Agent-Misread Guards; status: complete) |
 | `_bmad-output/planning-artifacts/epics.md` | Step 28 | Step 28 (ongoing — Epics 1–5 stories written; Epics 6–8 pending) |
+| `_bmad-output/planning-artifacts/implementation-readiness-report-2026-07-09.md` | Step 29 | — (complete, all 6 steps) |
 
 ## Corrections & Rework Log
 
@@ -1107,8 +1112,10 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 26 — Generate Project Context   (`_bmad-output/project-context.md`; 40 agent-facing rules; hardened via Party Mode [4 Seams] + Advanced Elicitation [6 Guards]; status: complete — build-ready agent rules file)
 [DONE]    Step 27 — Phase 5: Prototyping — auth flow rework (login-first, route guards, logout, forgot-pw, unique email) + PDF/CSV upload validation + logout UI polish (24/24 CDP checks)  <-- authenticated prototype, brand-consistent
 [DONE]    Step 28 — Create Epics and Stories — 8-epic structure (Party-Mode gap-fill); all Epics 1–8 complete with full Given/When/Then AC; Step 04 validation passed; 43 FRs + 9 NFRs + 18 UX-DRs + 12 ARs fully covered; `epics.md` is build-ready
+[DONE]    Step 29 — Implementation Readiness Check — 72 FRs traced to epics/stories; 6 pre-build fixes identified; overall verdict: READY; report at `implementation-readiness-report-2026-07-09.md`
+[TODO]    Apply 6 pre-build fixes to `epics.md` (30 min): FR-8.5 AC in S7.3, FR-8.6 AC in S5.3, S2.4 DoD note, Epic 4 developer note, S7.1 detector-class mapping, PRD X1 responsive decision
 [TODO]    Phase 5 — Acceptance Testing ([T]) of the Scenario 01 prototype, and/or prototype Scenarios 02 & 03
-[TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) add machine-assertable ACs for FR-5/FR-6/FR-7/FR-8 carry-forwards (DC-1/DC-2/DC-3); (3) validate CSV/PDF parser on real bank statements (S2.3). Then bmad-quick-dev / bmad-create-story.
+[TODO]    Development (3-day MVP build)   — before coding: (1) confirm data/demo-data.json path; (2) validate CSV/PDF parser on real bank statements (S2.3) Day 1 Hour 1; (3) verify safe-to-spend-scenarios.md has days=0 scenario. Then bmad-quick-dev / bmad-dev-story.
 ```
 
 **Current phase (updated Step 24):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
@@ -1125,13 +1132,13 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 28 |
+| Steps recorded | 29 |
 | Distinct BMAD/WDS commands/workflows observed or inferred | 15 (Step 13 used no command — direct authoring; Steps 15–16 = one `/bmad-party-mode` session; Steps 17–18 = one `/wds-4-ux-design` Dream session; Step 19 = direct instruction, no skill; Step 20 = `/wds-5-agentic-development` Prototyping; Step 23 = `/bmad-prd` Update) |
 | Distinct agents | 7 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer]) |
-| Distinct skills | 15 (+`bmad-generate-project-context`, +`bmad-advanced-elicitation` at Step 26; `bmad-party-mode` already counted at Steps 15–16) |
+| Distinct skills | 16 (+`bmad-generate-project-context`, +`bmad-advanced-elicitation` at Step 26; `bmad-party-mode` already counted at Steps 15–16; +`bmad-check-implementation-readiness` at Step 29) |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 22 (+`project-context.md` at Step 26) |
+| Artifact groups tracked | 23 (+`implementation-readiness-report-2026-07-09.md` at Step 29) |
 | Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 
@@ -1591,5 +1598,45 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
   1. **This entry is intentionally partial** — filed now because the project's Stop-hook detected `_bmad-output/` changes without a `PROJECT-PROGRESS.md` update (triggered multiple times across this session). Epic 6, 7, 8 stories and Step 04 validation remain outstanding; expect a follow-up update when the skill completes.
   2. **Existing `epics-and-stories.md` not superseded** — the new `epics.md` is the Step 03 structured output from this skill; `epics-and-stories.md` (Step 13) remains in place as the original backlog reference.
   3. **Step numbering gap:** Steps 17–27 were filed in earlier sessions (see the Summary Tables above). This step is correctly numbered 28 as the next new entry.
+
+---
+
+## Step 29 — Implementation Readiness Check
+
+**Timestamp:** 2026-07-09 (this conversation, branch `Bmad-Brainstorming`)
+**BMAD Phase:** Pre-Development / Quality Gate — validate planning artifacts are complete and aligned before Phase 4 implementation begins
+**Workflow:** `bmad-check-implementation-readiness` (6-step micro-file workflow: document discovery → PRD analysis → epic coverage validation → UX alignment → epic quality review → final assessment)
+**User Goal:** Verify that PRD, Architecture Spine, Epics & Stories, and UX Spec are complete, consistent, and implementation-ready — identifying any gaps that would block or confuse the 3-day build.
+**BMAD Command:** `/bmad-check-implementation-readiness` (**Observed** — explicit `<command-name>` invocation in this session)
+**Trigger:** User (ALPHA)
+
+### Agent Log
+- **Claude Code (Implementation Readiness PM facilitator)** — executed all 6 steps of the workflow, produced the full readiness report. **Source: Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-check-implementation-readiness`
+  - **Purpose:** 6-step assessment: document inventory → PRD requirement extraction → epic coverage matrix → UX alignment → epic quality review → final readiness verdict.
+  - **Contribution:** Extracted 72 FRs + 9 NFRs from PRD; traced all FRs to epic/story ACs; identified 6 targeted issues requiring pre-build fixes; declared overall status READY.
+  - **Source: Observed.**
+
+### Execution Summary
+- **Agent execution order:** Step 01 (document discovery; identified duplicate epics — `epics.md` selected as canonical) → Step 02 (PRD analysis; extracted 72 FRs + 9 NFRs) → Step 03 (epic coverage validation; 100% FR touched, 97% full coverage; 2 AC gaps identified) → Step 04 (UX alignment; 15 UX requirements aligned, 1 unresolved open item on responsive design) → Step 05 (epic quality review; 0 critical violations, 3 major issues, 3 minor concerns) → Step 06 (final assessment; READY verdict; 6 fixes recommended).
+- **Inputs:** `prd.md` (final), `ARCHITECTURE-SPINE.md` (final), `epics.md` (build-ready), `ux-spec-mvp.md`, `project-context.md`.
+- **Outputs:** `_bmad-output/planning-artifacts/implementation-readiness-report-2026-07-09.md` (complete, 6 steps, all sections populated).
+- **Key Decisions / Findings (Observed):**
+  - **Overall verdict:** ✅ READY with 6 low-effort pre-build fixes.
+  - **FR coverage:** 72/72 FRs touched; 70/72 fully covered with story ACs; 2 partial (FR-8.5 footer note missing from S7.3 AC; FR-8.6 insights-in-briefing AC gap in S5.3).
+  - **NFR coverage:** 9/9 = 100%.
+  - **No critical violations** in epic structure or story quality.
+  - **3 major issues:** (1) FR-8.5/FR-8.6 AC gaps; (2) S2.4 forward dependency to S3.1/S3.2 lacks DoD note; (3) Epic 4 has no user-visible output — needs developer note.
+  - **Naming gap:** S7.1 detector class names are not 1:1 with FR-8.1 pattern names ("death-by-small-purchases", "weekend-vs-weekday pace" not clearly mapped).
+  - **days=0 scenario:** S4.2 guards it in code but S4.3 pytest suite may not have an explicit `days_until_next_income = 0` scenario — recommend checking `safe-to-spend-scenarios.md` before S4.3 starts.
+  - **UX open item X1 (responsive design)** remains unresolved — must be decided (desktop-only vs. minimum breakpoint) before Day 1 build.
+- **Deliverables:** Complete implementation readiness report with coverage matrix, UX alignment, epic quality review, and 6-item action plan.
+- **Artifacts Created:** `_bmad-output/planning-artifacts/implementation-readiness-report-2026-07-09.md`.
+- **Artifacts Updated:** `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Step 28 (`epics.md` build-ready), Step 23 (`prd.md` final), Step 24 (`ARCHITECTURE-SPINE.md` final), Step 25 (`ux-spec-mvp.md`), Step 26 (`project-context.md`).
+- **Next Recommended BMAD Command:** Apply the 6 pre-build fixes to `epics.md` (30-min effort; all are targeted AC additions or notes), resolve PRD open item X1 (responsive design decision), then begin the 3-day MVP build with `bmad-dev-story` / `bmad-quick-dev` starting at S1.1.
+- **Notes:** The `epics-and-stories.md` file (141 lines, earlier summary version) was not selected for assessment — `epics.md` (1021 lines, full structured document from Step 28) was used as the canonical epics artifact. The two files coexist in `planning-artifacts/`.
 
 
