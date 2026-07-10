@@ -1,20 +1,15 @@
-"""Copilot chat page — Story 6.1 (FR-7.1, FR-7.7, FR-7.9, FR-7.10, NFR-8).
+"""Copilot chat page — Stories 6.1–6.3 (FR-7.1, FR-7.5, FR-7.7, FR-7.9, FR-7.10, NFR-8).
 
-Mirrors the WDS prototype ``01.7-copilot-chat.html`` exactly:
-  * ``.copilot-page.has-sidenav`` layout with sticky ``.topnav``
-  * ``.copilot-thread`` (``role="log"``, ``aria-live="polite"``) — the live region
-    announces completed sentences, not every token (NFR-8 / FR-7.10).
-  * Welcome card with headline, body copy, and quick-prompt chips (FR-7.7).
-    Hidden once the first message is sent.
-  * ``.msg--user`` / ``.msg--bot`` bubbles for completed turns.
-  * A ``.msg--bot`` streaming bubble that shows the in-flight ``streaming_content``
-    token-by-token via a reactive var (FR-7.1).
-  * ``.copilot-input-bar`` with a textarea + send button. The send button uses
-    ``aria-disabled`` (not ``disabled``) so it remains keyboard-focusable while
-    streaming (FR-7.10).
-
-Trace chips (FR-7.5) and context-chip handoff from Insights (FR-7.8) are
-Story 6.3 / Story 6.4 concerns; the skeleton CSS classes are in place.
+Mirrors WDS prototype ``01.7-copilot-chat.html``:
+  * ``.copilot-page.has-sidenav`` layout, sticky ``.topnav``
+  * ``.copilot-thread`` role="log" + aria-live="polite" (NFR-8)
+  * Welcome card with quick-prompt chips (FR-7.7) — hidden after first message
+  * ``.msg--user`` / ``.msg--bot`` bubbles for completed turns
+  * In-flight streaming bubble: thinking-dots → token stream → blinking cursor
+  * ``"Based on: …"`` trace chips below each data-citing bot bubble (FR-7.5)
+    - Chips on completed turns navigate to /transactions (transparency)
+    - Chips on the live streaming bubble appear as soon as the trace event fires
+  * ``aria-disabled`` (not ``disabled``) on the send button while streaming (FR-7.10)
 """
 from __future__ import annotations
 
@@ -26,11 +21,36 @@ from finance_app.state.copilot_state import QUICK_PROMPTS, CopilotState
 
 
 # ---------------------------------------------------------------------------
-# Sub-components
+# Trace chips
+# ---------------------------------------------------------------------------
+
+def _trace_chip(source: str) -> rx.Component:
+    """A single 'Based on: …' trace chip that navigates to /transactions."""
+    return rx.el.a(
+        source,
+        href="/transactions",
+        class_name="trace-chip",
+    )
+
+
+def _trace_row(sources: list) -> rx.Component:
+    """Render the 'Based on: …' row when sources is non-empty."""
+    return rx.cond(
+        sources.length() > 0,
+        rx.el.div(
+            rx.el.span("Based on:", class_name="trace-label"),
+            rx.foreach(sources, _trace_chip),
+            class_name="trace-row",
+        ),
+        rx.fragment(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Message bubbles
 # ---------------------------------------------------------------------------
 
 def _user_bubble(msg: dict) -> rx.Component:
-    """A user message bubble."""
     return rx.el.div(
         rx.el.span(msg["content"], class_name="msg-text"),
         class_name="msg msg--user",
@@ -38,26 +58,39 @@ def _user_bubble(msg: dict) -> rx.Component:
 
 
 def _bot_bubble(msg: dict) -> rx.Component:
-    """A completed assistant message bubble."""
+    """Completed assistant bubble with optional trace chips (FR-7.5)."""
     return rx.el.div(
         rx.el.span(msg["content"], class_name="msg-text"),
+        _trace_row(msg["trace_sources"]),
         class_name="msg msg--bot",
     )
 
 
+def _message_bubble(msg: dict) -> rx.Component:
+    return rx.cond(
+        msg["role"] == "user",
+        _user_bubble(msg),
+        _bot_bubble(msg),
+    )
+
+
 def _streaming_bubble() -> rx.Component:
-    """The in-flight assistant bubble — visible only while streaming."""
+    """In-flight assistant bubble — visible only while streaming.
+
+    Shows:
+      - Thinking dots before the first token arrives
+      - Token-by-token text + blinking cursor while tokens arrive
+      - Live trace chips as soon as the trace event fires (before done)
+    """
     return rx.cond(
         CopilotState.streaming,
         rx.el.div(
             rx.cond(
                 CopilotState.streaming_content == "",
-                # Thinking dots shown before the first token arrives.
                 rx.el.span(
                     rx.el.span(), rx.el.span(), rx.el.span(),
                     class_name="typing-dots",
                 ),
-                # Token-by-token text once tokens start arriving.
                 rx.fragment(
                     rx.el.span(
                         CopilotState.streaming_content,
@@ -66,20 +99,17 @@ def _streaming_bubble() -> rx.Component:
                     rx.el.span(class_name="cursor"),
                 ),
             ),
+            # Live trace chips appear as soon as the trace event fires.
+            _trace_row(CopilotState.current_trace_sources),
             class_name="msg msg--bot",
         ),
         rx.fragment(),
     )
 
 
-def _message_bubble(msg: dict) -> rx.Component:
-    """Route a completed message to the correct bubble style."""
-    return rx.cond(
-        msg["role"] == "user",
-        _user_bubble(msg),
-        _bot_bubble(msg),
-    )
-
+# ---------------------------------------------------------------------------
+# Welcome card
+# ---------------------------------------------------------------------------
 
 def _quick_chip(prompt: str) -> rx.Component:
     return rx.el.button(
@@ -92,10 +122,7 @@ def _quick_chip(prompt: str) -> rx.Component:
 
 
 def _welcome_card() -> rx.Component:
-    """First-visit welcome card with headline, body, and suggestion chips.
-
-    Hidden once the user has sent their first message (messages list is non-empty).
-    """
+    """Hidden once the user sends their first message."""
     return rx.cond(
         CopilotState.messages.length() == 0,
         rx.el.div(
@@ -120,8 +147,12 @@ def _welcome_card() -> rx.Component:
     )
 
 
+# ---------------------------------------------------------------------------
+# Thread + input bar + topnav
+# ---------------------------------------------------------------------------
+
 def _thread() -> rx.Component:
-    """The scrollable chat thread — role=log + aria-live=polite (NFR-8 / FR-7.10)."""
+    """Scrollable chat thread — role=log + aria-live=polite (NFR-8 / FR-7.10)."""
     return rx.el.div(
         _welcome_card(),
         rx.foreach(CopilotState.messages, _message_bubble),
@@ -134,13 +165,8 @@ def _thread() -> rx.Component:
 
 
 def _input_bar() -> rx.Component:
-    """Sticky bottom input bar with auto-sizing textarea and send button.
-
-    Send button uses ``aria-disabled`` (not ``disabled``) so it stays in the
-    tab order while streaming (FR-7.10).
-    """
+    """Sticky bottom bar. Send button uses aria-disabled, not disabled (FR-7.10)."""
     send_disabled = CopilotState.streaming | (CopilotState.input_value.strip() == "")
-
     return rx.el.div(
         rx.el.textarea(
             id="copilot-input-bar-field",
@@ -149,7 +175,6 @@ def _input_bar() -> rx.Component:
             rows="1",
             value=CopilotState.input_value,
             on_change=CopilotState.set_input,
-            # Enter (without Shift) submits via handle_key_down; Shift+Enter inserts newline.
             on_key_down=CopilotState.handle_key_down,
             disabled=CopilotState.streaming,
             auto_complete="off",
@@ -162,8 +187,6 @@ def _input_bar() -> rx.Component:
             aria_disabled=rx.cond(send_disabled, "true", "false"),
             on_click=CopilotState.send_message,
             type="button",
-            # ``disabled`` only when streaming so Enter-key still works from textarea;
-            # the aria-disabled above communicates the not-yet-active state accessibly.
             disabled=CopilotState.streaming,
         ),
         id="copilot-input-bar",
@@ -173,12 +196,8 @@ def _input_bar() -> rx.Component:
 
 def _topnav() -> rx.Component:
     return rx.el.div(
-        rx.el.a(
-            "← Dashboard",
-            href="/dashboard",
-            class_name="back-link",
-            id="copilot-topnav-back",
-        ),
+        rx.el.a("← Dashboard", href="/dashboard", class_name="back-link",
+                id="copilot-topnav-back"),
         rx.el.span("AI Copilot", class_name="topnav-title", id="copilot-topnav-title"),
         id="copilot-topnav",
         class_name="topnav",
@@ -195,7 +214,7 @@ def _topnav() -> rx.Component:
     on_load=[AuthState.check_auth, CopilotState.load_history],
 )
 def copilot() -> rx.Component:
-    """Copilot chat page — Story 6.1."""
+    """Copilot chat page — Stories 6.1–6.3."""
     return rx.fragment(
         side_nav("copilot"),
         rx.el.div(

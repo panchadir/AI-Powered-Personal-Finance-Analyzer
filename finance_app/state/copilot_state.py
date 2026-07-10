@@ -1,29 +1,24 @@
-"""Copilot chat state — Story 6.1 (FR-7.1, FR-7.9, NFR-8).
+"""Copilot chat state — Stories 6.1–6.3 (FR-7.1, FR-7.4, FR-7.5, FR-7.9, NFR-8).
 
 Drives the streaming chat UI:
-  * ``send_message`` appends the user turn, streams assistant tokens via
-    ``services.narrate.copilot.astream_reply``, persists both turns to
-    ``chat_messages`` (server-side, scoped to ``user_id`` — never localStorage).
-  * ``load_history`` is the ``on_load`` handler: fetches prior messages from DB
-    so the thread is populated when the user returns to the page.
-  * ``set_input`` drives the controlled textarea.
+  * ``send_message`` streams typed events from ``astream_events``:
+      - ``token``  → append to ``streaming_content``, yield to browser
+      - ``trace``  → store in ``current_trace_sources`` for the bubble
+      - ``error``  → set ``streaming_content`` to the error message
+      - ``done``   → finalise: move content + trace into ``messages``, clear buffer
+      - unknown    → ignored gracefully (FR-7.3 forward-compat AC)
+  * ``load_history`` on_load: fetches prior messages from DB (FR-7.9).
+  * ``set_input`` / ``handle_key_down`` drive the controlled textarea.
 
-Streaming approach: ``astream_reply`` is an async generator. The event handler
-loops over it, appending each token to ``streaming_content`` and yielding to
-push the update over Reflex's WebSocket. Once streaming ends, the complete
-response is appended to ``messages`` and ``streaming_content`` is cleared.
-
-Accessibility (NFR-8 / FR-7.10):
-  * ``role="log"`` + ``aria-live="polite"`` are set on the thread element in the
-    page component (not here — state owns data, component owns markup).
-  * ``streaming`` drives ``aria-disabled`` on the send button so it stays
-    keyboard-focusable while a response is in flight (FR-7.10).
+Each completed ``messages`` entry carries a ``trace_sources`` list so the
+page can render ``"Based on: …"`` trace chips below assistant bubbles (FR-7.5).
 
 Architecture (AD-2): only this file imports ``reflex``; ``services.narrate`` is
-framework-agnostic. No financial arithmetic lives here (AD-1 / NFR-3).
+framework-agnostic. No financial arithmetic here (AD-1 / NFR-3).
 """
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -32,7 +27,7 @@ from sqlmodel import select
 
 from finance_app.models import ChatMessage
 from finance_app.state.auth_state import AuthState, user_for_token
-from services.narrate.copilot import astream_reply
+from services.narrate.copilot import astream_events
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +38,19 @@ QUICK_PROMPTS: list[str] = [
     "Am I on track this month?",
 ]
 
+# Human-readable labels for the tool names shown in trace chips (FR-7.5).
+_TOOL_LABELS: dict[str, str] = {
+    "get_safe_to_spend":        "Safe-to-Spend",
+    "get_confidence_score":     "Confidence Score",
+    "query_transactions":       "Your transactions",
+    "get_spending_by_category": "Spending by category",
+    "get_upcoming_commitments": "Upcoming commitments",
+}
+
+
+def _label(tool_name: str) -> str:
+    return _TOOL_LABELS.get(tool_name, tool_name)
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -52,13 +60,17 @@ class CopilotState(AuthState):
     """State for the Copilot chat page."""
 
     # Completed chat turns rendered in the thread.
-    # Each dict: {"role": "user"|"assistant", "content": "..."}
+    # Each dict: {"role": str, "content": str, "trace_sources": list[str]}
     messages: list[dict] = []
 
-    # Token buffer for the in-flight assistant response (appended token-by-token).
+    # In-flight token buffer (token-by-token streaming).
     streaming_content: str = ""
 
-    # True while the assistant is generating — drives aria-disabled on the send btn.
+    # Trace sources collected during the current stream (emitted as one trace event).
+    # Stored here so the streaming bubble can show them before the turn finalises.
+    current_trace_sources: list[str] = []
+
+    # True while the assistant is generating — drives aria-disabled on send button.
     streaming: bool = False
 
     # Controlled textarea value.
@@ -75,17 +87,13 @@ class CopilotState(AuthState):
 
     @rx.event
     def handle_key_down(self, key: str):
-        """Submit on Enter (without Shift); Shift+Enter is a newline (handled client-side)."""
+        """Submit on Enter; Shift+Enter inserts a newline (handled client-side)."""
         if key == "Enter" and not self.streaming and self.input_value.strip():
             return CopilotState.send_message
 
     @rx.event
     async def load_history(self):
-        """Fetch prior chat messages from DB on page load (FR-7.9).
-
-        Called as ``on_load`` on the Copilot page. Loads only once per session
-        to avoid re-fetching when state updates trigger re-renders.
-        """
+        """Fetch prior chat messages from DB on page load (FR-7.9)."""
         if self._history_loaded:
             return
         with rx.session() as session:
@@ -97,7 +105,16 @@ class CopilotState(AuthState):
                 .where(ChatMessage.user_id == user.id)
                 .order_by(ChatMessage.timestamp)
             ).all()
-            self.messages = [{"role": r.role, "content": r.content} for r in rows]
+            self.messages = [
+                {
+                    "role": r.role,
+                    "content": r.content,
+                    "trace_sources": (
+                        json.loads(r.trace_sources) if r.trace_sources else []
+                    ),
+                }
+                for r in rows
+            ]
         self._history_loaded = True
 
     @rx.event
@@ -108,36 +125,36 @@ class CopilotState(AuthState):
 
     @rx.event
     async def send_message(self):
-        """Validate input, stream the assistant reply, persist both turns to DB.
+        """Stream the assistant reply via typed SSE events and persist both turns.
 
-        Flow:
-          1. Guard: empty input or already streaming → no-op.
-          2. Resolve user_id from the session cookie (IDOR guard — all DB ops use this id).
-          3. Optimistically append user bubble + clear input → yield (immediate UI update).
-          4. Persist user turn to DB.
-          5. Stream tokens from the LLM, appending each to ``streaming_content`` → yield.
-          6. On finish (or error): move completed text into ``messages``, clear buffer.
-          7. Persist assistant turn to DB.
+        Event handling (FR-7.4 / Story 6.3 AC):
+          token   → append text to streaming_content, yield
+          trace   → store human-readable source labels in current_trace_sources, yield
+          error   → overwrite streaming_content with the error message, yield
+          done    → finalise the turn (move to messages, clear buffer, persist to DB)
+          unknown → ignored (forward-compatibility AC)
         """
         text = self.input_value.strip()
         if not text or self.streaming:
             return
 
-        # Resolve user_id before any DB writes (all writes use this id — IDOR guard).
         with rx.session() as session:
             user = user_for_token(session, self.auth_token)
             if user is None:
                 return
             user_id = user.id
 
-        # Step 3: append user bubble, clear input, enter streaming mode.
-        self.messages = self.messages + [{"role": "user", "content": text}]
+        # Append user bubble, clear input, enter streaming mode.
+        self.messages = self.messages + [
+            {"role": "user", "content": text, "trace_sources": []}
+        ]
         self.input_value = ""
         self.streaming = True
         self.streaming_content = ""
+        self.current_trace_sources = []
         yield
 
-        # Step 4: persist user turn (best-effort; a failure doesn't abort the response).
+        # Persist user turn (best-effort).
         try:
             with rx.session() as session:
                 session.add(
@@ -149,53 +166,74 @@ class CopilotState(AuthState):
                 )
                 session.commit()
         except Exception:
-            log.exception("Failed to persist user chat message for user_id=%d", user_id)
+            log.exception("Failed to persist user message for user_id=%d", user_id)
 
-        # Build the full conversation history for the API (all prior turns + new user turn).
-        api_messages = [{"role": m["role"], "content": m["content"]} for m in self.messages]
+        api_messages = [
+            {"role": m["role"], "content": m["content"]} for m in self.messages
+        ]
 
-        # Step 5: stream tokens from the async LLM generator.
-        # user_id and session are passed so tool calls are IDOR-safe (Story 6.2).
         assistant_content = ""
-        try:
-            with rx.session() as tool_session:
-                async for token in astream_reply(
-                    api_messages,
-                    user_id=user_id,
-                    session=tool_session,
-                ):
-                    assistant_content += token
+        trace_sources: list[str] = []
+        error_occurred = False
+
+        with rx.session() as tool_session:
+            async for event in astream_events(
+                api_messages,
+                user_id=user_id,
+                session=tool_session,
+            ):
+                etype = event.get("type")
+
+                if etype == "token":
+                    assistant_content += event.get("text", "")
                     self.streaming_content = assistant_content
                     yield
-        except Exception:
-            log.exception("Copilot stream error for user_id=%d", user_id)
-            assistant_content = (
-                "I ran into a problem and couldn't finish that response. "
-                "Please try again in a moment."
-            )
-            self.streaming_content = assistant_content
-            yield
 
-        # Step 6: finalise — move completed response into messages list, clear buffer.
-        self.messages = self.messages + [
-            {"role": "assistant", "content": assistant_content}
-        ]
-        self.streaming_content = ""
-        self.streaming = False
-        yield
+                elif etype == "trace":
+                    raw_sources: list[str] = event.get("sources", [])
+                    trace_sources = [_label(s) for s in raw_sources]
+                    self.current_trace_sources = trace_sources
+                    yield
 
-        # Step 7: persist assistant turn (best-effort).
-        try:
-            with rx.session() as session:
-                session.add(
-                    ChatMessage(  # type: ignore[call-arg]
-                        user_id=user_id,
-                        role="assistant",
-                        content=assistant_content,
+                elif etype == "error":
+                    # Honest error frame — overwrite whatever content was streamed.
+                    assistant_content = event.get("text", "Something went wrong.")
+                    self.streaming_content = assistant_content
+                    error_occurred = True
+                    yield
+
+                elif etype == "done":
+                    # Finalise: move completed turn into messages list, clear buffer.
+                    self.messages = self.messages + [
+                        {
+                            "role": "assistant",
+                            "content": assistant_content,
+                            "trace_sources": trace_sources,
+                        }
+                    ]
+                    self.streaming_content = ""
+                    self.current_trace_sources = []
+                    self.streaming = False
+                    yield
+
+                # Unknown event types are silently ignored (forward-compat AC).
+
+        # Persist assistant turn (best-effort; skip empty content on error with no text).
+        if assistant_content:
+            try:
+                with rx.session() as session:
+                    session.add(
+                        ChatMessage(  # type: ignore[call-arg]
+                            user_id=user_id,
+                            role="assistant",
+                            content=assistant_content,
+                            trace_sources=(
+                                json.dumps(trace_sources) if trace_sources else None
+                            ),
+                        )
                     )
+                    session.commit()
+            except Exception:
+                log.exception(
+                    "Failed to persist assistant message for user_id=%d", user_id
                 )
-                session.commit()
-        except Exception:
-            log.exception(
-                "Failed to persist assistant chat message for user_id=%d", user_id
-            )
