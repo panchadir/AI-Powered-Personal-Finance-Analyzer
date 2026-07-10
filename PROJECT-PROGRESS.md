@@ -2854,3 +2854,232 @@ The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI
 - **Notes:** A stray reflex listener (PID 45140) on :3000 resisted Stop-Process -- the same unreaped-process nuisance documented since Step 49; harmless. No commit (commit only when the user asks).
 
 ---
+> **Note:** the Step 50+ entries below were authored on branch `Individual-epic-review` (Epic 4) and reached this branch by cherry-pick. They ran in parallel with the Epic 2 Step 50 above; the step numbers collide by accident of branching.
+
+## Step 50 — Epic 4 Story 4-1 (create-story + dev-story): lock the engine scenario contract
+
+**Timestamp:** 2026-07-10 (this conversation, branch `Individual-epic-review`)
+**BMAD Phase:** Phase 5: Implementation — Epic 4 (Financial Engine) kickoff
+**Workflow:** `bmad-create-story` → `bmad-dev-story`
+**User Goal:** "Start the Epic 4 implementation by invoking the necessary agents." Epic 4 (deterministic Safe-to-Spend + Confidence Score) is the never-cut honesty/safety spine; started out of Day-1→3 order because it is pure, contract-defined Python with no dependency on live-parsed data.
+**BMAD Command:** `bmad-create-story` (story 4-1), then `bmad-dev-story`. **Source: Observed.**
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code running `bmad-create-story` then `bmad-dev-story` (dev persona).
+- **Role:** Author the pre-flight story spec, then execute it (analysis/spec only — no engine code).
+- **Input:** `epics-and-stories.md` (E4/S4.0), `safe-to-spend-scenarios.md` (13 scenarios), `prd.md` FR-4/FR-5, `ARCHITECTURE-SPINE.md` AD-1/AD-8/AD-9, `project-context.md` Seams, `finance_app/models.py`, `services/utils/enums.py`.
+- **Output:** Story `4-1-...md` (ready-for-dev → review) + deliverable `4-1-engine-contract.md` (the LOCKED contract).
+- **Source:** **Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`, `bmad-dev-story`
+- **Purpose:** Context-engineer the story, then produce the locked contract 4-2/4-3 build against.
+- **Contribution:** Reconciled the **PRD 12 vs scenario-file/epic 13** scenario-count drift (locked 13; scenario 13 = payday-today ÷0 guard); locked the criticality prose→enum map (medium→important, low→flexible), the frozen-dataclass evidence-pack shape, buffer ₹2,000, and CS-1..CS-4.
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed.**
+
+### Execution Summary
+- **Agent execution order:** Inspect repo state (engine dir empty, models present) → create-story 4-1 (epic-4 → in-progress) → dev-story 4-1 → author `4-1-engine-contract.md` → self-check 4 scenarios by hand → story → review.
+- **Key Decisions (Observed):** scenario count **13** (scenario file wins over stale PRD FR-4 AC); criticality mapping; frozen `EvidencePack` (not dict); buffer ₹2,000 as an input param; `score_events` field-name lock (`trigger_event`/`suggested_action`).
+- **Verification:** hand-verified S1→1250, S2→830, S6→740, S4 top-of-range→570 vs `⌊pool/days/10⌋×10`.
+- **Deliverables:** `4-1-engine-contract.md` (single source of truth for 4-2/4-3); story 4-1 in review.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/4-1-engine-pre-flight-...md`, `4-1-engine-contract.md`.
+- **Artifacts Updated:** `sprint-status.yaml` (epic-4 → in-progress; 4-1 → review).
+- **Dependencies:** Story 1.2 data model (`Commitment`, `ScoreEvent`), the scenario suite, PRD FR-4/FR-5.
+- **Next Recommended Command:** `create-story`/`dev-story` for 4-2 (engine implementation).
+- **Notes:** No engine code shipped (spec story). Started Epic 4 out of order — safe because the engine is pure, TDD'd against the fixed contract.
+
+---
+
+## Step 51 — Epic 4 Story 4-2 (create-story + dev-story): Safe-to-Spend engine
+
+**Timestamp:** 2026-07-10 (this conversation, branch `Individual-epic-review`)
+**BMAD Phase:** Phase 5: Implementation — Epic 4
+**Workflow:** `bmad-create-story` → `bmad-dev-story`
+**User Goal:** Continue Epic 4 — implement the deterministic Safe-to-Spend engine against the locked contract.
+**BMAD Command:** `bmad-create-story` (4-2) → `bmad-dev-story`. **Source: Observed.**
+**Trigger:** User (chose "Continue to 4-2 now")
+
+### Agent Log
+- **Agent Name:** Claude Code (`bmad-create-story` → `bmad-dev-story`, dev persona).
+- **Role:** Build `services/engine/safe_to_spend.py` (pure `Decimal`, framework-agnostic) + targeted tests, red-green-refactor.
+- **Input:** `4-1-engine-contract.md` (§1–§5), `prd.md` FR-4, `ARCHITECTURE-SPINE.md` AD-8/AD-1, `services/utils/enums.py`, existing test conventions (`tests/utils/test_format.py`, `tests/test_service_boundary.py`).
+- **Output:** Engine module + `__init__` re-exports + zero-LLM `conftest.py` + 17 tests. Story → review.
+- **Source:** **Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`, `bmad-dev-story`
+- **Purpose:** Implement the FR-4.12 evidence pack + AD-8 formula + DD-1 reservation.
+- **Contribution:** AD-8 floor + round-DOWN-to-₹10 (Decimal-safe), DD-1 all 4 sub-rules, ÷0/undefined guard (reserved-only fallback), two-layer output, `safety_ok = available_balance >= reserved_total`.
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed.**
+
+### Execution Summary
+- **Agent execution order:** Probe toolchain (no venv/pytest) → create gitignored `.venv` + install **pytest only** (engine is stdlib-only) → create-story 4-2 → dev-story 4-2 → write `safe_to_spend.py` + tests → `pytest tests/engine/ tests/test_service_boundary.py` → **20 passed, zero LLM calls** → story → review.
+- **Key Decisions (Observed):** `safety_ok` = balance-covers-reserved (chosen over pool≥0); after-income model spreads over an assumed 30-day cycle; representative-scenario tests (1,2,10,12,13), leaving the full 13-row gate to 4-3.
+- **Findings surfaced:** **scenario-3 after-income mismatch** — engine ₹1,830 vs scenario-file "~990" (today layer ₹150 exact). Flagged for 4-3/spec owner (contract §8 open item).
+- **Verification:** `pytest tests/engine/ tests/test_service_boundary.py` → **20 passed**; boundary guard confirms no `reflex`/`finance_app` import.
+- **Deliverables:** `services/engine/safe_to_spend.py`; story 4-2 in review.
+- **Artifacts Created:** `services/engine/safe_to_spend.py`, `tests/engine/conftest.py`, `tests/engine/test_safe_to_spend.py`, `4-2-...md`, `.venv/` (gitignored).
+- **Artifacts Updated:** `services/engine/__init__.py` (re-exports), `sprint-status.yaml` (4-2 → review).
+- **Dependencies:** Step 50 (locked contract).
+- **Next Recommended Command:** `create-story`/`dev-story` for 4-3 (the 13-scenario gate).
+- **Notes:** Chose pytest-only venv over full app deps (reflex/camelot/pandas/psycopg2) — engine gate runs without them (AD-1). Ran inline, no subagents.
+
+---
+
+## Step 52 — Epic 4 Story 4-3 (create-story + dev-story): 13-scenario pytest gate
+
+**Timestamp:** 2026-07-10 (this conversation, branch `Individual-epic-review`)
+**BMAD Phase:** Phase 5: Implementation — Epic 4
+**Workflow:** `bmad-create-story` → `bmad-dev-story`
+**User Goal:** Continue Epic 4 — build the table-driven 13-scenario gate (the Day-2 go/no-go), CS-2 + CS-4.
+**BMAD Command:** `bmad-create-story` (4-3) → `bmad-dev-story`. **Source: Observed.**
+**Trigger:** User ("continue")
+
+### Agent Log
+- **Agent Name:** Claude Code (`bmad-create-story` → `bmad-dev-story`, dev persona).
+- **Role:** Author `tests/engine/test_scenarios.py` asserting every locked evidence-pack field across all 13 scenarios; add the minimal engine change for S7 `Low`.
+- **Input:** `4-1-engine-contract.md` §5/§6, `safe-to-spend-scenarios.md`, `services/engine/safe_to_spend.py`, `tests/engine/conftest.py`.
+- **Output:** 13-scenario parametrized suite + a `low_data` engine signal. Story → review.
+- **Source:** **Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`, `bmad-dev-story`
+- **Purpose:** Prove the engine correct against the frozen contract before the dashboard wires it.
+- **Contribution:** Encoded exact inputs for all 13 rows (dates chosen so `days_to_income` matches); asserted `reserved_total`/`spendable_pool`/`days_to_income`/`safe_to_spend_today`/`safety_ok` + CS-2 (prediction confidence) + CS-4 (no contradiction); reconciled scenario-3 (today exact, after-income structural).
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed.**
+
+### Execution Summary
+- **Agent execution order:** create-story 4-3 → dev-story 4-3 → add `EngineInput.low_data` + `Low` derivation (only permitted engine change) → write `test_scenarios.py` (13 rows) → `pytest` → **111 passed, 6 skipped, zero LLM calls** → story → review.
+- **Key Decisions (Observed):** scenario-3 after-income asserted **structurally** (engine 1,830 ≠ file ~990; today ₹150 exact) — recorded for spec-owner; **CS split** — 4-3 covers CS-2 + CS-4; CS-1 (0–100 score ordering) and CS-3 (`score_events` binding) require 4-4's code.
+- **Verification:** `pytest tests/engine/ tests/test_service_boundary.py` → **111 passed, 6 skipped** (skips = prediction confidence unpinned for S8–S13). No regression to 4-2.
+- **Deliverables:** `tests/engine/test_scenarios.py` — the MVP engine quality gate, green.
+- **Artifacts Created:** `tests/engine/test_scenarios.py`, `4-3-...md`.
+- **Artifacts Updated:** `services/engine/safe_to_spend.py` (`low_data`), `sprint-status.yaml` (4-3 → review).
+- **Dependencies:** Steps 50–51.
+- **Next Recommended Command:** `create-story`/`dev-story` for 4-4 (Confidence Score + writeback).
+- **Notes:** The `pytest services/engine/` go/no-go the PRD FR-4 AC requires is green before any dashboard wiring.
+
+---
+
+## Step 53 — Epic 4 Story 4-4 (create-story + dev-story): Confidence Score engine (writeback deferred)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `Individual-epic-review`)
+**BMAD Phase:** Phase 5: Implementation — Epic 4 (final story)
+**Workflow:** `bmad-create-story` → `bmad-dev-story`
+**User Goal:** Build the 0–100 preparedness Confidence Score + the event-binding fields, LLM-free, without violating AD-2 (services can't import the `ScoreEvent` `rx.Model`).
+**BMAD Command:** `bmad-create-story` (4-4) → `bmad-dev-story`. **Source: Observed.**
+**Trigger:** User (chose "Pure engine now, writeback deferred")
+
+### Agent Log
+- **Agent Name:** Claude Code (`bmad-create-story` → `bmad-dev-story`, dev persona).
+- **Role:** Build `services/engine/confidence_score.py` returning a `ScoreResult` dataclass; defer the DB insert to Epic 5.
+- **Input:** `4-1-engine-contract.md` §6, `prd.md` FR-5, `ARCHITECTURE-SPINE.md` AD-9/AD-1/AD-2, `finance_app/models.py` (ScoreEvent field names), the scenario evidence packs from `test_scenarios.py`.
+- **Output:** Confidence Score module + 20 tests (CS-1/CS-3/CS-4 + bounds + cold-start). Story → review.
+- **Source:** **Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-create-story`, `bmad-dev-story`
+- **Purpose:** A preparedness-only score that never contradicts Safe-to-Spend, with every change bound to an explanation/action.
+- **Contribution:** Score derived only from the evidence pack (engagement structurally impossible); shortfall band [0,20], covered band [40,95]; `ScoreResult` always carries `trigger_event`/`explanation`/`suggested_action`/`delta` (CS-3); prediction confidence passed through (never conflated); cold-start computes real value (no fake-50).
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed.**
+
+### Execution Summary
+- **Agent execution order:** create-story 4-4 → dev-story 4-4 → write `confidence_score.py` + re-exports + `test_confidence_score.py` (reusing scenario `CASES`) → `pytest` → **147 passed, 6 skipped, zero LLM calls** → story → review.
+- **Key Decisions (Observed):** **DB `score_events` writeback deferred to Epic 5 dashboard handler** (product decision — AD-2 forbids `services/` importing the `rx.Model`); the engine emits the bound fields, the handler persists atomically + reads back latest (AD-9). Spending-pace/savings-trend factors deferred (need transaction history).
+- **Verification:** computed scores confirm CS-1 ordering — **S11 95 > S1 74 > S7 59 > S6 47 > S10 12** (shortfall lowest; cold-start real 59, not 50).
+- **Deliverables:** `services/engine/confidence_score.py`; story 4-4 in review. **Epic 4 code complete.**
+- **Artifacts Created:** `services/engine/confidence_score.py`, `tests/engine/test_confidence_score.py`, `4-4-...md`.
+- **Artifacts Updated:** `services/engine/__init__.py` (re-exports), `sprint-status.yaml` (4-4 → review).
+- **Dependencies:** Steps 50–52.
+- **Next Recommended Command:** `code-review` of the Epic 4 engine (different LLM recommended), then wire the writeback in Epic 5.
+- **Notes:** All 4 Epic 4 stories now in review; epic stays `in-progress` until code-review flips them to done.
+
+---
+
+## Step 54 — Code Review of Epic 4 engine (inline adversarial review + triage)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `Individual-epic-review`)
+**BMAD Phase:** Phase 5: Implementation — code review of Epic 4 (stories 4-2/4-3/4-4)
+**Workflow:** `bmad-code-review`
+**User Goal:** "Run code-review." Adversarially review the Epic 4 engine implementation against the locked contract + the ADs, then triage.
+**BMAD Command:** `code-review` (user instruction). **Source: Observed.** Diff mode: uncommitted Epic 4 engine + tests (~1,177 lines; 404 engine source) vs `baseline_commit d0b4a8f`.
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code running the `bmad-code-review` workflow.
+- **Role:** Code reviewer — Blind Hunter + Edge Case Hunter + Acceptance Auditor lenses, **inline** (no subagents spawned, per operating constraints).
+- **Input:** `safe_to_spend.py`, `confidence_score.py`, `__init__.py` + 4 test files; specs 4-2/4-3/4-4 + contract 4-1; `project-context.md` (AD-8/AD-13/AD-1/AD-2, Seams, Agent-Misread Guards).
+- **Output:** 1 patch + 1 decision-needed + 3 defer + 1 dismissed.
+- **Source:** **Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`
+- **Purpose:** Adversarial review + structured triage of the Epic 4 engine before it is wired to the dashboard.
+- **Contribution:** Found a real (untested) `prediction_confidence` bug; raised an AD-13 currency-formatting decision; deferred 3 low-severity/known items; wrote findings to the story + deferred-work ledger.
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed.**
+
+### Execution Summary
+- **Agent execution order:** gather context (uncommitted diff, review_mode=full) → three review lenses inline → read code at each finding to rate → triage → wrote findings to `4-2-...md` + `deferred-work.md`. Awaiting user decisions on the patch + the AD-13 decision.
+- **Findings (all Observed):**
+  - **[Low-Med · patch]** `surfaced_predictions` flips True for a *predicted* commitment due **after** next income (`safe_to_spend.py:220` keys on `due_date is not None` instead of `driver is not None`) → wrongly downgrades `prediction_confidence` to Medium. Untested path. Fix: gate on `driver is not None`.
+  - **[Low-Med · decision-needed]** Engine evidence strings embed raw `₹{Decimal}` (e.g. "₹9500") instead of `formatINR` → "₹9,500" (`safe_to_spend.py:247`, `confidence_score.py:97`), bypassing AD-13. Decision: format in engine vs keep structured for narrate/UI vs accept (drivers are LLM-narrator inputs).
+  - **[Low · defer ×3]** after-income double-counts current balance (already contract §8 open item); `safety_ok=True` while STS=₹0 when buffer dented (untested boundary); overdue *predicted* commitment surfaced-not-reserved (touches "safety beats precision").
+  - **[dismissed ×1]** `test_confidence_score.py` importing `CASES` from `test_scenarios.py` (acceptable shared-fixture pattern; noise).
+- **Verification:** re-ran gate before review — `pytest tests/engine/ tests/test_service_boundary.py` → **147 passed, 6 skipped, zero LLM calls**.
+- **User decisions (Observed, via `AskUserQuestion`):** AD-13 → **format via `formatINR` in the engine**; patch → **apply now**.
+- **Actions applied:** fixed `surfaced_predictions` (gate on `driver is not None`) + added regression test `test_predicted_after_income_does_not_lower_confidence`; routed engine ₹ evidence strings through `formatINR` (→ "₹9,500") and the predicted-commitment date through `formatDate` (→ "27 Jun 2026") in `safe_to_spend.py` + `confidence_score.py`; updated 2 test assertions to the grouped form. `formatINR`/`formatDate` are framework-agnostic so the AD-2 boundary guard stays green.
+- **Verification:** `pytest tests/engine/ tests/test_service_boundary.py` → **148 passed, 6 skipped, zero LLM calls** (147 + the new regression test). Empirically confirmed the formatted strings ("₹9,500", "27 Jun 2026").
+- **Outcome:** all findings resolved or deferred (no unresolved high/medium) → **stories 4-1..4-4 → `done`; epic-4 → `done`.**
+- **Deliverables:** triaged + acted review; **Epic 4 (Financial Engine) complete.**
+- **Artifacts Updated:** `4-2-...md` (Review Findings checked, Change Log, Status → done), `4-1/4-3/4-4-...md` (Status → done), `deferred-work.md` (Epic-4 section, 3 entries), `sprint-status.yaml` (epic-4 + 4-1..4-4 → done), `services/engine/safe_to_spend.py` + `confidence_score.py` (patch + formatINR/formatDate), `tests/engine/test_safe_to_spend.py` (+regression test, updated assertion), `tests/engine/test_scenarios.py` (updated assertion).
+- **Dependencies:** Steps 50–53 (the code under review).
+- **Next Recommended Command:** `retrospective` for Epic 4 (optional), then `create-story`/`dev-story` for Epic 5 (dashboard + briefing) — which wires the engine into `rx.State` and performs the deferred `score_events` writeback (the DB half of CS-3).
+- **Notes:** Ran inline (no subagents spawned — user did not request subagents; the costly path was avoided). Review spanned 3 code stories; findings written to 4-2 as the primary engine-code story.
+
+---
+
+## Step 55 — Epic 4 Retrospective (party-mode)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `Individual-epic-review`)
+**BMAD Phase:** Phase 5: Implementation — post-epic retrospective (Epic 4)
+**Workflow:** `bmad-retrospective`
+**User Goal:** "Run a retrospective." Post-epic review of the Financial Engine — extract lessons, assess readiness, prep Epic 5.
+**BMAD Command:** `retrospective` (user instruction). **Source: Observed.**
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code running `bmad-retrospective` (party-mode facilitation; personas Amelia/Winston/Murat/John, Project Lead = ALPHA).
+- **Role:** Facilitate a grounded retrospective from the actual Epic 4 story records + code-review outcomes.
+- **Input:** stories 4-1..4-4, `deferred-work.md`, `sprint-status.yaml`, `project-context.md`, epics/PRD (E4/E5, FR-4/FR-5).
+- **Output:** `epic-4-retro-2026-07-10.md`; 2 committed action items; readiness assessment.
+- **Source:** **Observed.**
+
+### Skill Log
+- **Skill Name:** `bmad-retrospective`
+- **Purpose:** Extract lessons, assess production-readiness, prepare Epic 5.
+- **Contribution:** Surfaced 4 lessons (scenario-suite ≠ path coverage; contract must pin secondary outputs; AD-13 applies to engine prose; boundary-spanning ACs need up-front split); confirmed no plan-breaking discovery; recorded 2 action items.
+- **Triggering Agent:** Claude Code.
+- **Source:** **Observed.**
+
+### Execution Summary
+- **Agent execution order:** resolve workflow + roster → confirm Epic 4 done (4/4) → deep story analysis (real records) → note first-retro (no Epic 1–3 retro) → preview Epic 5 + dependencies → party-mode review (went-well / lessons) → `AskUserQuestion` for action-item selection → save retro doc → update sprint-status.
+- **Key outcomes (Observed):**
+  - **Went well:** contract-first caught the 12→13 drift pre-code; framework-agnostic engine → pytest-only venv; zero-LLM *enforced* (raising fixture); out-of-order build validated the engine/narrate wall; deferred-work discipline (never faked a number).
+  - **Lessons:** a 13-scenario suite covers enumerated cases, not every code path (the `surfaced_predictions` bug passed the gate, review caught it); the pre-flight contract pinned STS but not the secondary after-income / `safety_ok` semantics; AD-13 applies to engine-produced prose; CS-3 straddles the service/UI boundary (writeback deferred to Epic 5).
+  - **Action items (user-selected, 2 of 4):** (1) resolve scenario-3 after-income (₹1,830 vs file ~990) — John+Winston; (2) fix PRD FR-4 AC "12"→13 — John. Deselected: adapter/writeback (folded into Epic 5 scope) and the semantics/dev-checklist item (left informal).
+  - **Readiness:** Epic 4 production-ready for a local MVP; no blockers; no epic-planning-review needed before Epic 5. Epic 4 code still uncommitted.
+- **Deliverables:** `epic-4-retro-2026-07-10.md`; sprint-status `epic-4-retrospective → done` + `action_items` section (2 open).
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/epic-4-retro-2026-07-10.md`.
+- **Artifacts Updated:** `sprint-status.yaml` (retrospective done + action_items + last_updated).
+- **Dependencies:** Steps 50–54 (the Epic 4 work being retro'd).
+- **Next Recommended Command:** resolve the 2 action items, then `create-story`/`dev-story` for Epic 5 (Dashboard & Briefing) — engine wiring + the deferred `score_events` writeback. Also: commit the Epic 4 engine.
+- **Notes:** Ran party-mode grounded in real facts (no invented struggles). Condensed the workflow's many interactive halts into one consolidated action-item checkpoint (`AskUserQuestion`) to respect solo-dev context.
+
+---
+
