@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-09
-last_updated: 2026-07-09
+last_updated: 2026-07-10
 project: AI-Powered-Personal-Finance-Analyzer
 # (story 1.2 done; story 1.3 implemented + reviewed → done on 2026-07-09)
 # (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
@@ -60,12 +60,12 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Statement Upload & Transaction Extraction
-  epic-2: backlog
-  2-1-canonical-transaction-schema-and-parser-protocol: backlog
-  2-2-csv-parser-indian-bank-formats: backlog
-  2-3-pdf-parser-chain-text-based-statements: backlog
-  2-4-upload-page-progress-summary-and-cta: backlog
-  2-5-deduplication-and-persistence: backlog
+  epic-2: in-progress
+  2-1-canonical-transaction-schema-and-parser-protocol: done
+  2-2-csv-parser-indian-bank-formats: done
+  2-3-pdf-parser-chain-text-based-statements: done
+  2-4-upload-page-progress-summary-and-cta: done
+  2-5-deduplication-and-persistence: done
   epic-2-retrospective: optional
 
   # Epic 3: Transaction Categorization & Teach Me

@@ -1,0 +1,5 @@
+Txn Date,Value Date,Description,Ref No./Cheque No.,Debit,Credit,Balance
+01-Jun-2026,01-Jun-2026,BY TRANSFER-UPI/DR/ZOMATO,R1,320.50,,12000.00
+30-Jun-2026,30-Jun-2026,SALARY JUN 2026,SAL789,,"75,000.00","87,000.00"
+Opening Balance,,,,,,12320.50
+Closing Balance,,,,,,87000.00

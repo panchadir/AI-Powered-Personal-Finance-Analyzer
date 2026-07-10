@@ -65,7 +65,16 @@ def _upload_zone() -> rx.Component:
         ),
         rx.cond(
             UploadState.error != "",
-            rx.el.div(UploadState.error, class_name="upload-error", role="alert"),
+            rx.el.div(
+                rx.el.p(UploadState.error),
+                rx.el.a(
+                    "Still stuck? Contact support",
+                    href="mailto:support@aifinancialcopilot.app",
+                    class_name="link upload-support",
+                ),
+                class_name="upload-error",
+                role="alert",
+            ),
         ),
         rx.el.a(
             "Use a sample statement (demo)",
@@ -135,9 +144,13 @@ def upload() -> rx.Component:
         rx.el.div(
             rx.el.button(
                 "Go to my Dashboard →",
-                disabled=~UploadState.summary_visible,
-                on_click=rx.redirect("/dashboard"),
+                # aria-disabled (not `disabled`) so it stays keyboard-focusable and in tab
+                # order until parsing completes (FR-2.8 / NFR-8); `go_review` guards the action.
+                aria_disabled=rx.cond(UploadState.summary_visible, "false", "true"),
+                on_click=UploadState.go_review,
                 class_name="btn btn--primary",
+                opacity=rx.cond(UploadState.summary_visible, "1", "0.55"),
+                cursor=rx.cond(UploadState.summary_visible, "pointer", "not-allowed"),
             ),
             margin_top="var(--space-lg)",
         ),
