@@ -1,4 +1,4 @@
-"""Copilot chat page — Stories 6.1–6.3 (FR-7.1, FR-7.5, FR-7.7, FR-7.9, FR-7.10, NFR-8).
+"""Copilot chat page — Stories 6.1–6.4 (FR-7.1, FR-7.5, FR-7.7–FR-7.10, NFR-8).
 
 Mirrors WDS prototype ``01.7-copilot-chat.html``:
   * ``.copilot-page.has-sidenav`` layout, sticky ``.topnav``
@@ -7,8 +7,10 @@ Mirrors WDS prototype ``01.7-copilot-chat.html``:
   * ``.msg--user`` / ``.msg--bot`` bubbles for completed turns
   * In-flight streaming bubble: thinking-dots → token stream → blinking cursor
   * ``"Based on: …"`` trace chips below each data-citing bot bubble (FR-7.5)
-    - Chips on completed turns navigate to /transactions (transparency)
-    - Chips on the live streaming bubble appear as soon as the trace event fires
+  * Dismissable ``.context-chip`` "Talking about: {pattern}" when navigating
+    from an Insight card via ``?insight=<id>&pre=<text>`` (FR-7.8)
+  * Topnav back link dynamically points to Insights when context is active,
+    Dashboard otherwise (FR-7.8 prototype pattern)
   * ``aria-disabled`` (not ``disabled``) on the send button while streaming (FR-7.10)
 """
 from __future__ import annotations
@@ -21,20 +23,14 @@ from finance_app.state.copilot_state import QUICK_PROMPTS, CopilotState
 
 
 # ---------------------------------------------------------------------------
-# Trace chips
+# Trace chips (FR-7.5)
 # ---------------------------------------------------------------------------
 
 def _trace_chip(source: str) -> rx.Component:
-    """A single 'Based on: …' trace chip that navigates to /transactions."""
-    return rx.el.a(
-        source,
-        href="/transactions",
-        class_name="trace-chip",
-    )
+    return rx.el.a(source, href="/transactions", class_name="trace-chip")
 
 
 def _trace_row(sources: list) -> rx.Component:
-    """Render the 'Based on: …' row when sources is non-empty."""
     return rx.cond(
         sources.length() > 0,
         rx.el.div(
@@ -58,7 +54,6 @@ def _user_bubble(msg: dict) -> rx.Component:
 
 
 def _bot_bubble(msg: dict) -> rx.Component:
-    """Completed assistant bubble with optional trace chips (FR-7.5)."""
     return rx.el.div(
         rx.el.span(msg["content"], class_name="msg-text"),
         _trace_row(msg["trace_sources"]),
@@ -75,13 +70,7 @@ def _message_bubble(msg: dict) -> rx.Component:
 
 
 def _streaming_bubble() -> rx.Component:
-    """In-flight assistant bubble — visible only while streaming.
-
-    Shows:
-      - Thinking dots before the first token arrives
-      - Token-by-token text + blinking cursor while tokens arrive
-      - Live trace chips as soon as the trace event fires (before done)
-    """
+    """In-flight assistant bubble — thinking-dots until first token, then streaming text."""
     return rx.cond(
         CopilotState.streaming,
         rx.el.div(
@@ -92,14 +81,10 @@ def _streaming_bubble() -> rx.Component:
                     class_name="typing-dots",
                 ),
                 rx.fragment(
-                    rx.el.span(
-                        CopilotState.streaming_content,
-                        class_name="msg-text",
-                    ),
+                    rx.el.span(CopilotState.streaming_content, class_name="msg-text"),
                     rx.el.span(class_name="cursor"),
                 ),
             ),
-            # Live trace chips appear as soon as the trace event fires.
             _trace_row(CopilotState.current_trace_sources),
             class_name="msg msg--bot",
         ),
@@ -108,7 +93,37 @@ def _streaming_bubble() -> rx.Component:
 
 
 # ---------------------------------------------------------------------------
-# Welcome card
+# Context chip — Insights handoff (FR-7.8)
+# ---------------------------------------------------------------------------
+
+def _context_chip() -> rx.Component:
+    """Dismissable 'Talking about: {pattern}' chip shown when arriving from Insights.
+
+    Visible only when ``context_pattern_name`` is non-empty. The dismiss button
+    calls ``dismiss_context`` which also clears the pre-filled input.
+    """
+    return rx.cond(
+        CopilotState.context_pattern_name != "",
+        rx.el.div(
+            rx.el.span(
+                "Talking about: ",
+                rx.el.strong(CopilotState.context_pattern_name),
+            ),
+            rx.el.button(
+                "✕",
+                on_click=CopilotState.dismiss_context,
+                aria_label="Clear context",
+                type="button",
+            ),
+            id="copilot-thread-context-chip",
+            class_name="context-chip",
+        ),
+        rx.fragment(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Welcome card (FR-7.7)
 # ---------------------------------------------------------------------------
 
 def _quick_chip(prompt: str) -> rx.Component:
@@ -152,8 +167,10 @@ def _welcome_card() -> rx.Component:
 # ---------------------------------------------------------------------------
 
 def _thread() -> rx.Component:
-    """Scrollable chat thread — role=log + aria-live=polite (NFR-8 / FR-7.10)."""
+    """Scrollable chat thread — role=log + aria-live=polite (NFR-8)."""
     return rx.el.div(
+        # Context chip sits above the welcome card / messages (prototype position).
+        _context_chip(),
         _welcome_card(),
         rx.foreach(CopilotState.messages, _message_bubble),
         _streaming_bubble(),
@@ -195,9 +212,15 @@ def _input_bar() -> rx.Component:
 
 
 def _topnav() -> rx.Component:
+    """Back link points to Insights when context active, Dashboard otherwise (FR-7.8)."""
     return rx.el.div(
-        rx.el.a("← Dashboard", href="/dashboard", class_name="back-link",
-                id="copilot-topnav-back"),
+        rx.cond(
+            CopilotState.context_pattern_name != "",
+            rx.el.a("← Insights", href="/insights", class_name="back-link",
+                    id="copilot-topnav-back"),
+            rx.el.a("← Dashboard", href="/dashboard", class_name="back-link",
+                    id="copilot-topnav-back"),
+        ),
         rx.el.span("AI Copilot", class_name="topnav-title", id="copilot-topnav-title"),
         id="copilot-topnav",
         class_name="topnav",
@@ -214,7 +237,7 @@ def _topnav() -> rx.Component:
     on_load=[AuthState.check_auth, CopilotState.load_history],
 )
 def copilot() -> rx.Component:
-    """Copilot chat page — Stories 6.1–6.3."""
+    """Copilot chat page — Stories 6.1–6.4."""
     return rx.fragment(
         side_nav("copilot"),
         rx.el.div(
