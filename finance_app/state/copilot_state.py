@@ -155,12 +155,18 @@ class CopilotState(AuthState):
         api_messages = [{"role": m["role"], "content": m["content"]} for m in self.messages]
 
         # Step 5: stream tokens from the async LLM generator.
+        # user_id and session are passed so tool calls are IDOR-safe (Story 6.2).
         assistant_content = ""
         try:
-            async for token in astream_reply(api_messages):
-                assistant_content += token
-                self.streaming_content = assistant_content
-                yield
+            with rx.session() as tool_session:
+                async for token in astream_reply(
+                    api_messages,
+                    user_id=user_id,
+                    session=tool_session,
+                ):
+                    assistant_content += token
+                    self.streaming_content = assistant_content
+                    yield
         except Exception:
             log.exception("Copilot stream error for user_id=%d", user_id)
             assistant_content = (
