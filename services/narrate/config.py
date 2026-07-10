@@ -36,3 +36,13 @@ NARRATION_TEMPERATURE = 0.0
 #: Environment variable holding the API key. Absent -> narration degrades to a deterministic
 #: fallback rather than crashing the dashboard (NFR-1: degrade visibly, never silently wrong).
 API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
+"""
+
+#: Tier-2 transaction categorization (cheap, fast structured output).
+CATEGORIZE_MODEL = "claude-haiku-4-5-20251001"
+
+#: Briefing narration and Copilot chat (high quality, cached system prompt).
+COPILOT_MODEL = "claude-opus-4-8"
+
+#: Cost lever — swap COPILOT_MODEL for this string to reduce spend.
+COPILOT_MODEL_COST_LEVER = "claude-sonnet-5"
