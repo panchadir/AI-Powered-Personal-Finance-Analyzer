@@ -1,20 +1,37 @@
 """Statement-upload state (Story 2.4 UI), mirroring WDS prototype ``01.3-statement-upload.html``.
 
 Validates the chosen file (extension / MIME / size / empty / content sniff), then runs the
-prototype's transparent parse animation (Reading → Identifying → Rules → AI assist) and shows
-the "N by rules · M by AI · K need your help" summary before enabling the Dashboard CTA.
+transparent parse card (Reading -> Identifying -> Rules -> AI assist) and shows the
+"N by rules · M by AI · K need your help" summary before enabling the Dashboard CTA.
 
-The **real** statement parser is an Epic 2 concern (``services/ingestion`` is not implemented
-yet), so — exactly like the prototype — the transaction counts here come from a demo fallback.
-``_PARSE_*`` marks the single integration point where the real parser output will replace them.
+Story 2.4 wires the **real** parser: ``services.ingestion.parse_statement`` turns the uploaded
+bytes into canonical transactions, so the transaction *total* is real. Categorization (the
+"by rules" / "by AI" split) is Epic 3 (S3.1/S3.2) — until then steps 3 and 4 fire as skeleton
+events and every parsed row counts as "needs your help". Persisting the parsed rows (with dedup
+and ``user_id``/``source_file``) is Story 2.5; 2.4 parses and reports the honest count.
+
+Progress is pushed to the browser over Reflex's existing WebSocket via ``yield`` (no polling
+needed — Reflex state sync is already a server push; the 1-second-polling fallback in the AC is
+only relevant if that socket is unavailable, which Reflex itself manages).
 """
 from __future__ import annotations
 
 import asyncio
+import logging
 
 import reflex as rx
 
-from finance_app.state.auth_state import AuthState, HOME_ROUTE, LOGIN_ROUTE  # noqa: F401
+from finance_app.models import Transaction as TxnModel, UploadedFile
+from finance_app.state.auth_state import (  # noqa: F401
+    AuthState,
+    HOME_ROUTE,
+    LOGIN_ROUTE,
+    user_for_token,
+)
+from services.categorize import categorize_rules
+from services.ingestion import IngestionError, parse_statement, persist_transactions
+
+log = logging.getLogger(__name__)
 
 UPLOAD_ID = "upload-statement"
 _MAX_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -24,19 +41,29 @@ _ALLOWED_MIME = {
     "application/vnd.ms-excel", "text/plain", "",
 }
 
-# Demo fallback counts (prototype parity). Replaced by the real parser in Epic 2 (Story 2.3).
-_PARSE_TOTAL = 24
-_PARSE_RULES = 18
-_PARSE_AI = 3
-_PARSE_NEED_REVIEW = 3
+# A small in-repo HDFC-format sample so "Use a sample (demo)" runs a REAL parse (honest counts),
+# not a hardcoded fake. Three transactions; two debits + one salary credit.
+_SAMPLE_CSV = (
+    b"Date,Narration,Chq./Ref.No.,Value Dt,Withdrawal Amt.,Deposit Amt.,Closing Balance\n"
+    b"01/06/2026,UPI-SWIGGY-BANGALORE,R1,01/06/2026,450.00,,18000.00\n"
+    b"03/06/2026,NEFT-RENT LANDLORD,R2,03/06/2026,15000.00,,3000.00\n"
+    b"30/06/2026,SALARY ACME CORP,R3,30/06/2026,,85000.00,88000.00\n"
+)
 
-# (key, label) for the four transparent-parse steps shown in order.
+# (key, label) for the four transparent-parse steps shown in order. Labels follow the WDS
+# prototype; the AC's step *concepts* (Reading / Identifying / Categorising by Rules / AI Assist)
+# map 1:1. Steps "rules"/"ai" are skeleton until Epic 3 fills real categorization counts.
 PARSE_STEPS = (
     ("read", "Reading your statement"),
     ("identify", "Identifying transactions"),
     ("rules", "Categorising with our rules"),
     ("ai", "AI assist for ambiguous ones"),
 )
+
+# JS toggled around an in-progress parse so a back/close/navigate prompts the browser's native
+# "Leave site?" confirmation (FR-2.10). Cleared the moment the parse finishes or fails.
+_ARM_LEAVE_GUARD = "window.onbeforeunload = function (e) { e.preventDefault(); e.returnValue = ''; return ''; };"
+_CLEAR_LEAVE_GUARD = "window.onbeforeunload = null;"
 
 
 def _ext_of(name: str) -> str:
@@ -47,7 +74,8 @@ def _ext_of(name: str) -> str:
 def validate_statement(name: str, content_type: str, data: bytes) -> str:
     """Return an empty string if the file is an acceptable PDF/CSV, else a friendly error.
 
-    Mirrors the prototype's client-side checks (extension → MIME → empty → size → content sniff).
+    Client-side pre-check (extension -> MIME -> empty -> size -> content sniff) so obvious
+    mistakes fail fast; the real parser is the authority and raises typed errors of its own.
     """
     ext = _ext_of(name)
     if ext not in _ALLOWED_EXT:
@@ -66,7 +94,7 @@ def validate_statement(name: str, content_type: str, data: bytes) -> str:
         return "That file is too large (max 10 MB). Try exporting a single month."
     head = data[:1024]
     if ext == "pdf":
-        if not data[:5] == b"%PDF-":
+        if data[:5] != b"%PDF-":
             return "This PDF appears to be corrupted or isn't a real PDF. Try re-downloading your statement."
     else:  # csv
         if b"\x00" in head:
@@ -76,20 +104,8 @@ def validate_statement(name: str, content_type: str, data: bytes) -> str:
     return ""
 
 
-def _server_hook_error(name: str) -> str:
-    """Simulated server-side outcomes (prototype's filename test hooks). Epic 2 replaces this."""
-    n = (name or "").lower()
-    if "unsupported" in n:
-        return "We don't recognise this statement format yet. Supported: most Indian bank PDF/CSV exports."
-    if "servererror" in n:
-        return "Our server had a problem processing your file. Please try again in a moment."
-    if "network" in n:
-        return "Network error — we couldn't reach the server. Check your connection and try again."
-    return ""
-
-
 class UploadState(AuthState):
-    """Drives the upload zone, validation errors, and the transparent parse animation."""
+    """Drives the upload zone, validation errors, and the real parse -> summary flow."""
 
     error: str = ""
     filename: str = ""
@@ -98,7 +114,8 @@ class UploadState(AuthState):
     done_steps: list[str] = []  # completed steps (checked)
     summary_visible: bool = False  # parse summary + enabled CTA
 
-    # Parse results (demo fallback until the Epic 2 parser lands).
+    # Parse results. `total` is real (from the parser); the rules/ai split is skeleton until
+    # Epic 3, where every row is currently "needs review".
     total: int = 0
     rules: int = 0
     ai: int = 0
@@ -117,8 +134,14 @@ class UploadState(AuthState):
         return rx.redirect(LOGIN_ROUTE)
 
     @rx.event
+    def go_review(self):
+        """The Dashboard CTA. Guarded so an aria-disabled (focusable) button can't act early."""
+        if self.summary_visible:
+            return rx.redirect("/dashboard")
+
+    @rx.event
     async def handle_upload(self, files: list[rx.UploadFile]):
-        """Validate the dropped/chosen file, then start the parse animation."""
+        """Validate the dropped/chosen file, then parse it for real."""
         self.error = ""
         if not files:
             self.error = "No file selected. Please choose a statement to upload."
@@ -126,42 +149,102 @@ class UploadState(AuthState):
         f = files[0]
         name = f.name or getattr(f, "filename", "") or "statement"
         data = await f.read()
-        err = validate_statement(name, f.content_type or "", data) or _server_hook_error(name)
+        err = validate_statement(name, f.content_type or "", data)
         if err:
             self.error = err
             return
-        if "parsefail" in name.lower():
-            self.error = (
-                "We couldn't parse this statement. The file opened but we couldn't extract any "
-                "transactions — it may be an unusual or scanned format."
-            )
-            return
-        async for _ in self._run_parse(name):
-            yield
+        async for event in self._run_parse(name, data):
+            yield event
 
     @rx.event
     async def use_sample(self):
-        """'Use a sample statement (demo)' — skips file selection and parses the demo data."""
+        """'Use a sample statement (demo)' — parses a bundled sample CSV for real."""
         self.error = ""
-        async for _ in self._run_parse("sample-statement.pdf"):
-            yield
+        async for event in self._run_parse("sample-statement.csv", _SAMPLE_CSV):
+            yield event
 
-    async def _run_parse(self, name: str):
-        """Advance the four parse steps (~600ms each), then reveal the summary + CTA."""
+    async def _run_parse(self, name: str, data: bytes):
+        """Animate the four steps around a real parse; reveal the honest summary + CTA.
+
+        The real parse (``parse_statement``) runs in a worker thread so the event loop keeps
+        pushing progress. A typed ``IngestionError`` is translated to plain-language copy and
+        never re-raised to the UI (AD-12).
+        """
         self.reset_page()
         self.filename = name
         self.parsing = True
+        yield rx.call_script(_ARM_LEAVE_GUARD)  # FR-2.10: warn on back/close mid-parse
         yield
-        for key, _label in PARSE_STEPS:
-            self.active_step = key
-            yield
-            await asyncio.sleep(0.6)
+
+        # Step 1 — Reading.
+        self.active_step = "read"
+        yield
+        await asyncio.sleep(0.3)
+        self.done_steps = self.done_steps + ["read"]
+
+        # Step 2 — Identifying: the real parse happens here.
+        self.active_step = "identify"
+        yield
+        try:
+            transactions = await asyncio.to_thread(parse_statement, name, data)
+        except IngestionError as exc:
+            # Honest refusal: plain-language copy, drop back to the upload view.
+            self.parsing = False
             self.active_step = ""
-            self.done_steps = self.done_steps + [key]
+            self.error = exc.message
+            yield rx.call_script(_CLEAR_LEAVE_GUARD)
             yield
-        # Epic 2 integration point: real parser output replaces these demo counts.
-        self.total, self.rules, self.ai, self.need_review = (
-            _PARSE_TOTAL, _PARSE_RULES, _PARSE_AI, _PARSE_NEED_REVIEW,
+            return
+        self.total = len(transactions)
+        self.done_steps = self.done_steps + ["identify"]
+        yield
+
+        # Step 3 — Categorising with Tier-1 rules engine.
+        self.active_step = "rules"
+        yield
+        categorized = await asyncio.to_thread(categorize_rules, transactions)
+        rules_matched = sum(
+            1 for t in categorized
+            if t.category_confidence == 1.0
         )
+
+        # Persist categorized rows so DB always has category/category_source/category_confidence.
+        try:
+            with rx.session() as session:
+                user = user_for_token(session, self.auth_token)
+                if user is not None and categorized:
+                    uploaded = UploadedFile(  # type: ignore[call-arg]
+                        user_id=user.id, filename=name, status="parsed"
+                    )
+                    session.add(uploaded)
+                    session.commit()
+                    session.refresh(uploaded)
+                    persist_transactions(session, TxnModel, user.id, uploaded.id, categorized)
+        except Exception:  # noqa: BLE001
+            log.exception("Failed to persist parsed statement %r", name)
+            self.parsing = False
+            self.active_step = ""
+            self.error = "We read your statement but couldn't save it. Please try again."
+            yield rx.call_script(_CLEAR_LEAVE_GUARD)
+            yield
+            return
+
+        self.active_step = ""
+        self.done_steps = self.done_steps + ["rules"]
+        yield
+
+        # Step 4 — AI assist: skeleton until Epic 3 Tier-2 is implemented.
+        self.active_step = "ai"
+        yield
+        await asyncio.sleep(0.3)
+        self.active_step = ""
+        self.done_steps = self.done_steps + ["ai"]
+        yield
+
+        # Real summary: rule-matched count from Tier-1; remainder flagged as "needs review".
+        self.rules = rules_matched
+        self.ai = 0
+        self.need_review = self.total - rules_matched
         self.summary_visible = True
+        yield rx.call_script(_CLEAR_LEAVE_GUARD)
         yield

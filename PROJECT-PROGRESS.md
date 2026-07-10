@@ -926,6 +926,17 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 34 | Party Mode: Phase 2 desktop-only propagation, cluster 3/3 (Scenario 01, 7 pages) — sidebar nav, Confidence chip relabeled to match epics.md S5.1/5.2, 2 broken links fixed; Phase 2 punch list closed | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | All 7 files under `01-priyas-first-honest-morning/` + the scenario overview |
 | … | Steps 35–48 (sprint planning, Stories 1.1–1.3 create/dev/review) — see step entries above; not individually rowed here | various (Observed) | Amelia / Claude Code | app skeleton, DB schema, registration + cookie auth, code reviews |
 | 49 | Dev correction: WDS prototypes made the UI source of truth — `wds.css` theme app-wide, Register aligned (no-auto-login supersedes FR-1.2), Login + Upload built from prototypes; `project-context.md` gains the WDS/story-workflow rules | None (direct instruction) (Observed) | Claude Code (dev — WDS UI alignment) | `assets/wds.css`, `rxconfig.py`, `finance_app/**` (auth/register/upload/state/app), `_bmad-output/project-context.md` |
+| 50 | Parallel-dev dependency analysis (in-chat) + Epic 2 kickoff on new branch `epic-2-statement-upload-ingestion` (off `Bmad-Brainstorming`): Stories 2.1 (canonical `Transaction` + `StatementParser` protocol) & 2.2 (CSV parser HDFC/SBI + `normalize.py` dedup key + typed `IngestionError`); `pytest` 101 passed | None (direct instruction) (Observed) | Claude Code (dev/analyst) | `services/ingestion/{schema,protocol,errors,normalize,csv_parser}.py`, `tests/ingestion/test_parser_protocol.py` + `test_csv_parser.py` + 2 CSV fixtures, `sprint-status.yaml` |
+| 51 | Code review of Stories 2.1 & 2.2 (inline adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor) — 1 high patch applied (0.00-padded debit/credit column rejected valid rows), 1 medium deferred to Story 8.1 (footer/non-transaction rows), 1 dismissed (file type/size → Story 2.4); `pytest` 102 passed; both stories → done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `services/ingestion/csv_parser.py` (fix), `tests/ingestion/fixtures/hdfc_zero_padded.csv` + `test_csv_parser.py`, `deferred-work.md`, `sprint-status.yaml` |
+| 52 | Resolve deferred F2 (from the 2.1/2.2 review): CSV footer/non-transaction rows are now skipped, not fatal -- `_row_to_txn` returns None for rows with no debit/credit AND no valid date; rows with a date OR amount that can't fully parse still raise typed errors (AD-12); `pytest` 105 passed | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/csv_parser.py`, `tests/ingestion/fixtures/sbi_with_footer.csv` + `test_csv_parser.py`, `deferred-work.md` |
+| 53 | Story 2.3: PDF parser chain (user decision: build logic now, defer golden test) -- `PDFParser` runs statementsparser -> pdfplumber -> camelot (next only if previous empty); `ScannedPDFError` honest refusal for image PDFs (exact copy, code NO_TEXT_LAYER); pdfplumber/camelot reuse the CSV column mapping via new shared `map_table`; real-HDFC-PDF 24-row golden test deferred (no fixture in repo); `pytest` 114 passed | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/pdf_parser.py` (new) + `errors.py` (+ScannedPDFError) + `csv_parser.py` (+map_table) + `__init__.py`, `tests/ingestion/test_pdf_parser.py`, `deferred-work.md`, `sprint-status.yaml` |
+| 54 | Code review of Story 2.3 (inline adversarial): 1 medium patch applied -- `map_table` misaligned columns when a header cell was empty in a non-trailing position (silent wrong data / AD-12), root cause was keying rows off the filtered header while indexing full-position cells; fixed to key by full header positions + regression test; `pytest` 115 passed; 2-3 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `services/ingestion/csv_parser.py` (map_table fix), `tests/ingestion/test_pdf_parser.py`, `sprint-status.yaml` |
+| 55 | Story 2.4 (Upload page, first Reflex-UI story): installed Reflex skills via git-clone of agent-skills (read directly, no restart) after AGENTS.md gate; wired the REAL parser into the upload flow via new framework-agnostic `parse_statement` dispatcher (CSV/PDF by type, temp-file, typed refusal), replacing the Step-49 simulation; aria-disabled focusable CTA (NFR-8), beforeunload back-nav guard (FR-2.10), support link + typed-error copy (FR-2.9/AD-12), honest skeleton categorization (real total; rules/AI=0 until Epic 3); `pytest` 121 passed + `reflex compile --dry` SUCCESS (live `reflex run` blocked by missing psycopg2/Postgres -- env, not code) | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/dispatch.py` (new) + `__init__.py`, `finance_app/state/upload_state.py` + `pages/upload.py`, `tests/ingestion/test_dispatch.py`, `deferred-work.md`, `sprint-status.yaml` |
+| 56 | Code review of Story 2.4 (inline adversarial): 1 medium patch applied -- a non-UTF-8 CSV (cp1252, common in Indian bank exports) raised an untyped UnicodeDecodeError that escaped to the UI (AD-12) and left the beforeunload guard armed; fixed by wrapping unexpected parse errors in `parse_statement` as a typed IngestionError (PARSE_FAILED, logged) so only IngestionError ever escapes + regression test; 1 low deferred (CSVParser cp1252/latin-1 fallback); `pytest` 122 passed; 2-4 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `services/ingestion/dispatch.py` (wrap), `tests/ingestion/test_dispatch.py`, `deferred-work.md`, `sprint-status.yaml` |
+| 57 | Resolve deferred F2 from the 2.4 review (user request: fix, don't defer to 8.1): `CSVParser.parse` now reads via a new `_read_csv_text` helper (utf-8-sig -> cp1252 -> latin-1), so non-UTF-8 bank CSVs *parse* instead of being refused (latin-1 maps every byte -> no untyped UnicodeDecodeError possible); positive regression test added, the wrap test made monkeypatch-based; dispatch PARSE_FAILED wrap kept as safety net for other errors; `pytest` 123 passed | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/csv_parser.py`, `tests/ingestion/test_csv_parser.py` + `test_dispatch.py`, `deferred-work.md` |
+| 58 | Story 2.5 (dedup + persistence -- finishes Epic 2): new `services/ingestion/persist.py` -- pure `filter_new_transactions` + `persist_transactions` (transaction model INJECTED per AD-2, user-scoped dedup per AD-4 on the canonical key); wired into `upload_state._run_parse` so uploads persist deduped rows (re-upload / overlapping / wider range inserts only genuinely-new); `tests/ingestion/test_dedup.py` covers exact re-upload / overlapping / wider-range / per-user isolation / normalization; closes the 2.4 not-persisted deferral; `pytest` 130 passed + `compile --dry` SUCCESS | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/persist.py` (new) + `__init__.py`, `finance_app/state/upload_state.py`, `tests/ingestion/test_dedup.py`, `deferred-work.md`, `sprint-status.yaml` |
+| 59 | Code review of Story 2.5 (inline adversarial) -- **Epic 2 fully reviewed**: 1 medium patch applied -- the persist block in `upload_state._run_parse` had no error handling, so a DB error would escape untyped to the UI (AD-12) and leave the beforeunload guard armed (same class as 2.4-F1, on the persist path); wrapped with honest copy + guard-clear + drop-back-to-Upload. Verified NOT-a-bug: Decimal scale dedup (parsed Decimal('450') stored as '450.00' still dedups to 0-new; equal Decimals share a set slot). `pytest` 130 passed + `compile --dry` SUCCESS; 2-5 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `finance_app/state/upload_state.py` (persist error handling), `sprint-status.yaml` |
+| 60 | Final Epic-2 sweep (user: "check once again, fix any defers/patches"): holistic cross-cutting review -- no code defects found. Fixed a venv/requirements drift (installed pinned `psycopg2-binary`); added an end-to-end `parse_statement -> persist_transactions` integration test (`test_pipeline_integration.py`); and **got the app running live** -- `reflex run` now boots via a relative SQLite DSN and serves `/` + `/upload` at HTTP 200 (the earlier boot blocker was the psycopg2 drift + path-with-space, both resolved). `pytest` 132 passed. Remaining items are genuine cross-epic/asset deps (real HDFC PDF -> 8.5; categorization counts -> Epic 3; interactive browser E2E -> Epic 8) | None (direct user instruction) (Observed) | Claude Code (dev/reviewer) | `tests/ingestion/test_pipeline_integration.py` (new), `.venv` (psycopg2), `deferred-work.md` |
 
 ## Commands Used
 
@@ -1172,14 +1183,14 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 42 |
+| Steps recorded | 60 (Steps 43–50 added after this table's last full refresh; see step entries above and Timeline rows 49–50) |
 | Distinct BMAD/WDS commands/workflows observed or inferred | 20 (+`bmad-code-review` at Step 42; Steps 39–41 added `bmad-agent-dev`/`bmad-sprint-planning`/`bmad-create-story`/`bmad-dev-story`) |
 | Distinct agents | 8 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer], Amelia [`bmad-agent-dev`]) |
 | Distinct skills | 21 (+`bmad-agent-dev`, +`bmad-sprint-planning`, +`bmad-create-story`, +`bmad-dev-story` at Steps 39–41; +`bmad-code-review` at Step 42) |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
 | Artifact groups tracked | 31 (+`sprint-status.yaml`, +story 1.1 spec at Steps 39–40; +`finance_app/**`, +`services/**`, +`tests/**`, +config/docs group at Step 41; +`deferred-work.md`, +`data/.gitkeep` at Step 42) |
-| Application source code | First shipped at Step 41 (Story 1.1) — Steps 1–38 were ideation/research/planning/UX/prototype only |
+| Application source code | First shipped at Step 41 (Story 1.1) — Steps 1–38 were ideation/research/planning/UX/prototype only. Epic 2 ingestion (services/ingestion) first shipped at Step 50 (Stories 2.1-2.2) |
 | Corrections logged | 4 |
 | Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
 | Open findings from Step 30 | 0 unapplied — all 10 resolved across Steps 31–34 (6 build-blocker fixes + `days=0` scenario + X1 desktop-only propagated across 12 docs + Confidence Score contradiction closed + Commitments promoted P1 + both broken cross-refs + PRD typo + spine citation) |
@@ -2451,3 +2462,395 @@ The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI
 
 ---
 
+## Step 50 — Parallel-Development Analysis + Epic 2 Kickoff (Stories 2.1 & 2.2, new branch)
+
+**Timestamp:** 2026-07-10 (this conversation)
+**BMAD Phase:** Planning analysis (parallelization) → Phase 5: Implementation (Epic 2, Stories 2.1–2.2)
+**Workflow:** None (direct user instruction — dependency analysis + development; not a BMAD skill invocation)
+**User Goal:** (1) Analyze MVP scope / epics / story dependencies / architecture to determine whether 3–5 developers can build epics in parallel with minimal integration conflict; (2) with Epic 4 already claimed by another developer, **start an independent epic on its own branch cut from `Bmad-Brainstorming`.**
+**BMAD Command:** None — direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer + analyst, no BMAD persona active).
+- **Role:** Produce the parallel-development dependency analysis; then create the Epic 2 branch and implement its first two stories against the canonical contracts.
+- **Input:** `epics.md` (8-epic breakdown), `ARCHITECTURE-SPINE.md` (14 ADs), `prd.md` FR/NFR inventory, `sprint-status.yaml`, `deferred-work.md`, existing `services/`, `finance_app/models.py`, `tests/`.
+- **Output:** A 6-part parallelization report (independent vs dependent epics, integration points, 4-dev allocation, contract-freeze strategy, risks, branching strategy); a new git branch; Story 2.1 + Story 2.2 implemented, tested, and green.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A — no BMAD skill run; direct analysis + implementation (used `Glob`/`Grep`/`Read` for artifact discovery, `Bash` for git + `pytest` via `.venv`).
+- **Contribution:** N/A.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Read planning artifacts (epics, spine, PRD FR map) + sprint status → deliver the parallel-dev analysis (recommended Epic 2/4 as most-independent lanes; Epic 4 is the fixture-driven backend crown-jewel) → user reported Epic 4 taken → `git checkout -b epic-2-statement-upload-ingestion` off `Bmad-Brainstorming` → survey existing `services/ingestion` (empty package) + `models.py` + boundary test → **Story 2.1**: canonical `Transaction` dataclass + `StatementParser` protocol + tests → **Story 2.2** (on user's "2" to continue): `CSVParser` (HDFC + SBI profiles), shared `normalize.py` + dedup key, typed `IngestionError` hierarchy, golden-file fixtures + tests → verify (`pytest` 101 passed; boundary guard green) → sprint-status + this tracker entry.
+- **Key Decisions (all Observed):**
+  - **Epic 2 chosen as the independent lane** — it depends only on the already-merged DB layer (Story 1.2) and defines its own canonical schema; Epic 1 is ~done and Epic 4 is claimed.
+  - **Ingestion `Transaction` is a framework-agnostic dataclass, NOT the `rx.Model`** — `services/` must not import `finance_app` (AD-2, enforced by `test_service_boundary.py`), so the parser output shape is separate from the persistence shape; the `rx.State` upload handler is the bridge. Schema guards reject `float` money (AD-8) and raw-string direction at construction.
+  - **Dedup key decided once in `normalize.py`** (the project-context seam): `(user_id, date, abs(amount), collapsed description_raw, balance_after)` — so CSV/PDF parsers and the Story 2.5 persistence dedup can't disagree.
+  - **Introduced the typed `IngestionError` base early** (AD-12) — Story 2.2 needs it for unsupported-CSV refusal; Stories 2.3/8.1 extend the same hierarchy (`NO_TEXT_LAYER`, `EMPTY_STATEMENT`).
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` → 22 passed; full suite `pytest` → **101 passed** (up from 94 pre-session; +9 Story 2.1, +7 Story 2.2, boundary guard still green — no `services/`→`reflex`/`finance_app` import).
+- **Deliverables:** Parallel-development analysis (delivered in-chat, not a repo file); Epic 2 branch; Stories 2.1 + 2.2 implemented and green.
+- **Artifacts Created:** `services/ingestion/schema.py`, `services/ingestion/protocol.py`, `services/ingestion/errors.py`, `services/ingestion/normalize.py`, `services/ingestion/csv_parser.py`; `tests/ingestion/test_parser_protocol.py`, `tests/ingestion/test_csv_parser.py`; `tests/ingestion/fixtures/hdfc_sample.csv`, `tests/ingestion/fixtures/sbi_sample.csv`.
+- **Artifacts Updated:** `services/ingestion/__init__.py` (public API export); `_bmad-output/implementation-artifacts/sprint-status.yaml` (epic-2 → in-progress; stories 2-1 & 2-2 → review); `PROJECT-PROGRESS.md` (this entry).
+- **Dependencies:** Story 1.2 (DB schema + `services/utils/enums.py` + boundary test); the AD-6 canonical schema / AD-8 Decimal / AD-2 boundary invariants from the architecture spine.
+- **Next Recommended Command:** Story 2.3 (PDF parser chain: statementsparser → pdfplumber → camelot, with `NO_TEXT_LAYER` honest refusal) — extends the `IngestionError` hierarchy landed here and reuses `normalize.py`. Work is uncommitted on branch `epic-2-statement-upload-ingestion`, pending user go-ahead to commit.
+- **Notes:** No commit made — per project rule, commits happen only when the user asks; the branch holds the working tree. Stories marked `review` (implemented + self-verified via pytest), not `done` — a separate code-review pass is the project's gate to `done`.
+
+---
+
+
+## Step 51 — Code Review of Stories 2.1 & 2.2 (inline adversarial review + patch)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation — code review / quality gate for Epic 2 Stories 2.1 & 2.2
+**Workflow:** `bmad-code-review` (inline, all three adversarial lenses run in-session at user request — no cold subagents)
+**User Goal:** Review the uncommitted Story 2.1 (canonical schema + parser protocol) and Story 2.2 (CSV parser) work, enforce architecture invariants (AD-2/6/8/12/14), fix real defects, and move the stories toward done. A follow-up user turn asked to re-check for any remaining defer/patch and fix if found.
+**BMAD Command:** `/bmad-code-review` (Observed, this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (elite code reviewer; no BMAD persona).
+- **Role:** Gather diff context, run Blind Hunter + Edge Case Hunter + Acceptance Auditor lenses inline, triage by real-world consequence, apply the unambiguous patch, defer/dismiss the rest.
+- **Input:** Uncommitted diff (742 insertions across `services/ingestion/**` + `tests/ingestion/**`), ACs from `epics.md` Stories 2.1/2.2, `project-context.md` invariants.
+- **Output:** 3 findings triaged (1 patch / 1 defer / 1 dismiss); F1 fixed with regression fixture; F2 recorded in `deferred-work.md`; both stories set `done`.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review` (step-file workflow: gather-context → review → triage → present).
+- **Contribution:** Structured the adversarial review + triage buckets (decision/patch/defer/dismiss) and the story-status sync.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Resolve workflow customization + load `project-context.md`/config → Tier-1 identify target (uncommitted Epic 2 diff, spec = `epics.md`, mode full) → construct diff (816 lines via intent-to-add, then reset) → run 3 lenses inline → **empirically verify** each suspected defect via throwaway CSVs (`.venv` python) → triage → append F2 to `deferred-work.md` → apply F1 patch + add `hdfc_zero_padded.csv` fixture + regression test → `pytest` 102 passed → set stories `done` in `sprint-status.yaml` → second-pass re-check (short/ragged/empty rows) confirmed no untyped-exception defects (the `col()` `or ""` already defends `None` cells) → this tracker entry.
+- **Key Decisions (all Observed):**
+  - **F1 (HIGH, patched):** `_clean_amount("0.00")` returned `Decimal("0.00")`, so a `0.00`-padded unused debit/credit column tripped the both-present guard and aborted the parse of a valid statement (a common Indian-bank CSV shape). Fix: collapse a *zero* debit/credit to absent in `_row_to_txn` only — `balance_after` keeps `0.00` since a ₹0 balance is legitimate. Verified before + after.
+  - **F2 (MEDIUM, deferred → Story 8.1):** footer/non-transaction rows raise `MISSING_AMOUNT` and fail the whole file. Not a 2.2 AC violation (golden fixtures have no footers); a correct fix must skip *and* surface a skipped-row caveat (AD-12), which needs the Story 2.4/8.1 upload-summary surface. Silently dropping rows now would itself violate AD-12.
+  - **F3 (LOW, dismissed):** file type/MIME/size validation belongs to the Story 2.4 upload dispatcher, not the CSV parser unit.
+  - **Second-pass finding:** the suspected `None`-cell / ragged-row untyped `AttributeError` is NOT reachable — `col()`’s `or ""` coerces `None` to `""`, and malformed inputs surface typed `IngestionError`s (`UNPARSEABLE_AMOUNT`/`UNPARSEABLE_DATE`). No additional patch required.
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` → 23 passed (+1 regression); full suite → **102 passed**; `services/` boundary guard green (no `reflex`/`finance_app` import).
+- **Deliverables:** Stories 2.1 & 2.2 reviewed and set `done`; one real defect fixed; one item formally deferred; quality gate satisfied.
+- **Artifacts Created:** `tests/ingestion/fixtures/hdfc_zero_padded.csv`.
+- **Artifacts Updated:** `services/ingestion/csv_parser.py` (F1 fix), `tests/ingestion/test_csv_parser.py` (regression test), `_bmad-output/implementation-artifacts/deferred-work.md` (F2), `_bmad-output/implementation-artifacts/sprint-status.yaml` (2-1 & 2-2 → done; `last_updated` → 2026-07-10), `PROJECT-PROGRESS.md` (this entry + Timeline row 51).
+- **Dependencies:** Step 50 (the code under review); `bmad-code-review` skill; `project-context.md` invariants.
+- **Next Recommended Command:** Story 2.3 (PDF parser chain) — verify `pdfplumber`/`camelot` in the venv first; it extends the `IngestionError` hierarchy and reuses `normalize.py`. Work remains uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** No commit made (per project rule — commit only when the user asks). Stories set `done` on the strength of green ACs + fixed F1 + formally-deferred F2; no per-story spec file exists for 2.x, so status lives in `sprint-status.yaml` only (findings were not written into `epics.md`, which has no Tasks/Subtasks section).
+
+---
+
+## Step 52 — Resolve Deferred F2 from the 2.1/2.2 Review (CSV footer-row handling)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- resolve a deferred code-review finding
+**Workflow:** None (direct user instruction: "fix that 8.1 defer mentioned from the 2.1/2.2 stories")
+**User Goal:** Fix the F2 item that the Step-51 review had deferred to Story 8.1 (CSV footer/non-transaction rows aborting the whole parse), rather than leaving it deferred.
+**BMAD Command:** None -- direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer; no BMAD persona).
+- **Role:** Implement the footer-row fix in a way that honors AD-12, add regression tests, and mark the ledger item resolved.
+- **Input:** `deferred-work.md` F2 entry; `services/ingestion/csv_parser.py`; the AD-12 honesty rule.
+- **Output:** Footer/summary rows skipped without dropping any transaction; malformed transaction rows still refused; ledger entry marked RESOLVED.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A -- direct implementation (used `.venv` pytest + empirical CSV probes).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Re-frame the AD-12 concern (a footer row is provably not a transaction, so skipping it drops nothing and needs no caveat surface) -> add non-raising `_is_valid_date` helper -> change `_row_to_txn` to return `Transaction | None`, returning None only for rows with no debit, no credit, AND no valid date -> switch `parse()` to a loop that filters None -> add `sbi_with_footer.csv` fixture + 3 regression tests -> `pytest` 105 passed -> mark F2 RESOLVED (strikethrough) in `deferred-work.md` -> this entry.
+- **Key Decisions (all Observed):**
+  - **Skip only *structural* rows** (no debit, no credit, no valid date). Because such a row cannot be a transaction, the visible transaction count stays accurate and AD-12's "never show fewer rows than parsed" is satisfied **without** the skipped-row-count/caveat surface the Step-51 defer had assumed was required -- so it no longer needs Story 8.1.
+  - **Preserve honest refusal:** a row with a valid date OR an amount that can't fully parse still raises a typed `IngestionError` (`MISSING_AMOUNT` / `UNPARSEABLE_DATE`) -- silently dropping *those* is the actual AD-12 danger, so they are never skipped.
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` -> 26 passed (+3 regression tests); full suite -> **105 passed**; `services/` boundary green.
+- **Deliverables:** F2 fixed and closed; Story 2.2 ingestion now tolerates real-world footer rows.
+- **Artifacts Created:** `tests/ingestion/fixtures/sbi_with_footer.csv`.
+- **Artifacts Updated:** `services/ingestion/csv_parser.py` (`_is_valid_date`, `_row_to_txn` -> `Transaction | None`, loop in `parse()`), `tests/ingestion/test_csv_parser.py` (+3 tests, +`IngestionError` import), `_bmad-output/implementation-artifacts/deferred-work.md` (F2 marked RESOLVED), `PROJECT-PROGRESS.md` (this entry + Timeline row 52).
+- **Dependencies:** Step 51 (the review that raised/deferred F2); Step 50 (the parser under change).
+- **Next Recommended Command:** Story 2.3 (PDF parser chain) -- reuses `normalize.py` + the `IngestionError` hierarchy; verify `pdfplumber`/`camelot` in the venv first. Work remains uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** No commit made (commit only when the user asks). Story 2.2 stays `done`; F2 is now resolved rather than deferred, so the "unresolved medium" caveat behind the earlier done-status is gone.
+
+---
+## Step 53 — Story 2.3: PDF Parser Chain + Scanned-Image Honest Refusal
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- Epic 2, Story 2.3
+**Workflow:** None (direct user instruction "continue to Story 2.3"); a genuine asset blocker was raised and resolved by an explicit user decision before coding.
+**User Goal:** Implement the PDF parser chain (statementsparser -> pdfplumber -> camelot) with an honest refusal for scanned/image PDFs.
+**BMAD Command:** None -- direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer; no BMAD persona).
+- **Role:** Build the PDF chain + scanned refusal; raise the missing-fixture blocker; keep the mapping DRY with the CSV parser.
+- **Input:** `epics.md` Story 2.3 ACs; `services/ingestion/` (schema, protocol, csv_parser, normalize, errors); `statementparser`/`pdfplumber`/`camelot` library APIs (inspected); the prototype `demo-data.json` (24 tx).
+- **Output:** `PDFParser` chain + 3 extractor adapters + `ScannedPDFError`; shared `map_table`; unit tests via mocks; deferred golden test recorded.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A -- direct implementation. Used `AskUserQuestion` for the fixture-blocker decision; `.venv` pytest; API introspection.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Check env (pdfplumber/camelot/pandas present; statementparser imports as dist `statementsparser`; `reportlab` absent) -> discover the blocker (no HDFC PDF fixture; no `data/demo-data.json`; only a prototype copy) -> **raise it via `AskUserQuestion`** -> user chose "build logic now, defer golden test" -> inspect `statementparser` models (Transaction: date/narration/amount/type/closing_balance) -> add `_match_profile_or_none` + shared `map_table` to `csv_parser.py` (reuse for PDF tables) -> add `ScannedPDFError` (code `NO_TEXT_LAYER`) -> write `pdf_parser.py` (Extractor protocol, `PDFParser` orchestrator with injected extractors + text probe, 3 lazy-import adapters, scanned/no-transactions refusal) -> tests (chain order, fail-through, both refusals, statementsparser mapping via mock, pdfplumber wiring via mocked module, `map_table` reuse) -> `pytest` 114 passed -> record deferred golden test -> set 2-3 `review` -> this entry.
+- **Key Decisions (all Observed):**
+  - **Ports-and-adapters chain with injected extractors + text probe** (DI per project-context) so the chain logic and both honest-refusal paths are fully unit-testable without a real PDF or the heavy libs (imported lazily inside each adapter).
+  - **Scanned vs text discrimination:** if all extractors yield nothing, a pdfplumber text-layer probe decides -> `ScannedPDFError` (exact approved copy) for image PDFs, else a distinct `NO_TRANSACTIONS_FOUND`. Extractor exceptions are logged and skipped, never swallowed silently (AD-12).
+  - **DRY mapping:** pdfplumber/camelot tables are mapped through the *same* `map_table` (bank column profiles + F1 0.00-padding + F2 footer-skip) the CSV parser uses -- one mapping, not three. `map_table` returns `[]` (not raise) on an unknown table so the chain falls through.
+  - **Blocker raised, not silently resolved** (project-context rule 6): the golden-file AC needs an HDFC PDF fixture + `data/demo-data.json` that don't exist; per user decision the logic ships now and the real-PDF 24-row test is deferred.
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` -> 35 passed (+9); full suite -> **114 passed**; `services/` boundary green.
+- **Deliverables:** Story 2.3 logic complete (chain + refusal + shared mapping), tested; one AC (real-PDF golden test) formally deferred.
+- **Artifacts Created:** `services/ingestion/pdf_parser.py`, `tests/ingestion/test_pdf_parser.py`.
+- **Artifacts Updated:** `services/ingestion/csv_parser.py` (`_match_profile_or_none`, `map_table`), `errors.py` (`ScannedPDFError`), `__init__.py` (exports), `_bmad-output/implementation-artifacts/deferred-work.md` (deferred golden test), `_bmad-output/implementation-artifacts/sprint-status.yaml` (2-3 -> review), `PROJECT-PROGRESS.md` (this entry + Timeline row 53).
+- **Dependencies:** Stories 2.1 (schema/protocol) & 2.2 (CSV mapping reused via `map_table`); `statementparser`/`pdfplumber`/`camelot`.
+- **Next Recommended Command:** Provide a real HDFC demo PDF + `data/demo-data.json` to close the deferred golden test, OR proceed to Story 2.4 (Upload page: progress, summary, CTA) / Story 2.5 (dedup + persistence). Work uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** No commit (commit only when the user asks). 2-3 marked `review` (logic implemented + self-verified; a code-review pass + the deferred golden test remain before `done`).
+
+---
+## Step 54 — Code Review of Story 2.3 (inline adversarial review + patch)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- code review / quality gate for Story 2.3
+**Workflow:** `bmad-code-review` (inline, all three lenses in-session, consistent with the Step-51 review this session)
+**User Goal:** Review the uncommitted Story 2.3 PDF-parser work, enforce the ingestion invariants, fix real defects, and move the story toward done (the deferred real-PDF golden test explicitly out of scope for this review).
+**BMAD Command:** `/bmad-code-review` (Observed, this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (elite code reviewer; no BMAD persona).
+- **Role:** Adversarial review of `pdf_parser.py` + the `map_table`/`_match_profile_or_none` additions to `csv_parser.py` + `ScannedPDFError` + tests; verify empirically; patch.
+- **Input:** Story 2.3 diff; `epics.md` Story 2.3 ACs; `project-context.md` invariants (AD-6/8/2/14/12).
+- **Output:** 1 medium patch (found + fixed + regression test); acceptance confirmed (minus the explicitly-deferred golden test); 2-3 set done.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review` (gather-context -> review -> triage -> present).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Load context (workflow block, project-context, config) -> Tier-1 target = Story 2.3 files, mode full -> run 3 lenses inline -> **empirically verify** the suspected `map_table` alignment bug via a crafted table (an empty middle header cell mis-parsed the amount column -> raised UNPARSEABLE_AMOUNT; with numeric cells it would have been silent wrong data) -> apply patch (key rows by full header positions, not the filtered names) + regression test -> `pytest` 115 passed -> triage remaining observations (broad-except fall-through = intended chain behavior ending in an honest refusal; pdfplumber header-newline normalization + camelot flavor assumptions = within the already-deferred real-PDF golden-test scope) -> set 2-3 done -> this entry.
+- **Key Decisions (all Observed):**
+  - **F-align (MEDIUM, patched):** `map_table` filtered empty header cells to build the row dict but indexed data cells by full position, so any column after an empty header read the wrong value -- silent wrong data (AD-12/NFR-1) or a spurious parse error. Fix: build the row keyed by the full `header_cells` positions; empty/None header keys are simply never looked up. Verified before + after.
+  - **Dismissed / subsumed:** the chain's broad `except Exception` (logs + falls through, ending in a typed refusal -- correct chain semantics, AD-12 satisfied at the surface); real-table header normalization (internal newlines/spacing) and camelot header/flavor assumptions -- these are exactly what the deferred real-HDFC-PDF golden test validates, so tracked there, not re-logged.
+  - **Acceptance:** chain order + fall-through, exact scanned-image refusal copy (`NO_TEXT_LAYER`), Decimal money, canonical schema, and the `services/` boundary all hold. The only unmet AC is the intentionally-deferred real-PDF 24-row golden test.
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` -> 36 passed (+1 regression); full suite -> **115 passed**; `services/` boundary green.
+- **Deliverables:** Story 2.3 reviewed; one silent-wrong-data defect fixed; 2-3 set `done` (real-PDF golden test remains formally deferred to Story 8.5).
+- **Artifacts Updated:** `services/ingestion/csv_parser.py` (`map_table` alignment fix), `tests/ingestion/test_pdf_parser.py` (+regression test), `_bmad-output/implementation-artifacts/sprint-status.yaml` (2-3 -> done), `PROJECT-PROGRESS.md` (this entry + Timeline row 54).
+- **Dependencies:** Step 53 (the code under review); `bmad-code-review`.
+- **Next Recommended Command:** Story 2.5 (dedup + persistence -- pure logic, parallel-friendly) or Story 2.4 (upload page UI), or provide the HDFC PDF asset to close the deferred golden test. Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** The one patch was unambiguous silent-wrong-data, so it was applied during review (consistent with the Step-51 apply decision). 2-3 set `done` on the project's established convention that a formally-deferred, separately-owned item does not block `done` (cf. IDOR full sweep deferred to 8.3 while 1.4 is done) -- the real-PDF validation is owned by Story 8.5. No commit (commit only when the user asks).
+
+---
+## Step 55 — Story 2.4: Upload Page — Real Parser Wiring + Progress/Summary/CTA (first Reflex-UI story of Epic 2)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- Epic 2, Story 2.4
+**Workflow:** None (direct user instruction "continue to 2.4", then "install [reflex skills] and do the necessary things"); AGENTS.md Reflex-skills gate handled.
+**User Goal:** Implement the Upload page: real parse wiring, Step-1-of-3, four progress steps, honesty summary, aria-disabled CTA, back-nav confirm, and typed-error copy -- aligned to WDS prototype 01.3.
+**BMAD Command:** None -- direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer; no BMAD persona).
+- **Role:** Satisfy the AGENTS.md Reflex-skills gate, then wire the real ingestion pipeline into the existing WDS-aligned upload page and close the 2.4 ACs.
+- **Input:** `epics.md` Story 2.4 ACs; WDS prototype `01.3-statement-upload.html`; existing `upload.py`/`upload_state.py` (Step 49 simulation); the 2.1-2.3 ingestion services; the three Reflex skills.
+- **Output:** Framework-agnostic `parse_statement` dispatcher + tests; real-parse upload flow with aria-disabled CTA, back-nav guard, support link, typed-error copy, honest skeleton counts.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Reflex skills (reflex-docs, reflex-process-management, setup-python-env):** The AGENTS.md-required skills were **not installed** and the `claude` CLI is not on PATH in this environment (can't run `claude plugin ...`). Per the AGENTS.md fallback, git-cloned `reflex-dev/agent-skills` into `~/.claude/plugins/reflex-agent-skills` and **read the skills directly** -- no restart needed. Followed reflex-process-management for verification (`reflex compile --dry`, prod-run pattern) and setup-python-env confirmed the env (`.venv` + reflex 0.9.6 present).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Detect the skills gap -> AskUserQuestion (user chose "install + restart"; then redirected to "install and do the necessary things") -> confirm no `claude` CLI -> git-clone agent-skills + read the three SKILL.md -> read existing upload page/state + prototype 01.3 -> build `services/ingestion/dispatch.py` (`parse_statement`, `parser_for`, temp-file, typed refusal) + tests (9) -> rewrite `upload_state._run_parse` to run the real parse in `asyncio.to_thread`, translate `IngestionError` -> plain copy, arm/clear a `beforeunload` guard, and set honest skeleton counts -> update `upload.py` (aria-disabled focusable CTA + guarded `go_review`; support link on error) -> fix a lint nit -> `pytest` 121 passed -> `reflex compile --dry` SUCCESS -> attempt live boot (blocked by psycopg2/Postgres, then SQLite path-with-space) -> record env blocker + E2E deferral -> set 2-4 review -> this entry.
+- **Key Decisions (all Observed):**
+  - **Parse logic in `services/`, not the state handler** (AD-2/AD-3): the new `parse_statement` dispatcher is the seam the `rx.State` handler calls; the handler only orchestrates + translates errors.
+  - **aria-disabled, not `disabled`, on the CTA** (NFR-8/FR-2.8): the prototype used both, but a truly `disabled` button leaves the tab order -- the AC/NFR wins as a functional accessibility add on top of the WDS design; `go_review` guards the action.
+  - **Honest skeleton counts:** real transaction *total* from the parser; rules/AI = 0 and need_review = total until Epic 3 wires categorization (S2.4 DoD note). "Use a sample (demo)" parses a small in-repo HDFC CSV constant for real, not a hardcoded fake.
+  - **WebSocket vs polling:** Reflex state sync via `yield` is already a server push over its socket, so progress needs no separate polling; documented.
+- **Verification:** `pytest` -> **121 passed** (+6 dispatch); `reflex compile --dry` -> **Success** (upload page + state compile). Live `reflex run` blocked by a missing `psycopg2`/Postgres (and a SQLite path-with-space quirk) -- environment, not code; full browser E2E deferred to Epic 8.
+- **Artifacts Created:** `services/ingestion/dispatch.py`, `tests/ingestion/test_dispatch.py`; `~/.claude/plugins/reflex-agent-skills/**` (cloned skills, outside the repo).
+- **Artifacts Updated:** `services/ingestion/__init__.py` (exports), `finance_app/state/upload_state.py` (real parse flow), `finance_app/pages/upload.py` (CTA + support link), `_bmad-output/implementation-artifacts/deferred-work.md` (E2E + skeleton + persistence deferrals), `sprint-status.yaml` (2-4 -> review), `PROJECT-PROGRESS.md` (this entry + Timeline row 55).
+- **Dependencies:** Stories 2.1-2.3 (the parser pipeline `parse_statement` dispatches to); the Reflex skills; WDS prototype 01.3.
+- **Next Recommended Command:** Code-review 2.4, or Story 2.5 (dedup + persistence -- which also lets 2.4 persist parsed rows). To enable a live upload demo, install `psycopg2-binary` + start the compose `db`. Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** 2-4 set `review` (implemented + compile/unit verified; live-run + browser E2E blocked by env, deferred to Epic 8). Pre-existing stray reflex listeners on 3000/8000-8002 (documented since Step 49) left untouched. No commit (commit only when the user asks).
+
+---
+## Step 56 — Code Review of Story 2.4 (inline adversarial review + patch)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- code review / quality gate for Story 2.4
+**Workflow:** `bmad-code-review` (inline, all three lenses in-session)
+**User Goal:** Review the uncommitted Story 2.4 upload-page work, enforce the ingestion + Reflex invariants, fix real defects, move the story toward done (intentional deferrals: live E2E -> Epic 8, skeleton counts -> Epic 3, persistence -> 2.5 were excluded from scope).
+**BMAD Command:** `/bmad-code-review` (Observed, this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (elite code reviewer; no BMAD persona).
+- **Role:** Adversarial review of `dispatch.py` + `upload_state.py` + `upload.py` + tests; verify empirically; patch.
+- **Input:** Story 2.4 diff; `epics.md` Story 2.4 ACs; `project-context.md` (AD-2/3/8/12, NFR-8).
+- **Output:** 1 medium patch (found + fixed + regression test); 1 low defer; 2-4 set done.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review` (gather-context -> review -> triage -> present).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Load context -> Tier-1 target = Story 2.4 files, full mode -> run 3 lenses inline -> **empirically verify** the untyped-exception hypothesis (a cp1252 byte in a CSV -> `UnicodeDecodeError` from `CSVParser`'s utf-8-sig open, which `_run_parse`'s `except IngestionError` does NOT catch -> escapes to the Reflex UI + leaves the `beforeunload` guard armed) -> apply patch (wrap unexpected errors in `parse_statement` as a typed `IngestionError` code `PARSE_FAILED`, logged with context) + regression test -> `pytest` 122 passed -> triage remaining (aria-disabled accepted by precedent + compile success; skeleton counts / E2E / persistence intentional & excluded) -> record the cp1252-fallback follow-up -> set 2-4 done -> this entry.
+- **Key Decisions (all Observed):**
+  - **F1 (MEDIUM, patched):** an untyped exception (realistically `UnicodeDecodeError` on a non-UTF-8 bank CSV; also `csv.Error`, `OSError`, or a parser bug) escaped `_run_parse` to the UI -- an AD-12 violation ("generic Exception not re-raised to UI") that also left the back-nav guard stuck. Fix at the service boundary: `parse_statement` now catches unexpected errors, logs them with context, and re-raises a typed `IngestionError` (`PARSE_FAILED`) so its contract is "only IngestionError escapes"; the handler's existing branch then shows plain copy and clears the guard. Verified before + after.
+  - **F2 (LOW, deferred):** `CSVParser` refuses non-UTF-8 CSVs rather than parsing them; a `cp1252`/`latin-1` fallback would parse them instead of refusing. Folds into Story 8.1 / a 2.2 hardening follow-up. Recorded in `deferred-work.md`.
+  - **Dismissed:** `aria_disabled` prop rendering (the same `aria_*` pattern -- `aria_hidden` -- is already used in this file and the app compiled); skeleton categorization counts, live browser E2E, and persistence were flagged by the user as intentional deferrals and excluded.
+  - **Acceptance:** real-parse wiring, Step-1-of-3, four progress steps (3/4 skeleton by design), aria-disabled focusable CTA (NFR-8), honesty summary from real total, back-nav guard (FR-2.10), and typed-error copy + support link (FR-2.9/AD-12) all hold. `services/` boundary clean (AD-2).
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` -> 43 passed (+1 regression); full suite -> **122 passed**; `services/` boundary green.
+- **Deliverables:** Story 2.4 reviewed; one AD-12 hole fixed; 2-4 set `done` (live browser E2E remains deferred to Epic 8 per env blocker).
+- **Artifacts Updated:** `services/ingestion/dispatch.py` (typed-error wrap), `tests/ingestion/test_dispatch.py` (+regression), `_bmad-output/implementation-artifacts/deferred-work.md` (F2), `sprint-status.yaml` (2-4 -> done), `PROJECT-PROGRESS.md` (this entry + Timeline row 56).
+- **Dependencies:** Step 55 (the code under review); `bmad-code-review`.
+- **Next Recommended Command:** Story 2.5 (dedup + persistence -- pure logic; also lets 2.4 persist parsed rows), or install `psycopg2-binary` + start the compose `db` to run the live upload demo. Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** 2-4 set `done` on the project convention that formally-deferred, separately-owned items (E2E -> Epic 8; skeleton counts -> Epic 3; persistence -> 2.5) do not block `done`. The one patch was an unambiguous AD-12 hole, applied during review. No commit (commit only when the user asks).
+
+---
+## Step 57 — Resolve Deferred F2 from the 2.4 Review (CSV encoding fallback)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- resolve a deferred code-review finding
+**Workflow:** None (direct user instruction: "fix the deferred one instead of creating a backlog story")
+**User Goal:** Fix the F2 item the Step-56 review deferred (CSVParser refusing non-UTF-8 CSVs) rather than leaving it for Story 8.1.
+**BMAD Command:** None -- direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer; no BMAD persona).
+- **Role:** Add an encoding fallback to CSVParser so non-UTF-8 bank exports parse, and mark the ledger item resolved.
+- **Input:** `deferred-work.md` F2 entry; `services/ingestion/csv_parser.py`; the AD-12 honesty rule.
+- **Output:** cp1252/latin-1 fallback in `CSVParser.parse`; non-UTF-8 CSVs now parse; regression test; F2 marked RESOLVED.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A -- direct implementation (used `.venv` pytest).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Add `_CSV_ENCODINGS` + `_read_csv_text` helper (utf-8-sig -> cp1252 -> latin-1) -> switch `CSVParser.parse` to read text via the helper into an `io.StringIO` for `csv.DictReader` -> add positive regression test (`test_non_utf8_cp1252_csv_parses`) -> rewrite the Step-56 wrap test to be monkeypatch-based (since a cp1252 file now parses, the wrap needs a different trigger) -> `pytest` 123 passed -> mark F2 RESOLVED (strikethrough) in `deferred-work.md` -> this entry.
+- **Key Decisions (all Observed):**
+  - **Encoding fallback in the parser, not just a typed refusal:** the Step-56 fix turned the non-UTF-8 crash into a clean `PARSE_FAILED` refusal; this goes further and actually *parses* the file. `latin-1` is the guaranteed final fallback (maps every byte, never raises), so a genuinely unusual encoding yields an approximate character rather than a refusal.
+  - **Kept the dispatch `PARSE_FAILED` wrap** as a safety net for the *other* unexpected errors (csv.Error, OSError, parser bugs) -- defense in depth; the two fixes are complementary, not redundant.
+- **Verification:** `pytest tests/ingestion tests/test_service_boundary.py` -> 44 passed; full suite -> **123 passed**; `services/` boundary green.
+- **Deliverables:** F2 fixed and closed; CSV ingestion tolerates non-UTF-8 Indian bank exports.
+- **Artifacts Updated:** `services/ingestion/csv_parser.py` (`_read_csv_text` + encoding fallback), `tests/ingestion/test_csv_parser.py` (+cp1252 test), `tests/ingestion/test_dispatch.py` (wrap test -> monkeypatch), `_bmad-output/implementation-artifacts/deferred-work.md` (F2 RESOLVED), `PROJECT-PROGRESS.md` (this entry + Timeline row 57).
+- **Dependencies:** Step 56 (the review that deferred F2); Step 55 (the dispatch wrap this complements).
+- **Next Recommended Command:** Story 2.5 (dedup + persistence -- finishes Epic 2), or commit Epic 2. Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** Story 2.4 stays `done`; the 2.4 review ledger is now empty of open items. No commit (commit only when the user asks).
+
+---
+## Step 58 — Story 2.5: Deduplicated Persistence (finishes Epic 2)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- Epic 2, Story 2.5 (final Epic-2 story)
+**Workflow:** None (direct user instruction "continue to Story 2.5").
+**User Goal:** Dedup + persist parsed transactions so a re-upload / overlapping / wider-range statement never creates duplicate rows.
+**BMAD Command:** None -- direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer; no BMAD persona).
+- **Role:** Build the dedup + persistence layer honoring AD-2 (no finance_app import in services/) and AD-4 (user-scoped), and wire it into the upload handler.
+- **Input:** `epics.md` Story 2.5 ACs; the existing session-injected DB pattern (`auth_state.register_new_user` etc.); the test DB pattern (`test_idor_baseline`, `test_models_schema`); the canonical `dedup_key` (Story 2.2); `finance_app.models.Transaction`/`UploadedFile`.
+- **Output:** `persist.py` (pure `filter_new_transactions` + model-injected `persist_transactions`); `test_dedup.py`; upload handler now persists.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A -- direct implementation (used `.venv` pytest + `reflex compile --dry`).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Study the AD-2 tension (persistence writes the `transactions` rx.Model, but `services/` can't import `finance_app`) + the existing session-injected DB pattern + the in-memory-SQLite test pattern -> build `services/ingestion/persist.py`: `filter_new_transactions` (pure: batch + against existing keys) and `persist_transactions` (reads this user's existing dedup keys, filters, stamps user_id/source_file_id, inserts; transaction **model injected**, not imported) -> `tests/ingestion/test_dedup.py` (real DB round-trip on `finance_app.models.Transaction` via throwaway SQLite) -> wire persist into `upload_state._run_parse` (create an `UploadedFile` row, resolve the user via `user_for_token(session, self.auth_token)`, persist) -> `pytest` 130 passed -> `reflex compile --dry` SUCCESS -> mark the 2.4 not-persisted deferral RESOLVED -> set 2-5 review -> this entry.
+- **Key Decisions (all Observed):**
+  - **Model injected, not imported** (AD-2): `persist_transactions(session, txn_model, ...)` receives `finance_app.models.Transaction` from the caller (handler / test); `services/` stays free of `finance_app` and `reflex`. Boundary guard stays green.
+  - **Dedup is per-user on the canonical key** `(user_id, date, amount, description_raw, balance_after)` via the shared `dedup_key` (normalized: ISO date, whitespace-collapsed description, abs(amount)) -- so CSV/PDF parsers and this insert path can't disagree, and one user's rows never dedup against another's (AD-4).
+  - **Two layers:** a pure function (fully unit-testable) + the DB round-trip (testable on SQLite), mirroring the project's session-injected auth helpers.
+  - **Wired into the handler now** to close the 2.4 not-persisted gap and make Epic 2 functional (upload -> parse -> deduped persist).
+- **Verification:** `pytest tests/ingestion/test_dedup.py tests/test_service_boundary.py` -> 10 passed; full suite -> **130 passed** (+7); `reflex compile --dry` -> **Success**; `services/` boundary green.
+- **Deliverables:** Story 2.5 complete; Epic 2 functionally end-to-end (upload persists deduped rows). Closes the 2.4 persistence deferral.
+- **Artifacts Created:** `services/ingestion/persist.py`, `tests/ingestion/test_dedup.py`.
+- **Artifacts Updated:** `services/ingestion/__init__.py` (exports), `finance_app/state/upload_state.py` (persist wiring), `_bmad-output/implementation-artifacts/deferred-work.md` (2.4 persistence item RESOLVED), `sprint-status.yaml` (2-5 -> review), `PROJECT-PROGRESS.md` (this entry + Timeline row 58).
+- **Dependencies:** Stories 2.1-2.4 (canonical schema, parsers, dispatch, upload handler); Story 1.2 (models); the `dedup_key` seam (2.2).
+- **Next Recommended Command:** Code-review 2.5, then Epic 2 is code-complete -- commit the branch. Live upload+persist E2E remains an Epic-8 item (reflex-run env blocker: psycopg2/Postgres). Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** 2-5 set `review` (implemented + unit/compile verified; the live DB round-trip through the handler is compile-checked only, deferred to Epic 8 like the rest of the upload E2E). Epic 2 stories: 2.1-2.4 done, 2.5 review. No commit (commit only when the user asks).
+
+---
+## Step 59 — Code Review of Story 2.5 + Epic 2 Fully Reviewed
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- code review / quality gate for Story 2.5 (last Epic-2 story)
+**Workflow:** `bmad-code-review` (inline, all three lenses in-session)
+**User Goal:** Review the uncommitted Story 2.5 dedup+persistence work, enforce AD-2/AD-4/AD-6/AD-8, fix real defects, and close out Epic 2's review.
+**BMAD Command:** `/bmad-code-review` (Observed, this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (elite code reviewer; no BMAD persona).
+- **Role:** Adversarial review of `persist.py` + the handler persist wiring + `test_dedup.py`; verify empirically; patch.
+- **Input:** Story 2.5 diff; `epics.md` Story 2.5 ACs; `project-context.md` (AD-2/4/6/8).
+- **Output:** 1 medium patch (found + fixed); the Decimal-scale dedup concern verified as NOT-a-bug; 2-5 set done.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review` (gather-context -> review -> triage -> present).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Load context -> Tier-1 target = Story 2.5 files, full mode -> run 3 lenses inline -> **empirically verify** the two suspects: (a) Decimal scale round-trip -- a parsed `Decimal('450')` is stored as `Decimal('450.00')` in NUMERIC(12,2), and re-persisting the same parsed txn still dedups to `inserted=0` (equal Decimals share a hash/set slot) -> NOT a bug; (b) the handler persist block has no try/except, so a DB error escapes untyped to the UI + leaves the beforeunload guard armed -> real AD-12 hole -> apply patch (wrap the persist block: log + honest copy + clear guard + drop back, mirroring the IngestionError path) -> `pytest` 130 passed + `compile --dry` SUCCESS -> triage the rest (load-all-keys = MVP-fine; UploadedFile-per-reupload = upload audit, fine; parsed-vs-new count = honest per 2.4 contract) -> set 2-5 done -> this entry.
+- **Key Decisions (all Observed):**
+  - **F1 (MEDIUM, patched):** persist errors in `upload_state._run_parse` escaped untyped (AD-12) and left the leave-guard armed -- the same class as the 2.4-F1 parse fix, but on the persist path. Wrapped so a save failure surfaces "We read your statement but couldn't save it. Please try again." instead of a raw error, and never shows a success summary for unsaved data.
+  - **Decimal-scale dedup verified robust** (not a defect) -- important because dedup correctness depends on it; confirmed via a real DB round-trip, not assumed.
+  - **Dismissed / low:** loading all of a user's rows to build dedup keys (fine at MVP scale; premature to optimize); an `uploaded_files` row per upload attempt even when 0 new txns (reasonable upload audit); the summary showing parsed count rather than new-vs-duplicate (honest, matches the 2.4 summary contract).
+  - **Acceptance:** exact re-upload -> 0 new, overlapping -> only new, wider range -> only new, per-user isolation, normalize-before-compare -- all hold and are tested; model injected (AD-2), reads user-scoped (AD-4). `services/` boundary green.
+- **Verification:** full suite -> **130 passed**; `reflex compile --dry` -> **Success**; `services/` boundary green. (Handler DB path compile-verified only; live E2E is the intentional Epic-8 deferral.)
+- **Deliverables:** Story 2.5 reviewed + one AD-12 hole fixed; **Epic 2 (Stories 2.1-2.5) now all `done` and reviewed.**
+- **Artifacts Updated:** `finance_app/state/upload_state.py` (persist error handling + logger), `sprint-status.yaml` (2-5 -> done), `PROJECT-PROGRESS.md` (this entry + Timeline row 59).
+- **Dependencies:** Step 58 (the code under review); the 2.4-F1 precedent (same AD-12 class); `bmad-code-review`.
+- **Next Recommended Command:** Commit the Epic 2 branch (it is now code-complete and reviewed), then either open a PR or start Epic 3 (categorization -- fills the skeleton counts) / Epic 4 (engine). Live upload+persist E2E + the real-HDFC-PDF golden test remain Epic-8 / asset-gated items. Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** 2-5 set `done`; the patch was an unambiguous AD-12 hole applied during review. Epic 2 is functionally end-to-end (register -> login -> upload -> parse -> deduped persist), verified by unit tests + `compile --dry`; the only unexercised surface is the live browser run (env blocker). No commit (commit only when the user asks).
+
+---
+## Step 60 — Final Epic-2 Verification Sweep (holistic review + close fixable gaps)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-2-statement-upload-ingestion`)
+**BMAD Phase:** Phase 5: Implementation -- final quality sweep across all of Epic 2
+**Workflow:** None (direct user instruction: "check once again epic 2 is fully reviewed; if there are any defers or patches, fix them and make it as expected output").
+**User Goal:** Confirm Epic 2 is genuinely complete/correct; fix any remaining defect or fixable deferral.
+**BMAD Command:** None -- direct instruction. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer + reviewer; no BMAD persona).
+- **Role:** Holistic cross-cutting review of the whole Epic-2 surface; close the fixable gaps; honestly classify the rest.
+- **Input:** All of `services/ingestion/**`, the upload page/state, all `tests/ingestion/**`, `requirements.txt`, the open `deferred-work.md` items.
+- **Output:** venv/requirements drift fixed; end-to-end integration test added; live boot achieved and verified; the genuinely-blocked items explained.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A -- direct review + implementation. Followed reflex-process-management for the live run (`reflex run --env prod --single-port`, read `reflex.log`, SIGINT/Stop-Process by listening PID).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Scan `requirements.txt` (ingestion libs correctly pinned) + grep the Epic-2 code for TODO/FIXME/placeholder (none) -> find `psycopg2-binary` is pinned but not installed in `.venv` (drift) -> `pip install psycopg2-binary==2.9.10` -> holistic cross-cutting review (parse->persist seam, Decimal round-trip, direction storage, user-scoping) -> add `tests/ingestion/test_pipeline_integration.py` (bytes -> `parse_statement` -> `persist_transactions` -> re-upload dedups; per-user isolation) -> `pytest` 132 passed -> boot the app live with a relative SQLite DSN (`sqlite:///data/verify.db`) -> **App Running**, `curl /` and `/upload` = HTTP 200 -> stop server + clean temp files -> update the E2E deferral note (boot blocker resolved) -> this entry.
+- **Key Decisions / Findings (all Observed):**
+  - **No code defects found** in the holistic pass -- the per-story reviews (Steps 51/54/56/59) had already caught and fixed the real issues (F1s across dispatch/handler/map_table/encoding). The parse->persist seam, Decimal scale round-trip, and user-scoping all hold.
+  - **Fixed a real "expected output" gap:** the `.venv` was missing `psycopg2-binary` though it is pinned in `requirements.txt`; installed it so the venv matches the declared deps.
+  - **Added the missing integration coverage:** every unit was tested in isolation but nothing chained parse->persist; the new integration test does, including end-to-end re-upload dedup.
+  - **Achieved a live boot:** the earlier `reflex run` failure was purely the psycopg2 drift + a path-with-space SQLite quoting bug -- both env issues, now resolved; the app boots and serves. Only the *interactive* browser upload E2E remains (Epic 8, needs browser automation).
+  - **Genuinely-blocked deferrals (cannot close within Epic 2, not defects):** the real-HDFC-PDF golden test needs a real HDFC PDF asset (a synthetic one would neither satisfy the AC nor exercise statementsparser's HDFC path, and would add a dep) -> Story 8.5; the steps-3/4 categorization counts need Epic 3.
+- **Verification:** full suite -> **132 passed** (+2 integration); `reflex run --env prod` -> **App Running**, `/` and `/upload` -> HTTP 200 with a full production build; `services/` boundary green.
+- **Deliverables:** Epic 2 confirmed complete + correct; venv synced; integration coverage added; live-run proven.
+- **Artifacts Created:** `tests/ingestion/test_pipeline_integration.py`.
+- **Artifacts Updated:** `.venv` (installed `psycopg2-binary==2.9.10`), `_bmad-output/implementation-artifacts/deferred-work.md` (E2E boot-blocker resolved note), `PROJECT-PROGRESS.md` (this entry + Timeline row 60).
+- **Dependencies:** all of Epic 2 (Steps 50-59).
+- **Next Recommended Command:** Commit the Epic-2 branch (code-complete, reviewed, integration-tested, boots live), then Epic 3 (categorization) or open a PR. Uncommitted on branch `epic-2-statement-upload-ingestion`.
+- **Notes:** A stray reflex listener (PID 45140) on :3000 resisted Stop-Process -- the same unreaped-process nuisance documented since Step 49; harmless. No commit (commit only when the user asks).
+
+---
