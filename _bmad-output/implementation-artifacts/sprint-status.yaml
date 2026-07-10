@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-09
-last_updated: 2026-07-09
+last_updated: 2026-07-10  # Epic 4 complete + retrospective done
 project: AI-Powered-Personal-Finance-Analyzer
 # (story 1.2 done; story 1.3 implemented + reviewed → done on 2026-07-09)
 # (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
@@ -77,12 +77,12 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Financial Engine — Safe-to-Spend & Confidence Score
-  epic-4: backlog
-  4-1-engine-pre-flight-read-and-lock-the-scenario-contract: backlog
-  4-2-safe-to-spend-engine-implementation: backlog
-  4-3-safe-to-spend-pytest-suite-all-13-scenarios: backlog
-  4-4-confidence-score-engine-and-score-events-writeback: backlog
-  epic-4-retrospective: optional
+  epic-4: done
+  4-1-engine-pre-flight-read-and-lock-the-scenario-contract: done
+  4-2-safe-to-spend-engine-implementation: done
+  4-3-safe-to-spend-pytest-suite-all-13-scenarios: done
+  4-4-confidence-score-engine-and-score-events-writeback: done
+  epic-4-retrospective: done
 
   # Epic 5: Dashboard, Briefing & Commitment Management
   epic-5: backlog
@@ -118,3 +118,14 @@ development_status:
   8-4-readme-and-one-command-setup: backlog
   8-5-demo-dry-run-and-regression-guard: backlog
   epic-8-retrospective: optional
+
+# Action items committed during retrospectives (surfaced by sprint-status).
+action_items:
+  - epic: 4
+    action: "Resolve scenario-3 after-income mismatch: fix safe-to-spend-scenarios.md's ~990 to match the engine's Rs.1,830, or refine the after-income model (stop double-counting the rolled-over balance). Closes contract section-8 open item."
+    owner: "John (PM) + Winston (Architect)"
+    status: open
+  - epic: 4
+    action: "Fix PRD FR-4 AC scenario count: reads '12 scenarios', should be 13 (scenario 13 = payday-today div-by-zero guard)."
+    owner: "John (PM)"
+    status: open
