@@ -29,7 +29,7 @@ If every extractor comes back empty we distinguish two honest failures (AD-12):
 * **text present but no transactions found** -> a text PDF we couldn't structure; a typed
   ``NO_TRANSACTIONS_FOUND`` refusal.
 
-Extractors are injected (default = the real four) so the chain logic and the refusal paths
+Extractors are injected (default = the real six) so the chain logic and the refusal paths
 are unit-testable without a real PDF; the external libraries are imported lazily inside each
 adapter's ``extract`` so importing this module stays cheap and side-effect free.
 """
@@ -52,6 +52,8 @@ __all__ = [
     "Extractor",
     "PositionalColumnExtractor",
     "StatementsparserExtractor",
+    "ICICITextExtractor",
+    "HDFCTableExtractor",
     "PdfplumberExtractor",
     "CamelotExtractor",
     "SCANNED_MESSAGE",
@@ -59,23 +61,343 @@ __all__ = [
 
 log = logging.getLogger(__name__)
 
-#: Approved user-facing copy for a scanned/image PDF (FR-2.4 / ux-spec-mvp.md). Exact — the
-#: em dash and wording are part of the microcopy contract; changing it fails acceptance.
 SCANNED_MESSAGE = (
     "I can't read this one — it's a scanned image, not text. Try your bank's CSV export."
 )
 
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+def _clean_dec(s: str) -> Decimal:
+    return Decimal(s.replace(",", "").strip())
+
 
 @runtime_checkable
 class Extractor(Protocol):
-    """One link in the PDF parser chain: an adapter over a single extraction strategy."""
-
     name: str
 
     def extract(self, file_path: Path) -> list[Transaction]:
-        """Return canonical transactions, or ``[]`` if this strategy found none."""
         ...
 
+
+# ---------------------------------------------------------------------------
+# ICICI text extractor
+# ICICI PDFs have grid lines only on the header row; all transaction data is
+# in free-form plain text.  Pattern per transaction:
+#   <merchant short name>          <- line before
+#   <sno>  DD.MM.YYYY  amt1  [amt2]  balance
+#   <full UPI narration lines>     <- lines after
+# ---------------------------------------------------------------------------
+
+_ICICI_TXN_RE = re.compile(
+    r"^(\d+)\s+"
+    r"(\d{2}\.\d{2}\.\d{4})\s+"
+    r"([\d,]+\.\d{2})\s+"
+    r"(?:([\d,]+\.\d{2})\s+)?"
+    r"([\d,]+\.\d{2})\s*$"
+)
+
+_ICICI_FOOTER_MARKERS = (
+    "Never share", "www.icici", "Dial your", "Please call",
+    "Sincerely", "Legends", "RCHG", "This is a system",
+)
+
+
+class ICICITextExtractor:
+    """Parses ICICI Bank PDFs via plain-text extraction."""
+
+    name = "icici_text"
+
+    def extract(self, file_path: Path) -> list[Transaction]:
+        import pdfplumber
+
+        with pdfplumber.open(str(file_path)) as pdf:
+            first_text = (pdf.pages[0].extract_text() or "") if pdf.pages else ""
+            if "ICICI" not in first_text.upper():
+                return []
+            full_text = "\n".join(p.extract_text() or "" for p in pdf.pages)
+
+        return self._parse_text(full_text)
+
+    def _parse_text(self, text: str) -> list[Transaction]:
+        lines = text.splitlines()
+        transactions: list[Transaction] = []
+        prev_balance: Decimal | None = None
+        i = 0
+
+        while i < len(lines):
+            line = lines[i].strip()
+            m = _ICICI_TXN_RE.match(line)
+            if not m:
+                i += 1
+                continue
+
+            date_raw = m.group(2)
+            a1 = _clean_dec(m.group(3))
+            a2 = _clean_dec(m.group(4)) if m.group(4) else None
+            balance = _clean_dec(m.group(5))
+
+            # Merchant short name is the line immediately before the number line
+            narration_parts = []
+            if i > 0:
+                prev = lines[i - 1].strip()
+                if prev and not _ICICI_TXN_RE.match(prev) and not re.match(r"^\d{2}\.\d{2}\.\d{4}", prev):
+                    narration_parts.append(prev)
+
+            # Full UPI narration follows the number line
+            j = i + 1
+            while j < len(lines):
+                nxt = lines[j].strip()
+                if not nxt or _ICICI_TXN_RE.match(nxt):
+                    break
+                if any(kw in nxt for kw in _ICICI_FOOTER_MARKERS):
+                    break
+                narration_parts.append(nxt)
+                j += 1
+
+            narration = " ".join(narration_parts).strip()
+
+            if prev_balance is not None:
+                direction = Direction.credit if balance > prev_balance else Direction.debit
+            else:
+                direction = Direction.debit
+
+            if a2 is not None and prev_balance is not None:
+                amount = abs(balance - prev_balance)
+            else:
+                amount = a1
+
+            try:
+                iso_date = normalize_date(date_raw)
+            except IngestionError:
+                i += 1
+                continue
+
+            transactions.append(Transaction(
+                date=iso_date,
+                description_raw=narration,
+                amount=abs(amount),
+                direction=direction,
+                balance_after=balance,
+            ))
+            prev_balance = balance
+            i = j
+
+        return transactions
+
+
+# ---------------------------------------------------------------------------
+# HDFC table extractor
+# HDFC PDFs have a proper table with headers:
+#   Txn Date | Narration | Withdrawals | Deposits | Closing Balance
+# BUT pdfplumber merges all rows into a single row — each cell contains
+# newline-separated values for all transactions.  We split on newlines.
+# ---------------------------------------------------------------------------
+
+_HDFC_DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+
+_HDFC_REQUIRED_HEADERS = {"txn date", "narration", "withdrawals", "deposits", "closing balance"}
+
+
+class HDFCTableExtractor:
+    """Parses HDFC Bank PDFs by splitting the merged-row table pdfplumber extracts."""
+
+    name = "hdfc_table"
+
+    def extract(self, file_path: Path) -> list[Transaction]:
+        import pdfplumber
+
+        with pdfplumber.open(str(file_path)) as pdf:
+            first_text = (pdf.pages[0].extract_text() or "") if pdf.pages else ""
+            if "HDFC" not in first_text.upper():
+                return []
+
+            transactions: list[Transaction] = []
+            for page in pdf.pages:
+                for table in (page.extract_tables() or []):
+                    txns = self._parse_table(table)
+                    transactions.extend(txns)
+
+        return transactions
+
+    def _parse_table(self, table: list[list[str | None]]) -> list[Transaction]:
+        if not table:
+            return []
+
+        # Find header row
+        header_idx = None
+        col = {}
+        for idx, row in enumerate(table):
+            cells = [re.sub(r"\s+", " ", (c or "")).strip().lower() for c in row]
+            if _HDFC_REQUIRED_HEADERS <= set(cells):
+                header_idx = idx
+                col = {cells[i]: i for i in range(len(cells))}
+                break
+
+        if header_idx is None:
+            return []
+
+        transactions: list[Transaction] = []
+        for row in table[header_idx + 1:]:
+            if not row:
+                continue
+
+            # HDFC merges all transactions into one cell per column, newline-separated.
+            # Date/withdrawal/deposit/balance cells are 1:1 per transaction (one line each).
+            # Narration spans multiple lines per transaction — split by detecting the
+            # "Value Dt DD/MM/YYYY Ref <ref>" boundary line that ends every HDFC narration.
+            dates_raw   = [l.strip() for l in (row[col["txn date"]] or "").splitlines()]
+            narr_lines  = [l.strip() for l in (row[col["narration"]] or "").splitlines()]
+            withdrawals = [l.strip() for l in (row[col["withdrawals"]] or "").splitlines()]
+            deposits    = [l.strip() for l in (row[col["deposits"]] or "").splitlines()]
+            balances    = [l.strip() for l in (row[col["closing balance"]] or "").splitlines()]
+
+            date_vals = [d for d in dates_raw if _HDFC_DATE_RE.match(d)]
+            if not date_vals:
+                continue
+
+            n = len(date_vals)
+
+            # Split narration lines into n groups.
+            # Each HDFC narration ends with a line matching "Value Dt DD/MM/YYYY Ref <ref>"
+            # followed by the ref number on the next line. We use that as the group boundary.
+            narr_groups = self._split_narrations(narr_lines, n)
+
+            for k in range(n):
+                narration = narr_groups[k] if k < len(narr_groups) else ""
+                w_str = withdrawals[k] if k < len(withdrawals) else "0.00"
+                d_str = deposits[k]    if k < len(deposits)    else "0.00"
+                b_str = balances[k]    if k < len(balances)    else ""
+
+                try:
+                    withdrawal = _clean_dec(w_str) if w_str else Decimal("0")
+                except Exception:
+                    withdrawal = Decimal("0")
+                try:
+                    deposit = _clean_dec(d_str) if d_str else Decimal("0")
+                except Exception:
+                    deposit = Decimal("0")
+                try:
+                    balance = _clean_dec(b_str) if b_str else None
+                except Exception:
+                    balance = None
+
+                if withdrawal == 0 and deposit == 0:
+                    continue
+
+                direction = Direction.credit if deposit > 0 else Direction.debit
+                amount    = deposit if deposit > 0 else withdrawal
+
+                try:
+                    iso_date = normalize_date(date_vals[k])
+                except IngestionError:
+                    continue
+
+                transactions.append(Transaction(
+                    date=iso_date,
+                    description_raw=narration,
+                    amount=abs(amount),
+                    direction=direction,
+                    balance_after=balance,
+                ))
+
+        return transactions
+
+    # "Value Dt DD/MM/YYYY Ref" — may or may not have the ref number on the same line
+    _HDFC_VALUE_DT = re.compile(r"Value\s+Dt\s+\d{2}/\d{2}/\d{4}\s+Ref", re.I)
+    # Inline ref: "Value Dt … Ref <digits>" all on one line
+    _HDFC_VALUE_DT_INLINE = re.compile(r"Value\s+Dt\s+\d{2}/\d{2}/\d{4}\s+Ref\s+\d+", re.I)
+
+    def _split_narrations(self, lines: list[str], n: int) -> list[str]:
+        """Split flat narration lines into exactly n groups.
+
+        HDFC narrations always end with a "Value Dt DD/MM/YYYY Ref" marker.
+        Two forms:
+          A) "... Value Dt 01/05/2026 Ref 189499104532"  — ref on same line → close here
+          B) "... Value Dt 01/05/2026 Ref"               — ref on next line → close after next
+        """
+        if n == 1:
+            return [" ".join(l for l in lines if l)]
+
+        groups: list[list[str]] = []
+        current: list[str] = []
+        pending_ref = False  # waiting to consume the standalone ref line
+
+        for line in lines:
+            current.append(line)
+
+            if pending_ref:
+                # This line is the standalone ref number — close the group
+                pending_ref = False
+                if len(groups) < n - 1:
+                    groups.append(current)
+                    current = []
+                if len(groups) == n - 1:
+                    break
+            elif self._HDFC_VALUE_DT_INLINE.search(line):
+                # Ref is on this line — close immediately
+                if len(groups) < n - 1:
+                    groups.append(current)
+                    current = []
+                if len(groups) == n - 1:
+                    break
+            elif self._HDFC_VALUE_DT.search(line):
+                # Ref is on the next line
+                pending_ref = True
+
+        groups.append(current)
+
+        while len(groups) < n:
+            groups.append([])
+
+        return [" ".join(l for l in g if l).strip() for g in groups[:n]]
+
+
+# ---------------------------------------------------------------------------
+# Generic pdfplumber extractor (table-based, reuses CSV column profiles)
+# ---------------------------------------------------------------------------
+
+class PdfplumberExtractor:
+    """Generic table extractor — wraps pdfplumber; rows mapped via map_table."""
+
+    name = "pdfplumber"
+
+    def extract(self, file_path: Path) -> list[Transaction]:
+        import pdfplumber
+
+        transactions: list[Transaction] = []
+        with pdfplumber.open(str(file_path)) as pdf:
+            for page in pdf.pages:
+                for table in page.extract_tables() or []:
+                    if len(table) >= 2:
+                        transactions.extend(map_table(table[0], table[1:]))
+        return transactions
+
+
+# ---------------------------------------------------------------------------
+# Camelot extractor (last resort)
+# ---------------------------------------------------------------------------
+
+class CamelotExtractor:
+    """Last-resort table extractor — wraps camelot; rows mapped via map_table."""
+
+    name = "camelot"
+
+    def extract(self, file_path: Path) -> list[Transaction]:
+        import camelot
+
+        transactions: list[Transaction] = []
+        for table in camelot.read_pdf(str(file_path), pages="all"):
+            rows = table.df.values.tolist()
+            if len(rows) >= 2:
+                transactions.extend(map_table(rows[0], rows[1:]))
+        return transactions
+
+
+# ---------------------------------------------------------------------------
+# Primary statementparser extractor
+# ---------------------------------------------------------------------------
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Positional (coordinate-based) extractor — the general, bank-agnostic path.
@@ -409,10 +731,18 @@ class StatementsparserExtractor:
     name = "statementsparser"
 
     def extract(self, file_path: Path) -> list[Transaction]:
-        import statementparser  # lazy: heavy import only when actually parsing a PDF
+        import statementparser
 
         # categorize/verify_balance off: we run our own Tier-1/2 categorization (Epic 3) and
         # don't want the library's balance check to raise on a benign mismatch.
+        try:
+            from statementparser.parsers.base import DATE_FORMATS
+            if "%d.%m.%Y" not in DATE_FORMATS.get("ICICI", []):
+                DATE_FORMATS.setdefault("ICICI", []).insert(0, "%d.%m.%Y")
+                DATE_FORMATS.setdefault("ICICI", []).insert(1, "%d.%m.%y")
+        except Exception:
+            pass
+
         statement = statementparser.parse(
             str(file_path), categorize=False, verify_balance=False
         )
@@ -424,7 +754,7 @@ class StatementsparserExtractor:
             Direction.debit if getattr(t.type, "value", t.type) == "DEBIT" else Direction.credit
         )
         return Transaction(
-            date=t.date.isoformat(),  # datetime.date -> ISO 'YYYY-MM-DD'
+            date=t.date.isoformat(),
             description_raw=(t.narration or t.description or "").strip(),
             amount=abs(t.amount),
             direction=direction,
@@ -432,43 +762,12 @@ class StatementsparserExtractor:
         )
 
 
-class PdfplumberExtractor:
-    """Generic table extractor — wraps ``pdfplumber``; rows mapped via ``map_table``."""
-
-    name = "pdfplumber"
-
-    def extract(self, file_path: Path) -> list[Transaction]:
-        import pdfplumber  # lazy
-
-        transactions: list[Transaction] = []
-        with pdfplumber.open(str(file_path)) as pdf:
-            for page in pdf.pages:
-                for table in page.extract_tables() or []:
-                    if len(table) >= 2:  # header + at least one data row
-                        transactions.extend(map_table(table[0], table[1:]))
-        return transactions
-
-
-class CamelotExtractor:
-    """Last-resort table extractor — wraps ``camelot``; rows mapped via ``map_table``."""
-
-    name = "camelot"
-
-    def extract(self, file_path: Path) -> list[Transaction]:
-        import camelot  # lazy
-
-        transactions: list[Transaction] = []
-        for table in camelot.read_pdf(str(file_path), pages="all"):
-            rows = table.df.values.tolist()
-            if len(rows) >= 2:
-                transactions.extend(map_table(rows[0], rows[1:]))
-        return transactions
-
+# ---------------------------------------------------------------------------
+# Text layer probe
+# ---------------------------------------------------------------------------
 
 def _pdf_has_text_layer(file_path: Path) -> bool:
-    """True if any page yields extractable text — the scanned-vs-text discriminator."""
-    import pdfplumber  # lazy
-
+    import pdfplumber
     with pdfplumber.open(str(file_path)) as pdf:
         for page in pdf.pages:
             if (page.extract_text() or "").strip():
@@ -476,8 +775,12 @@ def _pdf_has_text_layer(file_path: Path) -> bool:
     return False
 
 
+# ---------------------------------------------------------------------------
+# PDFParser — runs the chain
+# ---------------------------------------------------------------------------
+
 class PDFParser:
-    """Runs the extractor chain and produces canonical transactions (StatementParser)."""
+    """Runs the extractor chain and produces canonical transactions."""
 
     def __init__(
         self,
@@ -494,6 +797,8 @@ class PDFParser:
             else [
                 PositionalColumnExtractor(),
                 StatementsparserExtractor(),
+                ICICITextExtractor(),
+                HDFCTableExtractor(),
                 PdfplumberExtractor(),
                 CamelotExtractor(),
             ]
@@ -506,9 +811,6 @@ class PDFParser:
             try:
                 rows = extractor.extract(path)
             except Exception as exc:  # noqa: BLE001
-                # A tool failing on a PDF it doesn't understand is expected — fall through to
-                # the next link. Logged with context, never silently swallowed (AD-12); the
-                # honest final refusal below is what reaches the user if all links fail.
                 log.warning(
                     "PDF extractor %r failed on %s: %s",
                     getattr(extractor, "name", extractor),
@@ -517,9 +819,9 @@ class PDFParser:
                 )
                 continue
             if rows:
+                log.info("PDF extractor %r parsed %d rows from %s", extractor.name, len(rows), path.name)
                 return rows
 
-        # Every extractor came back empty — decide which honest refusal to raise.
         if not self._has_text_layer(path):
             raise ScannedPDFError(SCANNED_MESSAGE)
         raise IngestionError(

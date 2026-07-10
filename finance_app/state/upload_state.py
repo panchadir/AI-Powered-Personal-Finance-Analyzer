@@ -28,6 +28,7 @@ from finance_app.state.auth_state import (  # noqa: F401
     LOGIN_ROUTE,
     user_for_token,
 )
+from services.categorize import categorize_rules
 from services.ingestion import IngestionError, parse_statement, persist_transactions
 
 log = logging.getLogger(__name__)
@@ -195,23 +196,31 @@ class UploadState(AuthState):
             yield
             return
         self.total = len(transactions)
-        # Story 2.5: persist the parsed rows — deduped on the canonical key and scoped to the
-        # signed-in user (AD-4) — so Review/Dashboard read real data. A re-upload or overlapping
-        # range inserts only genuinely-new rows. `source_file_id` ties rows to this upload.
+        self.done_steps = self.done_steps + ["identify"]
+        yield
+
+        # Step 3 — Categorising with Tier-1 rules engine.
+        self.active_step = "rules"
+        yield
+        categorized = await asyncio.to_thread(categorize_rules, transactions)
+        rules_matched = sum(
+            1 for t in categorized
+            if t.category_confidence == 1.0
+        )
+
+        # Persist categorized rows so DB always has category/category_source/category_confidence.
         try:
             with rx.session() as session:
                 user = user_for_token(session, self.auth_token)
-                if user is not None and transactions:
+                if user is not None and categorized:
                     uploaded = UploadedFile(  # type: ignore[call-arg]
                         user_id=user.id, filename=name, status="parsed"
                     )
                     session.add(uploaded)
                     session.commit()
                     session.refresh(uploaded)
-                    persist_transactions(session, TxnModel, user.id, uploaded.id, transactions)
+                    persist_transactions(session, TxnModel, user.id, uploaded.id, categorized)
         except Exception:  # noqa: BLE001
-            # Never show a success summary for data we failed to save (AD-12). Log with
-            # context, surface honest copy, clear the leave-guard, and drop back to Upload.
             log.exception("Failed to persist parsed statement %r", name)
             self.parsing = False
             self.active_step = ""
@@ -219,24 +228,23 @@ class UploadState(AuthState):
             yield rx.call_script(_CLEAR_LEAVE_GUARD)
             yield
             return
+
         self.active_step = ""
-        self.done_steps = self.done_steps + ["identify"]
+        self.done_steps = self.done_steps + ["rules"]
         yield
 
-        # Steps 3 & 4 — Categorising by rules / AI assist: skeleton until Epic 3 (S3.1/S3.2).
-        for key in ("rules", "ai"):
-            self.active_step = key
-            yield
-            await asyncio.sleep(0.3)
-            self.active_step = ""
-            self.done_steps = self.done_steps + [key]
-            yield
+        # Step 4 — AI assist: skeleton until Epic 3 Tier-2 is implemented.
+        self.active_step = "ai"
+        yield
+        await asyncio.sleep(0.3)
+        self.active_step = ""
+        self.done_steps = self.done_steps + ["ai"]
+        yield
 
-        # Honest summary: real total; categorization not run yet, so all rows need review.
-        # Epic 3 replaces rules/ai with real Tier-1/Tier-2 counts.
-        self.rules = 0
+        # Real summary: rule-matched count from Tier-1; remainder flagged as "needs review".
+        self.rules = rules_matched
         self.ai = 0
-        self.need_review = self.total
+        self.need_review = self.total - rules_matched
         self.summary_visible = True
         yield rx.call_script(_CLEAR_LEAVE_GUARD)
         yield
