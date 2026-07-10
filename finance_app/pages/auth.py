@@ -34,21 +34,28 @@ def _field(
     autocomplete: str | None = None,
     id_prefix: str = "login",
     toggle: rx.Component | None = None,
+    on_blur=None,
+    on_change=None,
 ) -> rx.Component:
     attrs: dict = {}
     if autocomplete:
         attrs["autoComplete"] = autocomplete
+    input_props: dict = dict(
+        id=f"{id_prefix}-{name}",
+        name=name,
+        type=input_type,
+        placeholder=placeholder,
+        custom_attrs=attrs,
+        class_name=rx.cond(error != "", "has-error", ""),
+    )
+    if on_blur is not None:
+        input_props["on_blur"] = on_blur
+    if on_change is not None:
+        input_props["on_change"] = on_change
     return rx.el.div(
         rx.el.label(label, html_for=f"{id_prefix}-{name}"),
         rx.el.div(
-            rx.el.input(
-                id=f"{id_prefix}-{name}",
-                name=name,
-                type=input_type,
-                placeholder=placeholder,
-                custom_attrs=attrs,
-                class_name=rx.cond(error != "", "has-error", ""),
-            ),
+            rx.el.input(**input_props),
             toggle if toggle is not None else rx.fragment(),
             class_name="input-wrap",
         ),
@@ -85,13 +92,19 @@ def _forgot_modal() -> rx.Component:
             rx.form(
                 _field("Account email", "email", "you@example.com",
                        LoginState.forgot_email_error, input_type="email",
-                       autocomplete="email", id_prefix="forgot"),
+                       autocomplete="email", id_prefix="forgot",
+                       on_blur=LoginState.blur_forgot_email,
+                       on_change=LoginState.change_forgot_email),
                 _field("New password", "new_password", "8+ characters",
                        LoginState.forgot_password_error, input_type="password",
-                       autocomplete="new-password", id_prefix="forgot"),
+                       autocomplete="new-password", id_prefix="forgot",
+                       on_blur=LoginState.blur_forgot_password,
+                       on_change=LoginState.change_forgot_password),
                 _field("Confirm new password", "confirm_password", "Repeat new password",
                        LoginState.forgot_confirm_error, input_type="password",
-                       autocomplete="new-password", id_prefix="forgot"),
+                       autocomplete="new-password", id_prefix="forgot",
+                       on_blur=LoginState.blur_forgot_confirm,
+                       on_change=LoginState.change_forgot_confirm),
                 rx.el.div(
                     rx.dialog.close(
                         rx.el.button("Cancel", type="button", class_name="btn btn--secondary",
@@ -113,12 +126,18 @@ def _forgot_modal() -> rx.Component:
 
 def _login_form() -> rx.Component:
     return rx.form(
-        _field("Email address", "email", "you@example.com", LoginState.email_error,
-               input_type="email", autocomplete="email"),
+        _field(
+            "Email address", "email", "you@example.com", LoginState.email_error,
+            input_type="email", autocomplete="email",
+            on_blur=LoginState.blur_email,
+            on_change=LoginState.change_email,
+        ),
         _field(
             "Password", "password", "Your password", LoginState.password_error,
             input_type=rx.cond(LoginState.show_password, "text", "password"),
             autocomplete="current-password", toggle=_pw_toggle(),
+            on_blur=LoginState.blur_password,
+            on_change=LoginState.change_password,
         ),
         rx.el.div(_forgot_modal(), class_name="login-row"),
         rx.el.button(
