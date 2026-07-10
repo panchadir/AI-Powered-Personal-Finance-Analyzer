@@ -5,6 +5,18 @@ paise), never ``float``. ``pytest services/engine/`` is the non-negotiable MVP q
 gate and must run with zero LLM calls. Populated in Epic 4.
 """
 from services.engine.confidence_score import ScoreResult, compute_confidence_score
+from services.engine.inputs import (
+    DEFAULT_BUFFER,
+    CommitmentRecord,
+    IncomeSignal,
+    StatementFacts,
+    build_engine_input,
+    derive_statement_facts,
+    detect_next_income,
+    due_day_label,
+    resolve_due_date,
+    to_commitment_inputs,
+)
 from services.engine.safe_to_spend import (
     CommitmentInput,
     EngineInput,
@@ -19,4 +31,15 @@ __all__ = [
     "compute_safe_to_spend",
     "ScoreResult",
     "compute_confidence_score",
+    # Epic 5 — the persisted-rows -> EngineInput bridge.
+    "CommitmentRecord",
+    "StatementFacts",
+    "IncomeSignal",
+    "DEFAULT_BUFFER",
+    "build_engine_input",
+    "derive_statement_facts",
+    "detect_next_income",
+    "to_commitment_inputs",
+    "resolve_due_date",
+    "due_day_label",
 ]

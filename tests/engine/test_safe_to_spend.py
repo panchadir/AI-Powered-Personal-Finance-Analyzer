@@ -259,7 +259,11 @@ class TestRepresentativeScenarios:
         assert pack.spendable_pool == D("-9500")
         assert pack.safe_to_spend_today == D("0")  # floored, not negative
         assert pack.safety_ok is False  # honest shortfall
-        assert any("exceed your balance by ₹9,500" in d for d in pack.drivers)  # formatINR (AD-13)
+        assert pack.buffer_intact is False  # a shortfall consumes the buffer too
+        # The driver names bills-minus-balance (23,500 − 16,000 = ₹7,500) — what is actually
+        # missing to pay the bills. `-spendable_pool` (₹9,500) also includes the ₹2,000 buffer,
+        # so claiming the bills "exceed your balance by ₹9,500" would be false (AD-13 formatINR).
+        assert any("exceed your balance by ₹7,500" in d for d in pack.drivers)
 
     def test_scenario_12_salary_not_detected(self) -> None:
         ei = EngineInput(available_balance=D("20000"), as_of=date(2026, 6, 15), next_income_date=None)

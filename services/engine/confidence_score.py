@@ -36,9 +36,15 @@ from decimal import ROUND_HALF_UP, Decimal
 from services.engine.safe_to_spend import EvidencePack
 from services.utils.format import formatINR
 
-# Score bands (contract §6 / FR-5). Shortfall sits strictly below every covered state.
+# Score bands (contract §6 / FR-5). Three strictly-ordered states, worst first:
+#   not safety_ok            → [0, 20]   bills cannot be paid
+#   safety_ok, buffer dented → [20, 39]  bills covered, emergency buffer being eaten
+#   safety_ok, buffer intact → [40, 95]  fully covered
+# The middle band exists so a ₹0 Safe-to-Spend can never present as "On track" (the ≥40 label).
 _SHORTFALL_CEILING = Decimal("20")  # not safety_ok → [0, 20]
-_COVERED_FLOOR = Decimal("40")  # safety_ok → [40, 95]
+_BUFFER_FLOOR = Decimal("20")  # buffer dented → [20, 39]
+_BUFFER_CEILING = Decimal("39")  # strictly below _COVERED_FLOOR — never reads "On track"
+_COVERED_FLOOR = Decimal("40")  # safety_ok + buffer intact → [40, 95]
 _COVERED_SPAN = Decimal("55")
 
 _ZERO = Decimal("0")
@@ -74,8 +80,7 @@ def _round_to_int(value: Decimal) -> int:
 def _preparedness_score(evidence: EvidencePack) -> int:
     """0–100 preparedness from the evidence pack (never engagement). Monotonic + clamped.
 
-    Uses ``net = spendable_pool + reserved_total`` (= balance − buffer); the evidence pack
-    carries no raw balance/buffer and none is needed.
+    Uses ``net = spendable_pool + reserved_total`` (= balance − buffer).
     """
     if not evidence.safety_ok:
         # Shortfall: lowest band; a deeper gap scores lower.
@@ -83,6 +88,17 @@ def _preparedness_score(evidence: EvidencePack) -> int:
         denom = evidence.reserved_total if evidence.reserved_total > _ZERO else _ONE
         severity = _clamp(gap / denom, _ZERO, _ONE)
         return max(0, _round_to_int(_SHORTFALL_CEILING * (_ONE - severity)))
+
+    if not evidence.buffer_intact:
+        # Bills are payable, but the emergency buffer is being eaten. Strictly below the covered
+        # floor: this is precisely the state where Safe-to-Spend is ₹0 while `safety_ok` is
+        # True, and calling that "On track" would be the CS-4 contradiction in a friendlier hat.
+        # A deeper dent scores lower; a fully-consumed buffer bottoms out at _BUFFER_FLOOR.
+        dent = -evidence.spendable_pool  # in (0, buffer] while safety_ok holds
+        denom = evidence.buffer if evidence.buffer > _ZERO else _ONE
+        severity = _clamp(dent / denom, _ZERO, _ONE)
+        span = _BUFFER_CEILING - _BUFFER_FLOOR
+        return _round_to_int(_BUFFER_CEILING - span * severity)
 
     net = evidence.spendable_pool + evidence.reserved_total  # balance − buffer
     headroom = _ZERO if net <= _ZERO else _clamp(evidence.spendable_pool / net, _ZERO, _ONE)
@@ -93,18 +109,35 @@ def _preparedness_score(evidence: EvidencePack) -> int:
 def _explain(evidence: EvidencePack) -> tuple[str, str]:
     """Plain-language (explanation, suggested_action), traceable to real figures (FR-5.6)."""
     if not evidence.safety_ok:
-        gap = formatINR(-evidence.spendable_pool)
+        # `-spendable_pool` is the amount needed to cover the bills *and* restore the buffer,
+        # which is the right target for the action. It is NOT "how much the bills exceed your
+        # balance" — that claim belongs to the engine's driver, which names the smaller
+        # bills-minus-balance figure. Keep the two distinct.
+        to_free = formatINR(-evidence.spendable_pool)
         return (
-            f"Your committed bills before payday exceed what's available by {gap}, "
+            f"Your committed bills before payday exceed what's available by {to_free}, "
             "so your preparedness is low right now.",
-            f"Free up {gap} before payday — move a bill's date or add funds — "
+            f"Free up {to_free} before payday — move a bill's date or add funds — "
             "and I'll lift this.",
+        )
+    if not evidence.buffer_intact:
+        dent = formatINR(-evidence.spendable_pool)
+        return (
+            f"Your committed bills are covered, but paying them dips {dent} into your "
+            f"{formatINR(evidence.buffer)} emergency buffer.",
+            f"Setting aside {dent} before payday would leave your buffer whole.",
         )
     if "no_income_detected" in evidence.data_quality_flags:
         return (
             "Your committed bills are covered from your current balance, but I couldn't "
             "detect your next salary yet.",
             "Add your expected salary so I can sharpen this and show your after-payday picture.",
+        )
+    if "income_amount_unknown" in evidence.data_quality_flags:
+        return (
+            "Your committed bills are covered, and I can see when your next income lands — "
+            "but not how much it will be.",
+            "Add your expected salary amount so I can show your after-payday picture.",
         )
     return (
         f"Your committed bills are covered and you have {formatINR(evidence.spendable_pool)} of "

@@ -89,12 +89,16 @@ class EvidencePack:
     safe_to_spend_after_income: Decimal | None    # null when no income detected (FR-4.8 / scen 12)
     prediction_confidence: str                    # 'Low' | 'Medium' | 'High'
     drivers: tuple[str, ...]                       # human-readable reservation/surfacing drivers
-    data_quality_flags: tuple[str, ...]           # e.g. 'no_income_detected'
+    data_quality_flags: tuple[str, ...]           # 'no_income_detected' | 'income_amount_unknown'
     safety_ok: bool                               # True iff every commitment due <= next income covered
+    buffer_intact: bool                           # True iff spendable_pool >= 0 (buffer not eaten)
+    buffer: Decimal                               # echoed input, so consumers can size the dent
 ```
 
 - Return a **frozen dataclass** (typed, immutable, asserted by attribute) — not a bare dict.
-- `safe_to_spend_after_income` is `null`/`None` **only** when no income is detected (scenario 12). Otherwise it is the after-income per-day figure.
+- **`safety_ok` and `buffer_intact` answer different questions** (amended 2026-07-10, Epic 5). `safety_ok` = *can every ring-fenced commitment be paid?* — the NFR-1 promise. `buffer_intact` = *is the emergency buffer still whole?* A balance can cover every bill while eating the buffer: `safety_ok=True`, `buffer_intact=False`. Merging them would make the shortfall driver ("your bills exceed your balance") lie in exactly that case. The Confidence Score bands the three states strictly — shortfall `[0,20]` < buffer-dented `[20,39]` < covered `[40,95]` — so a ₹0 Safe-to-Spend can never present as "On track" (CS-4 at the boundary the original model missed).
+- **The shortfall driver names `reserved_total − available_balance`**, not `−spendable_pool`. The latter includes the buffer and overstates the claim (S10: the bills exceed the balance by ₹7,500, not ₹9,500). `−spendable_pool` remains the right figure for the Confidence Score's `suggested_action` ("free up ₹9,500" also restores the buffer).
+- `safe_to_spend_after_income` is `null`/`None` in **two** cases, distinguished by `data_quality_flags`: no income date at all (`no_income_detected`, scenario 12), or an income date with **no income amount** (`income_amount_unknown`). The second was added in Epic 5: 10 of the 13 scenarios supply a `next_income_date` with no `next_income_amount`, and the old after-income model still produced a figure for them — one derived entirely from the rolled-over balance. An "after your salary" number that never touched a salary violates NFR-1, so it is now `None`.
 - **Persisted field-name lock (for 4-4):** the Confidence-Score write path uses `finance_app/models.py:ScoreEvent` columns **exactly** — `trigger_event` (NOT `triggering_event`) and `suggested_action` (NOT `action`) (AD-9, CS-3). Reference them via the model attribute, never a hardcoded string.
 
 ---
@@ -171,7 +175,8 @@ Arithmetic on 3 rows confirms the source table (`STS = ⌊pool ÷ days ÷ 10⌋ 
 - **DECISION — criticality prose→enum mapping** (see §2a): medium→`important`, low→`flexible`. 4-2 uses the enum exclusively.
 - **DECISION — engine returns a frozen dataclass** (`EvidencePack`), not a dict (§4).
 - **DECISION — buffer default ₹2,000** confirmed for MVP (DD-2); passed as an `EngineInput` parameter so it is per-user overridable without touching engine logic. Persisting a per-user override is **out of scope for Epic 4** (belongs with commitments/settings UI).
-- **OPEN — scenario 3 "After salary: ~₹990/day" is approximate** in the source. **Contract ruling:** 4-3 asserts the *today* layer exactly (**₹150**) and the *after-income* layer **within ±₹10** (one rounding bucket), OR pins the exact expected value once 4-2 fixes the salary-date/day-count inputs. 4-2 must record the exact computed after-income figure so 4-3 can tighten this to an exact assertion. Same tolerance note applies to scenario 5's "~₹5,000 EMI" surfaced-driver text (assert the flag/driver presence, not verbatim prose).
+- ~~**OPEN — scenario 3 "After salary: ~₹990/day" is approximate** in the source. **Contract ruling:** 4-3 asserts the *today* layer exactly (**₹150**) and the *after-income* layer **within ±₹10** (one rounding bucket), OR pins the exact expected value once 4-2 fixes the salary-date/day-count inputs. 4-2 must record the exact computed after-income figure so 4-3 can tighten this to an exact assertion.~~ **✅ CLOSED 2026-07-10 (Epic 5).** The approximation existed because the after-income layer was a function of *two* layers at once: it spread `available_balance + income − next-cycle-reserved − buffer`, double-counting the balance that today's layer is already spending down. **Resolution (owner-approved): the after-income layer spreads the income only.** A shortfall (`spendable_pool < 0`) carries forward and is subtracted from the incoming salary; a surplus does not carry (it was already offered as today's spend). Both of scenario 3's layers are now exact and derivable: today **₹150**; after-income **₹55,000 ÷ 30 = ₹1,833.33 → ₹1,830** (floored to the nearest ₹10). The source file's flagged-approximate "~₹990" is superseded — it never matched any stated input. This also removes the state where the card could read *"you're ₹5,460 short today"* directly above *"₹3,600/day after payday"*.
+- **Scenario 5's "~₹5,000 EMI" surfaced-driver text** keeps the original tolerance note: assert the flag/driver presence, not verbatim prose.
 - **REQUIREMENT carried to 4-3 (AD-1):** `pytest services/engine/` must be green with **zero LLM calls**, enforced structurally by a fixture that injects an LLM client which **raises on construction/use** — so any accidental LLM reach fails loudly.
 
 ---

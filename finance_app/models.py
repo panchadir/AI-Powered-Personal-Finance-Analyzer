@@ -35,7 +35,20 @@ USER_FK = "localuser.id"
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    """Current UTC instant as a **naive** datetime — the project-wide storage convention.
+
+    Every timestamp column below is a naive SQLAlchemy ``DateTime``. Writing a tz-*aware* value
+    into one stores the wall-clock and silently drops the offset, so what comes back on read is
+    naive anyway — and comparing that naive value against an aware ``datetime.now(timezone.utc)``
+    raises ``TypeError``. Returning naive UTC here makes the write side agree with the column,
+    so a round-tripped timestamp compares cleanly without a shim.
+
+    **The convention is: every stored timestamp is UTC, and naive.** Convert to aware only at
+    the point of display or arithmetic against an aware value.
+    (Flagged in the Story 1.2 review to be settled when timestamps were first consumed; the
+    Epic 5 dashboard and Confidence-Score drill-in are that consumer.)
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class UploadedFile(rx.Model, table=True):

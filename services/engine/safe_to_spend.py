@@ -80,7 +80,20 @@ class EngineInput:
 
 @dataclass(frozen=True)
 class EvidencePack:
-    """The FR-4.12 struct the engine returns; Story 4.3 asserts every field by name."""
+    """The FR-4.12 struct the engine returns; Story 4.3 asserts every field by name.
+
+    ``safety_ok`` and ``buffer_intact`` are **two different questions**, deliberately not merged:
+
+    * ``safety_ok`` — can every ring-fenced commitment actually be paid? This is the NFR-1
+      promise ("no displayed number may cause a missed committed obligation").
+    * ``buffer_intact`` — is the emergency buffer still whole? A balance can cover every bill
+      while eating into the buffer. That is *not* a missed obligation, so ``safety_ok`` stays
+      ``True``; but it is not "well prepared" either, so the Confidence Score bands it below a
+      fully-covered cycle.
+
+    Collapsing the two would make the shortfall driver ("your bills exceed your balance") lie in
+    the buffer-dented case, where the bills are in fact covered.
+    """
 
     reserved_total: Decimal
     spendable_pool: Decimal
@@ -91,6 +104,8 @@ class EvidencePack:
     drivers: tuple[str, ...] = field(default_factory=tuple)
     data_quality_flags: tuple[str, ...] = field(default_factory=tuple)
     safety_ok: bool = True
+    buffer_intact: bool = True
+    buffer: Decimal = Decimal("2000")  # echoed from the input so consumers can size the dent
 
 
 def _floor_to_nearest_ten(amount: Decimal) -> Decimal:
@@ -158,16 +173,37 @@ def _reserve_for_commitment(
 
 
 def _after_income_layer(
-    engine_input: EngineInput, *, buffer: Decimal
+    engine_input: EngineInput, *, spendable_pool: Decimal
 ) -> Decimal | None:
-    """The "after confirmed income" per-day figure (FR-4.5), or ``None`` if no income.
+    """The "after confirmed income" per-day figure (FR-4.5), or ``None`` when it is unknowable.
 
-    Never merged with today's layer. Spreads (rolled-over balance + income − next-cycle
-    reservations − buffer) over an assumed cycle (contract §8 open item).
+    Never merged with today's layer. **Spreads the income only — not the current balance.**
+
+    The previous model spread ``available_balance + income − next-cycle-reserved − buffer`` over
+    the cycle, but today's layer is *already* spending that same ``available_balance`` down over
+    ``days_to_income``. Counting it in both layers inflated the after-payday figure and, worse,
+    let it stay cheerful while today's layer was in shortfall — the card could read "you are
+    ₹5,460 short today" directly above "₹3,600/day after payday". Spreading only the income is
+    the conservative reading (FR-4.6): what is left of the balance on payday is whatever the
+    user did not spend, and we must not promise it back to them.
+
+    A shortfall *does* cross the boundary. If ``spendable_pool`` is negative the gap (commitments
+    plus the dented buffer) has to be made good out of the incoming salary, so it is subtracted
+    here. A surplus does not cross: it was already offered as today's spend.
+
+    Returns ``None`` in two honest cases, distinguished by ``data_quality_flags``:
+
+    * no income date at all (``no_income_detected``, scenario 12);
+    * an income date but no income *amount* (``income_amount_unknown``) — we know *when* the
+      salary lands, not *how much*. There is nothing to spread, and a ₹0/day figure would be a
+      confidently wrong number. (Under the old model this case silently produced a figure
+      derived entirely from the rolled-over balance — an "after your salary" number that never
+      touched a salary.)
     """
-    if engine_input.next_income_date is None:
+    if engine_input.next_income_date is None or engine_input.next_income_amount is None:
         return None
-    income = engine_input.next_income_amount or _ZERO
+
+    income = engine_input.next_income_amount
     reserved_next_cycle = sum(
         (
             c.amount
@@ -178,7 +214,9 @@ def _after_income_layer(
         ),
         start=_ZERO,
     )
-    post_pool = engine_input.available_balance + income - reserved_next_cycle - buffer
+    # min(0, pool): a shortfall carries forward; a surplus does not.
+    carried_shortfall = min(_ZERO, spendable_pool)
+    post_pool = income - reserved_next_cycle + carried_shortfall
     return _floor_to_nearest_ten(max(_ZERO, post_pool / _FOLLOWING_CYCLE_DAYS))
 
 
@@ -244,28 +282,49 @@ def compute_safe_to_spend(engine_input: EngineInput) -> EvidencePack:
     data_quality_flags: list[str] = []
     if engine_input.next_income_date is None:
         data_quality_flags.append("no_income_detected")
+    elif engine_input.next_income_amount is None:
+        # We know when the salary lands but not how much. The after-income layer is None rather
+        # than a fabricated ₹0/day (see `_after_income_layer`).
+        data_quality_flags.append("income_amount_unknown")
 
-    # Honest shortfall (FR-4.9): committed bills (+ buffer) exceed the balance.
-    if spendable_pool < 0:
-        shortfall = -spendable_pool
+    # safety_ok: can the balance actually honour every ring-fenced commitment? The buffer is a
+    # *separate* question (below) — folding it in here would make the shortfall copy lie.
+    safety_ok = engine_input.available_balance >= reserved_total
+    buffer_intact = spendable_pool >= _ZERO
+
+    if not safety_ok:
+        # Honest shortfall (FR-4.9 / UX-DR11). The gap named here is bills-minus-balance — the
+        # amount actually missing to pay them. Reporting `-spendable_pool` would overstate it by
+        # the buffer and make the sentence false: with a ₹16,000 balance and ₹23,500 of bills,
+        # the bills exceed the balance by ₹7,500, not ₹9,500.
+        bills_gap = reserved_total - engine_input.available_balance
         drivers.append(
-            f"Committed bills before payday exceed your balance by {formatINR(shortfall)} — "
+            f"Committed bills before payday exceed your balance by {formatINR(bills_gap)} — "
             "here's what to do"
         )
-
-    # safety_ok: can the balance actually honour every ring-fenced commitment? (AD-8)
-    safety_ok = engine_input.available_balance >= reserved_total
+    elif not buffer_intact:
+        # Bills are covered; the emergency buffer is not whole. Not a missed obligation, so
+        # `safety_ok` stays True — but it is not "well prepared" either (see confidence_score).
+        dent = -spendable_pool
+        drivers.append(
+            f"Your bills are covered, but you'd dip {formatINR(dent)} into your "
+            f"{formatINR(buffer)} emergency buffer"
+        )
 
     return EvidencePack(
         reserved_total=reserved_total,
         spendable_pool=spendable_pool,
         days_to_income=days_to_income,
         safe_to_spend_today=safe_to_spend_today,
-        safe_to_spend_after_income=_after_income_layer(engine_input, buffer=buffer),
+        safe_to_spend_after_income=_after_income_layer(
+            engine_input, spendable_pool=spendable_pool
+        ),
         prediction_confidence=_prediction_confidence(
             engine_input, surfaced_predictions=surfaced_predictions
         ),
         drivers=tuple(drivers),
         data_quality_flags=tuple(data_quality_flags),
         safety_ok=safety_ok,
+        buffer_intact=buffer_intact,
+        buffer=buffer,
     )

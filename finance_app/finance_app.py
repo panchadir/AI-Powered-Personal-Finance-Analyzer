@@ -1,8 +1,8 @@
 """Finance Analyzer — Reflex app entrypoint.
 
-Importing ``finance_app.pages`` registers all six ``@rx.page`` routes (auth, upload,
-transactions, dashboard, insights, copilot) before the app is constructed. Pages
-orchestrate only; business logic lives in ``services/`` (AD-2).
+Importing ``finance_app.pages`` registers every ``@rx.page`` route (auth, upload,
+transactions, dashboard, commitments, insights, copilot) before the app is constructed.
+Pages orchestrate only; business logic lives in ``services/`` (AD-2).
 
 UI baseline: the approved **WDS prototype** is the source of truth for all screens
 (``prototypes/01-priyas-first-honest-morning-Prototype``). Its self-contained design

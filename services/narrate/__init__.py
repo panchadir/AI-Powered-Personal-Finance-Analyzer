@@ -3,3 +3,10 @@
 Receives the engine's evidence pack as input and calls the LLM only for language.
 No financial number may originate here (AD-1). Populated in Epics 5-7.
 """
+from services.narrate.briefing import (
+    BriefingContext,
+    build_fallback_briefing,
+    generate_briefing,
+)
+
+__all__ = ["BriefingContext", "generate_briefing", "build_fallback_briefing"]

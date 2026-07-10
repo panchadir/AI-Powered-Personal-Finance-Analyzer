@@ -875,6 +875,17 @@ a { color: inherit; }
 .commit-menu-dropdown button:hover { background: var(--gray-100); }
 .commit-menu-dropdown button.danger { color: var(--danger); }
 
+/* Epic 5: the Reflex port renders Edit / Delete as two inline text buttons rather than the
+   prototype's "…" popover — a per-row dropdown needs per-row open state, which buys nothing
+   for two actions. `.commit-menu-btn` is a 32px icon circle, so these need their own box. */
+.commit-row-action {
+  background: none; border: none; padding: 6px var(--space-sm); cursor: pointer;
+  font-size: var(--text-sm); color: var(--muted); border-radius: var(--radius-sm);
+}
+.commit-row-action:hover { background: var(--gray-100); color: var(--ink); }
+.commit-row-action.danger { color: var(--danger); }
+.commit-row-action.danger:hover { background: var(--gray-100); color: var(--danger); }
+
 .commit-empty {
   text-align: center; padding: var(--space-xl) var(--space-md);
   border: 1px dashed var(--gray-300); border-radius: var(--radius);

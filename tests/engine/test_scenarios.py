@@ -302,8 +302,17 @@ def test_safety_ok_truth_table() -> None:
 
 
 def test_scenario_10_shortfall_driver_names_gap() -> None:
+    """The driver names bills-minus-balance, not the pool gap.
+
+    S10: ₹16,000 balance, ₹23,500 of bills, ₹2,000 buffer → ``spendable_pool == -9,500``. The
+    bills exceed the balance by **₹7,500**; the extra ₹2,000 is the buffer. Saying "₹9,500"
+    would make the sentence false — the buffer is a separate concern (``buffer_intact``), and
+    ``-spendable_pool`` is the *action* target ("free up ₹9,500 to also restore your buffer"),
+    which lives on the Confidence Score's `suggested_action`, not on this claim.
+    """
     pack = compute_safe_to_spend(next(c.ei for c in CASES if c.name == "s10_shortfall"))
-    assert any("exceed your balance by ₹9,500" in d for d in pack.drivers)  # formatINR (AD-13)
+    assert any("exceed your balance by ₹7,500" in d for d in pack.drivers)  # formatINR (AD-13)
+    assert not any("₹9,500" in d for d in pack.drivers)
 
 
 def test_scenario_12_no_income_flag_and_null_after_layer() -> None:
@@ -319,14 +328,173 @@ def test_scenario_13_payday_today_no_zero_division() -> None:
     assert pack.safe_to_spend_today == D("18000")
 
 
-def test_scenario_3_today_exact_after_income_structural() -> None:
-    """Contract §8: today layer is locked (₹150); after-income asserted structurally
-    (engine returns ₹1,830 from the stated inputs, not the file's flagged-approximate ~990)."""
+def test_scenario_3_today_and_after_income_both_exact() -> None:
+    """Contract §8 CLOSED: both layers are now exact.
+
+    Today is ₹150. After-income spreads the **income only** (₹55,000 / 30 = ₹1,833.33, floored
+    to ₹1,830); the ₹2,150 balance is not added back, because today's layer is already spending
+    it. The pool is positive, so no shortfall carries forward.
+
+    (§8 previously left this structural because the old model added the balance in, making the
+    figure a function of two layers at once. It is a single, derivable number now.)
+    """
     pack = compute_safe_to_spend(next(c.ei for c in CASES if c.name == "s3_day_before_payday"))
     assert pack.safe_to_spend_today == D("150")
-    assert pack.safe_to_spend_after_income is not None
-    assert pack.safe_to_spend_after_income > 0
+    assert pack.safe_to_spend_after_income == D("1830")
     assert pack.safe_to_spend_after_income % 10 == 0
+
+
+def test_after_income_spreads_income_only_not_the_rolled_over_balance() -> None:
+    """The double-count regression: the balance must not appear in both layers."""
+    ei = EngineInput(
+        available_balance=D("25040"),
+        as_of=date(2026, 6, 30),
+        next_income_date=date(2026, 7, 30),
+        next_income_amount=D("85000"),
+        income_confidence="High",
+    )
+    pack = compute_safe_to_spend(ei)
+    # income only: 85,000 / 30 = 2,833.33 -> ₹2,830.
+    # old model:  (25,040 + 85,000 − 2,000) / 30 = 3,601.33 -> ₹3,600  (balance counted twice)
+    assert pack.safe_to_spend_after_income == D("2830")
+
+
+def test_a_shortfall_carries_forward_into_the_after_income_layer() -> None:
+    """A shortfall must not vanish at the payday boundary.
+
+    The card previously read "you're short today" beside a cheerful after-payday figure,
+    because the gap was never subtracted from the next cycle. The gap has to be made good out
+    of the incoming salary, so it is.
+    """
+    ei = EngineInput(
+        available_balance=D("25040"),
+        as_of=date(2026, 6, 30),
+        commitments=(
+            _known("HDFC EMI", "8500", date(2026, 7, 15)),
+            _known("Rent", "20000", date(2026, 6, 30)),
+        ),
+        next_income_date=date(2026, 7, 30),
+        next_income_amount=D("85000"),
+        income_confidence="High",
+    )
+    pack = compute_safe_to_spend(ei)
+    assert pack.safe_to_spend_today == D("0")
+    assert pack.safety_ok is False
+    assert pack.spendable_pool == D("-5460")
+    # (85,000 − 5,460 carried shortfall) / 30 = 2,651.33 -> ₹2,650. Strictly less than the
+    # ₹2,830 the same balance/income yields with no shortfall.
+    assert pack.safe_to_spend_after_income == D("2650")
+    assert pack.safe_to_spend_after_income < D("2830")
+
+
+def test_a_surplus_does_not_carry_forward() -> None:
+    """Only shortfalls cross the boundary; today's unspent surplus was already offered today."""
+    base = dict(
+        available_balance=D("25040"),
+        as_of=date(2026, 6, 30),
+        next_income_date=date(2026, 7, 30),
+        next_income_amount=D("85000"),
+        income_confidence="High",
+    )
+    lean = compute_safe_to_spend(EngineInput(**base))
+    rich = compute_safe_to_spend(EngineInput(**{**base, "available_balance": D("90000")}))
+    # A much larger balance raises *today*, and leaves the after-income layer untouched.
+    assert rich.safe_to_spend_today > lean.safe_to_spend_today
+    assert rich.safe_to_spend_after_income == lean.safe_to_spend_after_income == D("2830")
+
+
+def test_known_income_date_without_an_amount_yields_no_after_layer() -> None:
+    """We know *when* the salary lands, not *how much*. ₹0/day would be a confidently wrong number.
+
+    Under the old model this case still produced a figure — derived entirely from the rolled-over
+    balance. An "after your salary" number that never touched a salary violates NFR-1.
+    """
+    ei = EngineInput(
+        available_balance=D("42000"),
+        as_of=date(2026, 6, 11),
+        commitments=(_known("Rent", "15000", date(2026, 7, 1)),),
+        next_income_date=date(2026, 7, 1),  # no next_income_amount
+        income_confidence="High",
+    )
+    pack = compute_safe_to_spend(ei)
+    assert pack.safe_to_spend_after_income is None
+    assert "income_amount_unknown" in pack.data_quality_flags
+    assert "no_income_detected" not in pack.data_quality_flags  # a salary *was* detected
+    assert pack.safe_to_spend_today > 0  # today's layer is unaffected
+
+
+class TestBufferHealthIsSeparateFromCommitmentSafety:
+    """`safety_ok` answers "can the bills be paid?"; `buffer_intact` answers "is the buffer whole?"."""
+
+    def _bills_covered_buffer_dented(self) -> EngineInput:
+        # ₹16,000 balance, ₹15,000 of bills, ₹2,000 buffer -> bills payable, buffer down ₹1,000.
+        return EngineInput(
+            available_balance=D("16000"),
+            as_of=date(2026, 6, 20),
+            commitments=(_known("Rent", "15000", date(2026, 6, 28)),),
+            next_income_date=date(2026, 7, 1),
+            next_income_amount=D("55000"),
+        )
+
+    def test_bills_covered_but_buffer_dented_keeps_safety_ok_true(self) -> None:
+        pack = compute_safe_to_spend(self._bills_covered_buffer_dented())
+        assert pack.safety_ok is True  # no obligation is missed
+        assert pack.buffer_intact is False  # but the buffer is being eaten
+        assert pack.safe_to_spend_today == D("0")
+
+    def test_the_driver_does_not_claim_the_bills_exceed_the_balance(self) -> None:
+        # They don't: ₹15,000 of bills against a ₹16,000 balance.
+        pack = compute_safe_to_spend(self._bills_covered_buffer_dented())
+        assert not any("exceed your balance" in d for d in pack.drivers)
+        assert any("emergency buffer" in d for d in pack.drivers)
+
+    def test_a_zero_safe_to_spend_never_reads_as_on_track(self) -> None:
+        """CS-4, at the boundary the old model missed.
+
+        Previously this scored exactly 40 -> the "On track" label, beside a ₹0 Safe-to-Spend.
+        The buffer band puts it strictly below the covered floor.
+        """
+        from services.engine.confidence_score import compute_confidence_score
+
+        pack = compute_safe_to_spend(self._bills_covered_buffer_dented())
+        score = compute_confidence_score(pack).score
+        assert pack.safe_to_spend_today == D("0")
+        assert score < 40  # below the "On track" floor
+        assert score >= 20  # but above the cannot-pay-your-bills band
+
+    def test_a_deeper_dent_scores_lower_than_a_shallow_one(self) -> None:
+        from services.engine.confidence_score import compute_confidence_score
+
+        shallow = compute_safe_to_spend(self._bills_covered_buffer_dented())  # dent ₹1,000
+        deep = compute_safe_to_spend(
+            EngineInput(
+                available_balance=D("15100"),  # dent ₹1,900 of the ₹2,000 buffer
+                as_of=date(2026, 6, 20),
+                commitments=(_known("Rent", "15000", date(2026, 6, 28)),),
+                next_income_date=date(2026, 7, 1),
+                next_income_amount=D("55000"),
+            )
+        )
+        assert deep.safety_ok is True and deep.buffer_intact is False
+        assert compute_confidence_score(deep).score < compute_confidence_score(shallow).score
+
+    def test_a_true_shortfall_still_scores_below_every_buffer_dent(self) -> None:
+        """The three bands stay strictly ordered: shortfall < buffer-dented < covered."""
+        from services.engine.confidence_score import compute_confidence_score
+
+        shortfall = compute_safe_to_spend(next(c.ei for c in CASES if c.name == "s10_shortfall"))
+        dented = compute_safe_to_spend(self._bills_covered_buffer_dented())
+        healthy = compute_safe_to_spend(next(c.ei for c in CASES if c.name == "s11_over_conservatism_guard"))
+
+        assert compute_confidence_score(shortfall).score <= 20
+        assert 20 <= compute_confidence_score(dented).score < 40
+        assert compute_confidence_score(healthy).score >= 40
+
+    def test_a_healthy_cycle_reports_the_buffer_intact(self) -> None:
+        pack = compute_safe_to_spend(next(c.ei for c in CASES if c.name == "s11_over_conservatism_guard"))
+        assert pack.safety_ok is True
+        assert pack.buffer_intact is True
+        assert not any("emergency buffer" in d for d in pack.drivers)
 
 
 def test_cs4_no_contradiction_shortfall() -> None:
