@@ -199,6 +199,12 @@ class AuthState(rx.State):
         # Re-assign to force Reflex to re-emit the (now session-less) cookie to the browser.
         self.auth_token = self.auth_token
 
+    @rx.event
+    def logout(self):
+        """Clear the session and redirect to login."""
+        self.do_logout()
+        return rx.redirect(LOGIN_ROUTE)
+
     def _login(self, user_id: int, expiration_delta: datetime.timedelta = AUTH_SESSION_EXPIRATION_DELTA) -> None:
         """Create a LocalAuthSession for ``user_id``, keyed on the cookie token."""
         self.do_logout()
@@ -234,6 +240,7 @@ class RegisterState(AuthState):
     show_password: bool = False  # drives the show/hide password toggle (AC #5)
     show_confirm: bool = False  # show/hide for the confirm-password field
     registration_success: bool = False  # swaps the form for the success panel (no auto-login)
+    password_value: str = ""  # tracked so blur_confirm can cross-check for a match
 
     @rx.event
     def toggle_password(self):
@@ -251,6 +258,59 @@ class RegisterState(AuthState):
         self.email_error = self.password_error = self.confirm_error = self.error_message = ""
         self.email_taken = False
         self.registration_success = False
+        self.password_value = ""
+
+    # ---- Blur-triggered per-field validation ----
+
+    @rx.event
+    def blur_email(self, value: str):
+        email = (value or "").strip()
+        if not email:
+            self.email_error = "Please enter your email address"
+        elif not is_valid_email(email):
+            self.email_error = "That doesn't look like a valid email"
+        else:
+            self.email_error = ""
+            self.email_taken = False
+
+    @rx.event
+    def blur_password(self, value: str):
+        password = value or ""
+        self.password_value = password
+        if not password:
+            self.password_error = "Please create a password"
+        elif len(password) < MIN_PASSWORD_LENGTH:
+            self.password_error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters"
+        else:
+            self.password_error = ""
+
+    @rx.event
+    def blur_confirm(self, value: str):
+        if not value:
+            self.confirm_error = "Please confirm your password"
+        elif value != self.password_value:
+            self.confirm_error = "Passwords don't match"
+        else:
+            self.confirm_error = ""
+
+    # ---- Clear-on-input handlers ----
+
+    @rx.event
+    def change_email(self, value: str):  # noqa: ARG002
+        if self.email_error or self.email_taken:
+            self.email_error = ""
+            self.email_taken = False
+
+    @rx.event
+    def change_password(self, value: str):
+        self.password_value = value
+        if self.password_error:
+            self.password_error = ""
+
+    @rx.event
+    def change_confirm(self, value: str):  # noqa: ARG002
+        if self.confirm_error:
+            self.confirm_error = ""
 
     def _validate(self, email: str, password: str, confirm: str) -> bool:
         """Client-side validation matching the prototype; sets every field's message."""
@@ -310,6 +370,7 @@ class LoginState(AuthState):
     forgot_email_error: str = ""
     forgot_password_error: str = ""
     forgot_confirm_error: str = ""
+    _forgot_password_value: str = ""  # tracked so blur_forgot_confirm can cross-check
 
     @rx.event
     def toggle_password(self):
@@ -320,9 +381,89 @@ class LoginState(AuthState):
         self.email_error = self.password_error = self.form_error = ""
         self.reset_notice = ""
 
+    # ---- Blur-triggered validation + clear-on-input ----
+
+    @rx.event
+    def blur_email(self, value: str):
+        email = (value or "").strip()
+        if not email:
+            self.email_error = "Please enter your email"
+        elif not is_valid_email(email):
+            self.email_error = "That doesn't look like a valid email"
+        else:
+            self.email_error = ""
+
+    @rx.event
+    def blur_password(self, value: str):
+        if not (value or ""):
+            self.password_error = "Please enter your password"
+        else:
+            self.password_error = ""
+
+    @rx.event
+    def change_email(self, value: str):  # noqa: ARG002
+        if self.email_error:
+            self.email_error = ""
+
+    @rx.event
+    def change_password(self, value: str):  # noqa: ARG002
+        if self.password_error:
+            self.password_error = ""
+
+    # ---- Blur handlers for the forgot-password modal fields ----
+
+    @rx.event
+    def blur_forgot_email(self, value: str):
+        email = (value or "").strip()
+        if not email:
+            self.forgot_email_error = "Enter your account email"
+        elif not is_valid_email(email):
+            self.forgot_email_error = "That doesn't look like a valid email"
+        else:
+            self.forgot_email_error = ""
+
+    @rx.event
+    def blur_forgot_password(self, value: str):
+        password = value or ""
+        if not password:
+            self.forgot_password_error = f"At least {MIN_PASSWORD_LENGTH} characters"
+        elif len(password) < MIN_PASSWORD_LENGTH:
+            self.forgot_password_error = f"At least {MIN_PASSWORD_LENGTH} characters"
+        elif len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            self.forgot_password_error = f"Password is too long (max {MAX_PASSWORD_BYTES} characters)"
+        else:
+            self.forgot_password_error = ""
+        self._forgot_password_value = password
+
+    @rx.event
+    def blur_forgot_confirm(self, value: str):
+        if not value:
+            self.forgot_confirm_error = "Please confirm your new password"
+        elif value != self._forgot_password_value:
+            self.forgot_confirm_error = "Passwords don't match"
+        else:
+            self.forgot_confirm_error = ""
+
+    @rx.event
+    def change_forgot_email(self, value: str):  # noqa: ARG002
+        if self.forgot_email_error:
+            self.forgot_email_error = ""
+
+    @rx.event
+    def change_forgot_password(self, value: str):
+        self._forgot_password_value = value
+        if self.forgot_password_error:
+            self.forgot_password_error = ""
+
+    @rx.event
+    def change_forgot_confirm(self, value: str):  # noqa: ARG002
+        if self.forgot_confirm_error:
+            self.forgot_confirm_error = ""
+
     @rx.event
     def open_forgot(self):
         self.forgot_email_error = self.forgot_password_error = self.forgot_confirm_error = ""
+        self._forgot_password_value = ""
         self.forgot_open = True
 
     @rx.event

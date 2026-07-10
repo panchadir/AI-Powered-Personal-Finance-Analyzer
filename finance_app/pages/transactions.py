@@ -2,10 +2,23 @@
 
 import reflex as rx
 
-from finance_app.components.placeholder import coming_soon
+from finance_app.components.nav import side_nav
 from finance_app.state.auth_state import AuthState
 
 
 @rx.page(route="/transactions", title="Transactions · Finance Analyzer", on_load=AuthState.check_auth)
 def transactions() -> rx.Component:
-    return coming_soon("Transactions")
+    return rx.fragment(
+        side_nav("transactions"),
+        rx.el.main(
+            rx.vstack(
+                rx.heading("Transactions", size="7"),
+                rx.text("Coming soon", color_scheme="gray"),
+                spacing="3",
+                align="center",
+                min_height="85vh",
+                justify="center",
+            ),
+            class_name="has-sidenav",
+        ),
+    )

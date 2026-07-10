@@ -49,23 +49,29 @@ def _field(
     autocomplete: str | None = None,
     toggle: rx.Component | None = None,
     extra: rx.Component | None = None,
+    on_blur=None,
+    on_change=None,
 ) -> rx.Component:
     """One ``.field`` (label + input-wrap + inline error), matching the prototype markup."""
     attrs: dict = {}
     if autocomplete:
         attrs["autoComplete"] = autocomplete
+    input_props: dict = dict(
+        id=f"register-{name}",
+        name=name,
+        type=input_type,
+        placeholder=placeholder,
+        custom_attrs=attrs,
+        class_name=rx.cond(error != "", "has-error", ""),
+    )
+    if on_blur is not None:
+        input_props["on_blur"] = on_blur
+    if on_change is not None:
+        input_props["on_change"] = on_change
     return rx.el.div(
         rx.el.label(label, html_for=f"register-{name}"),
         rx.el.div(
-            rx.el.input(
-                id=f"register-{name}",
-                name=name,
-                type=input_type,
-                placeholder=placeholder,
-                custom_attrs=attrs,
-                # .has-error paints the red border (prototype behaviour).
-                class_name=rx.cond(error != "", "has-error", ""),
-            ),
+            rx.el.input(**input_props),
             toggle if toggle is not None else rx.fragment(),
             class_name="input-wrap",
         ),
@@ -103,6 +109,8 @@ def _register_form() -> rx.Component:
         _field(
             "Email address", "email", "you@example.com", RegisterState.email_error,
             input_type="email", autocomplete="email",
+            on_blur=RegisterState.blur_email,
+            on_change=RegisterState.change_email,
             # On a duplicate email, offer an inline "Log in instead?" link (AC #8).
             extra=rx.cond(
                 RegisterState.email_taken,
@@ -118,6 +126,8 @@ def _register_form() -> rx.Component:
             "Password", "password", "8+ characters", RegisterState.password_error,
             input_type=rx.cond(RegisterState.show_password, "text", "password"),
             autocomplete="new-password",
+            on_blur=RegisterState.blur_password,
+            on_change=RegisterState.change_password,
             toggle=_pw_toggle(RegisterState.show_password, RegisterState.toggle_password),
         ),
         _field(
@@ -125,6 +135,8 @@ def _register_form() -> rx.Component:
             RegisterState.confirm_error,
             input_type=rx.cond(RegisterState.show_confirm, "text", "password"),
             autocomplete="new-password",
+            on_blur=RegisterState.blur_confirm,
+            on_change=RegisterState.change_confirm,
             toggle=_pw_toggle(RegisterState.show_confirm, RegisterState.toggle_confirm),
         ),
         rx.el.button(
