@@ -63,6 +63,7 @@ RULES: tuple[Rule, ...] = (
     Rule(("nykaa",), "Shopping"),
     Rule(("tatacliq", "tata cliq"), "Shopping"),
     Rule(("shopsy",), "Shopping"),
+    Rule(("reliance digital",), "Shopping"),
 
     # --- Entertainment & Subscriptions ---
     Rule(("netflix",), "Entertainment"),
@@ -101,7 +102,7 @@ RULES: tuple[Rule, ...] = (
     Rule(("dr.", "doctor",), "Health & Medical"),
 
     # --- Utilities & Bills ---
-    Rule(("electricity", "bescom", "msedcl", "tsspdcl", "apspdcl", "epdcl", "eastern power"), "Utilities"),
+    Rule(("electricity", "bescom", "msedcl", "tsspdcl", "apspdcl", "epdcl", "eastern power", "tata power"), "Utilities"),
     Rule(("water board", "water supply", "bwssb", "bmc water"), "Utilities"),
     Rule(("gas bill", "indane", "bharat gas", "hp gas", "mahanagar gas", "igl"), "Utilities"),
     Rule(("broadband", "internet", "wifi", "jio fiber", "airtel fiber", "act fibernet"), "Utilities"),

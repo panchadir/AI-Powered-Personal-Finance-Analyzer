@@ -64,3 +64,11 @@ class TestAuthenticate:
         _make_user(session, "priya@example.com", "supersecret8")
         assert authenticate(session, "", "") is None
         assert authenticate(session, "priya@example.com", "") is None
+
+    def test_none_email_returns_none(self, session) -> None:
+        _make_user(session, "priya@example.com", "supersecret8")
+        assert authenticate(session, None, "supersecret8") is None
+
+    def test_whitespace_only_email_returns_none(self, session) -> None:
+        _make_user(session, "priya@example.com", "supersecret8")
+        assert authenticate(session, "   ", "supersecret8") is None

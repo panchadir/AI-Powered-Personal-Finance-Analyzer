@@ -45,18 +45,20 @@ last_updated: 2026-07-10
 project: AI-Powered-Personal-Finance-Analyzer
 # (story 1.2 done; story 1.3 implemented + reviewed → done on 2026-07-09)
 # (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
+# (epic-3 marked in-progress; story 3.1 ready-for-dev on 2026-07-10)
+# (story 1.4 review patches applied -> done; story 1.5 backfilled + aria-live gap fixed -> done; epic-1 -> done, 2026-07-10)
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 development_status:
   # Epic 1: Secure Access & App Foundation
-  epic-1: in-progress
+  epic-1: done
   1-1-project-skeleton-and-app-scaffold: done
   1-2-database-schema-and-shared-formatting-utilities: done
   1-3-user-registration-with-auto-login: done
-  1-4-user-login-logout-and-protected-routes: review
-  1-5-auth-transition-ux-validation-behavior-and-nav-scaffold: backlog
+  1-4-user-login-logout-and-protected-routes: done
+  1-5-auth-transition-ux-validation-behavior-and-nav-scaffold: done
   epic-1-retrospective: optional
 
   # Epic 2: Statement Upload & Transaction Extraction
@@ -69,9 +71,9 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Transaction Categorization & Teach Me
-  epic-3: backlog
-  3-1-tier-1-rules-engine-and-transactions-table: backlog
-  3-2-tier-2-llm-categorizer-claude-haiku: backlog
+  epic-3: in-progress
+  3-1-tier-1-rules-engine-and-transactions-table: done
+  3-2-tier-2-llm-categorizer-claude-haiku: ready-for-dev
   3-3-teach-me-user-correction-and-merchant-rules: backlog
   3-4-confidence-badges-and-transaction-table-polish: backlog
   epic-3-retrospective: optional

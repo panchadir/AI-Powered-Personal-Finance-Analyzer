@@ -42,7 +42,16 @@ class TestIdorBaseline:
     def test_user_a_cannot_see_user_b_transactions(self, session) -> None:
         user_a = _make_user(session, "a@example.com")
         user_b = _make_user(session, "b@example.com")
-        # A row owned by B only.
+        # Both A and B have a row, so an empty A result can't be confused with an empty table.
+        session.add(
+            Transaction(  # type: ignore[call-arg]
+                user_id=user_a.id,
+                date="2026-06-29",
+                description_raw="ZOMATO",
+                amount=Decimal("640.00"),
+                direction="debit",
+            )
+        )
         session.add(
             Transaction(  # type: ignore[call-arg]
                 user_id=user_b.id,
@@ -56,9 +65,14 @@ class TestIdorBaseline:
 
         a_rows = session.exec(select_txn(user_a.id)).all()
         b_rows = session.exec(select_txn(user_b.id)).all()
-        assert a_rows == []  # A cannot see B's data (IDOR baseline)
-        assert len(b_rows) == 1  # control: the row exists and is correctly scoped to B
+        # A sees exactly its own row and nothing of B's (proves the filter works, not that
+        # the table is empty).
+        assert len(a_rows) == 1
+        assert a_rows[0].user_id == user_a.id
+        assert a_rows[0].description_raw == "ZOMATO"
+        assert len(b_rows) == 1
         assert b_rows[0].user_id == user_b.id
+        assert b_rows[0].description_raw == "SWIGGY"
 
     def test_session_token_resolves_only_to_its_owner(self, session) -> None:
         user_a = _make_user(session, "a@example.com")

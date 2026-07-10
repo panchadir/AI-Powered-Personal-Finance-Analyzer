@@ -196,8 +196,9 @@ class AuthState(rx.State):
         """Delete any LocalAuthSession rows bound to the current cookie token."""
         with rx.session() as session:
             clear_sessions_for_token(session, self.auth_token)
-        # Re-assign to force Reflex to re-emit the (now session-less) cookie to the browser.
-        self.auth_token = self.auth_token
+        # Clear the cookie so it doesn't linger dead (AC #3) and so the next login rotates
+        # to a fresh token (session-fixation hygiene) via `_login`'s `self.auth_token or ...`.
+        self.auth_token = ""
 
     @rx.event
     def logout(self):
