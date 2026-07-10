@@ -1,7 +1,7 @@
 """Copilot streaming service — Stories 6.1–6.3 (FR-7.1–FR-7.5).
 
 Public API:
-  ``astream_events(messages, user_id, session)``
+  ``astream_events(messages, user_id, session_factory)``
     Async generator that yields typed event dicts (SSE contract, FR-7.4):
 
       {"type": "token",  "text": "<string>"}
@@ -16,9 +16,14 @@ Public API:
     forward-compatibility AC).
 
 Tool-use loop (Story 6.2 — unchanged):
-  Non-streaming rounds until stop_reason == end_turn, then a final streaming
-  pass that emits token events.  Tool names are collected as trace sources and
-  emitted as a single ``trace`` event before ``done``.
+  Each round streams through ``messages.stream()``. If the model requests
+  tool calls, ``text_stream`` yields nothing (tool-use and text are mutually
+  exclusive in one response); the final message carries ``tool_use`` blocks.
+  Tools are executed with a short-lived session from ``session_factory``
+  (never held open during streaming). The loop continues until the model
+  produces a text response — which is streamed live as token events — or
+  until ``_MAX_TOOL_ROUNDS`` is exhausted, in which case a final stream call
+  (without tools) forces a text answer.
 
 Story 6.2 AC checklist (unchanged):
   * Only the 5 read-only tools in ``tools.TOOL_SCHEMAS`` — no write path.
@@ -32,8 +37,10 @@ Architecture (AD-1 / NFR-3): no ``reflex`` / ``finance_app.*`` imports.
 from __future__ import annotations
 
 import json
+import logging
 import os
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
+from contextlib import AbstractContextManager
 from typing import Any
 
 import anthropic
@@ -41,6 +48,8 @@ from sqlmodel import Session
 
 from services.narrate.config import COPILOT_MODEL
 from services.narrate.tools import TOOL_SCHEMAS, run_tool
+
+log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # System prompt — static portion marked cache_control: ephemeral (NFR-4)
@@ -105,7 +114,7 @@ async def astream_events(
     messages: list[dict[str, str]],
     *,
     user_id: int,
-    session: Session,
+    session_factory: Callable[[], AbstractContextManager[Session]],
     api_key: str | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Async-stream typed event dicts for the Copilot response.
@@ -113,49 +122,59 @@ async def astream_events(
     Yields ``token``, ``trace``, ``error`` (on failure), and ``done`` events.
     ``done`` is guaranteed from a ``finally`` block — the caller never hangs.
 
+    Each tool execution opens its own short-lived session via ``session_factory``
+    so no DB connection is held open during the streaming phase.
+
     Args:
-        messages:  Full conversation history including the new user turn.
-        user_id:   Authenticated user's id — injected into every tool call.
-        session:   Open SQLModel session for tool DB queries.
-        api_key:   Anthropic API key; falls back to ``ANTHROPIC_API_KEY`` env var.
+        messages:        Full conversation history including the new user turn.
+        user_id:         Authenticated user's id — injected into every tool call.
+        session_factory: Zero-arg callable returning an open-session context manager
+                         (e.g. ``rx.session``).
+        api_key:         Anthropic API key; falls back to ``ANTHROPIC_API_KEY`` env var.
     """
     client = anthropic.AsyncAnthropic(
         api_key=api_key or os.environ.get("ANTHROPIC_API_KEY")
     )
 
     conversation: list[dict[str, Any]] = list(messages)  # type: ignore[assignment]
-    tools_called: list[str] = []  # accumulates tool names for the trace event
+    tools_called: list[str] = []
 
     try:
-        # ---- Tool-use rounds (non-streaming) --------------------------------
+        # ---- Tool-use rounds (streaming, tool-aware) -------------------------
+        # text_stream yields nothing when the model chooses tool_use, so we can
+        # stream live tokens AND detect tool_use from the same stream call.
         for _round in range(_MAX_TOOL_ROUNDS):
-            response = await client.messages.create(
+            async with client.messages.stream(
                 model=COPILOT_MODEL,
                 max_tokens=_MAX_TOKENS,
                 system=_SYSTEM,
                 tools=TOOL_SCHEMAS,  # type: ignore[arg-type]
                 messages=conversation,  # type: ignore[arg-type]
-            )
+            ) as stream:
+                async for text in stream.text_stream:
+                    yield _token_event(text)
+                final_message = await stream.get_final_message()
 
-            tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
+            tool_use_blocks = [b for b in final_message.content if b.type == "tool_use"]
 
-            if response.stop_reason == "end_turn" or not tool_use_blocks:
-                # No more tool calls needed — stream the final response.
+            if not tool_use_blocks:
+                # Text response — tokens already yielded above. Done.
                 break
 
-            # Execute each requested tool, collect results.
+            # Execute each requested tool with a short-lived session.
             conversation.append(
-                {"role": "assistant", "content": response.content}  # type: ignore[arg-type]
+                {"role": "assistant", "content": list(final_message.content)}  # type: ignore[arg-type]
             )
             tool_results: list[dict[str, Any]] = []
             for block in tool_use_blocks:
                 tools_called.append(block.name)
-                result = run_tool(
-                    block.name,
-                    block.input,  # type: ignore[arg-type]
-                    user_id=user_id,
-                    session=session,
-                )
+                with session_factory() as session:
+                    result = run_tool(
+                        block.name,
+                        dict(block.input),  # type: ignore[arg-type]
+                        user_id=user_id,
+                        session=session,
+                    )
                 tool_results.append(
                     {
                         "type": "tool_result",
@@ -165,31 +184,23 @@ async def astream_events(
                 )
             conversation.append({"role": "user", "content": tool_results})
         else:
-            # Exhausted tool rounds — instruct model to answer with what it has.
-            conversation.append(
-                {
-                    "role": "user",
-                    "content": "Please give your best honest answer based on the data retrieved.",
-                }
-            )
-
-        # ---- Final streaming response ----------------------------------------
-        async with client.messages.stream(
-            model=COPILOT_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=_SYSTEM,
-            tools=TOOL_SCHEMAS,  # type: ignore[arg-type]
-            messages=conversation,  # type: ignore[arg-type]
-        ) as stream:
-            async for text in stream.text_stream:
-                yield _token_event(text)
+            # All _MAX_TOOL_ROUNDS were tool-use rounds. Stream a final answer
+            # WITHOUT tools so the model is forced to reply in text.
+            async with client.messages.stream(
+                model=COPILOT_MODEL,
+                max_tokens=_MAX_TOKENS,
+                system=_SYSTEM,
+                messages=conversation,  # type: ignore[arg-type]
+            ) as stream:
+                async for text in stream.text_stream:
+                    yield _token_event(text)
 
         # Emit trace event after streaming completes (FR-7.5).
         if tools_called:
             yield _trace_event(tools_called)
 
-    except Exception as exc:
-        # Emit an honest error frame before done so the UI can show it (Story 6.3 AC).
+    except Exception:
+        log.exception("Copilot streaming failed for user_id=%d", user_id)
         yield _error_event(
             "I ran into a problem and couldn't finish that response. "
             "Please try again in a moment."

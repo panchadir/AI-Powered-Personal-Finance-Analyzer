@@ -110,9 +110,11 @@ class CopilotState(AuthState):
           ?insight=<int id>   — activates the context chip
           ?pre=<str>          — pre-fills the textarea
 
-        Called as ``on_load`` on the Copilot page.
+        Called as ``on_load`` on the Copilot page. Chat history is loaded only
+        once per session; insight context and pre-fill are resolved on every
+        page load so that re-navigating with a different ``?insight=`` param
+        shows the correct context chip.
         """
-        # Read URL query params before the DB round-trip.
         params = self.router.page.params
         raw_insight = params.get("insight", "")
         pre_text = params.get("pre", "")
@@ -139,28 +141,36 @@ class CopilotState(AuthState):
                     }
                     for r in rows
                 ]
-
-                # Resolve insight context from the URL param.
-                if raw_insight:
-                    try:
-                        insight_id = int(raw_insight)
-                        insight = session.exec(
-                            select(Insight).where(
-                                Insight.id == insight_id,
-                                Insight.user_id == user_id,
-                            )
-                        ).one_or_none()
-                        if insight is not None:
-                            self.context_insight_id = insight_id
-                            self.context_pattern_name = insight.pattern_name
-                    except (ValueError, TypeError):
-                        pass  # malformed ?insight= param — ignore silently
-
             self._history_loaded = True
 
-        # Pre-fill the textarea if ?pre= is present (set after history load so it
-        # is not overwritten by the reset inside load_history on a fresh page).
-        if pre_text and not self.input_value:
+        # Resolve insight context on every page load (not guarded by
+        # _history_loaded) so re-navigation to a different ?insight= param
+        # updates the chip correctly.
+        if raw_insight:
+            with rx.session() as session:
+                user = user_for_token(session, self.auth_token)
+                if user is None:
+                    return
+                user_id = user.id
+                try:
+                    insight_id = int(raw_insight)
+                    insight = session.exec(
+                        select(Insight).where(
+                            Insight.id == insight_id,
+                            Insight.user_id == user_id,
+                        )
+                    ).one_or_none()
+                    if insight is not None:
+                        self.context_insight_id = insight_id
+                        self.context_pattern_name = insight.pattern_name
+                except (ValueError, TypeError):
+                    pass  # malformed ?insight= param — ignore silently
+        else:
+            # No insight param — clear any stale context from a prior navigation.
+            self.context_insight_id = 0
+            self.context_pattern_name = ""
+
+        if pre_text:
             self.input_value = pre_text
 
     @rx.event
@@ -227,12 +237,13 @@ class CopilotState(AuthState):
 
         assistant_content = ""
         trace_sources: list[str] = []
+        is_error_response = False
 
-        with rx.session() as tool_session:
+        try:
             async for event in astream_events(
                 api_messages,
                 user_id=user_id,
-                session=tool_session,
+                session_factory=rx.session,
             ):
                 etype = event.get("type")
 
@@ -248,6 +259,9 @@ class CopilotState(AuthState):
                     yield
 
                 elif etype == "error":
+                    # Keep the error text for display but mark it so we do NOT
+                    # persist it to DB as a real assistant turn.
+                    is_error_response = True
                     assistant_content = event.get("text", "Something went wrong.")
                     self.streaming_content = assistant_content
                     yield
@@ -267,7 +281,14 @@ class CopilotState(AuthState):
 
                 # Unknown event types silently ignored (forward-compat AC).
 
-        if assistant_content:
+        finally:
+            # Guarantee streaming is always reset even if the generator is
+            # cancelled or raises before emitting a done event.
+            self.streaming = False
+            yield
+
+        # Only persist genuine assistant replies — not error sentinel strings.
+        if assistant_content and not is_error_response:
             try:
                 with rx.session() as session:
                     session.add(

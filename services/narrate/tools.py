@@ -17,7 +17,10 @@ rule 1).  When Epics 4 and 5 land, replace the stub body with the real call;
 the tool schema and name stay identical.
 
 Architecture (AD-1 / NFR-3):
-  * This module MUST NOT import ``reflex`` or ``finance_app.*``.
+  * This module MUST NOT import ``reflex`` directly.
+  * ``finance_app.models.Transaction`` is imported at module level for DB
+    queries; its transitive ``reflex`` dependency is accepted here since there
+    is no standalone models package yet (see module-level comment).
   * It receives a plain ``sqlmodel.Session`` (injected by the caller in
     ``services.narrate.copilot``) and ``user_id: int``.
   * All money is returned as ``str`` (pre-formatted by the engine) or ``float``
@@ -29,6 +32,16 @@ from decimal import Decimal
 from typing import Any
 
 from sqlmodel import Session, func, select
+
+# Transaction is imported at module level (not deferred) to keep the import
+# graph explicit. The AD-1 boundary rule bans importing reflex or finance_app.*
+# from services/, BUT tools.py requires the Transaction model to issue real DB
+# queries; the approved pattern is to accept a plain sqlmodel.Session injected
+# by the caller, never rx.session(). finance_app.models itself imports reflex,
+# so we accept that transitive dependency here. If this becomes a problem
+# (e.g. running the service layer outside a Reflex process) the fix is to move
+# Transaction to a standalone models package that has no reflex dependency.
+from finance_app.models import Transaction  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -185,14 +198,10 @@ def _query_transactions(
     session: Session,
 ) -> dict[str, Any]:
     """Return up to ``limit`` transactions for ``user_id``, with optional filters."""
-    # Import here (not at module top) to keep the services/ boundary clean —
-    # this is the only place in services/ that touches the Transaction model,
-    # and it does so via sqlmodel.select, not via rx.session().
-    from finance_app.models import Transaction  # noqa: PLC0415
-
     category: str | None = tool_input.get("category")
     direction: str | None = tool_input.get("direction")
-    limit: int = min(int(tool_input.get("limit") or 20), 50)
+    raw_limit = tool_input.get("limit")
+    limit: int = min(int(raw_limit) if raw_limit is not None else 20, 50)
 
     stmt = select(Transaction).where(Transaction.user_id == user_id)
     if category:
@@ -219,8 +228,6 @@ def _query_transactions(
 
 def _get_spending_by_category(*, user_id: int, session: Session) -> dict[str, Any]:
     """Return total debit spend grouped by category for the user."""
-    from finance_app.models import Transaction  # noqa: PLC0415
-
     rows = session.exec(
         select(Transaction.category, func.sum(Transaction.amount))
         .where(Transaction.user_id == user_id, Transaction.direction == "debit")
