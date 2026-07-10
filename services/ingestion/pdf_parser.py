@@ -31,11 +31,14 @@ verified there once the fixture exists.
 from __future__ import annotations
 
 import logging
+import re
+from decimal import Decimal
 from pathlib import Path
 from typing import Callable, Protocol, runtime_checkable
 
 from services.ingestion.csv_parser import map_table
 from services.ingestion.errors import IngestionError, ScannedPDFError
+from services.ingestion.normalize import normalize_date
 from services.ingestion.schema import Transaction
 from services.utils.enums import Direction
 
@@ -45,8 +48,128 @@ __all__ = [
     "StatementsparserExtractor",
     "PdfplumberExtractor",
     "CamelotExtractor",
+    "ICICITextExtractor",
     "SCANNED_MESSAGE",
 ]
+
+# ICICI transaction line: S.No  DD.MM.YYYY  [withdrawal]  [deposit]  balance
+# e.g. "1 02.06.2026 65.00 21364.25" or "7 06.06.2026 1200.00 21289.25"
+_ICICI_TXN_RE = re.compile(
+    r"^(\d+)\s+"                          # S No.
+    r"(\d{2}\.\d{2}\.\d{4})\s+"          # Transaction Date  DD.MM.YYYY
+    r"([\d,]+\.\d{2})\s+"                # amount1 (withdrawal or deposit)
+    r"(?:([\d,]+\.\d{2})\s+)?"           # amount2 optional (deposit when both present)
+    r"([\d,]+\.\d{2})\s*$"              # closing balance
+)
+
+
+def _clean_dec(s: str) -> Decimal:
+    return Decimal(s.replace(",", ""))
+
+
+class ICICITextExtractor:
+    """Parses ICICI Bank PDFs by reading plain text — needed because ICICI puts transaction
+    data in free-form text rows, not in table cells that pdfplumber/camelot can grid-extract.
+
+    Each transaction spans several lines:
+      <merchant short name>
+      <sno>  <DD.MM.YYYY>  [withdrawal]  [deposit]  <balance>
+      <full UPI/narration line(s)>
+    Direction is determined by comparing consecutive balances: balance goes up → credit.
+    """
+
+    name = "icici_text"
+
+    def extract(self, file_path: Path) -> list[Transaction]:
+        import pdfplumber
+
+        full_text = []
+        with pdfplumber.open(str(file_path)) as pdf:
+            # Check if this is an ICICI statement before spending time parsing
+            first_text = (pdf.pages[0].extract_text() or "") if pdf.pages else ""
+            if "ICICI" not in first_text.upper():
+                return []
+            for page in pdf.pages:
+                t = page.extract_text() or ""
+                full_text.append(t)
+
+        return self._parse_text("\n".join(full_text))
+
+    def _parse_text(self, text: str) -> list[Transaction]:
+        lines = text.splitlines()
+        transactions: list[Transaction] = []
+        prev_balance: Decimal | None = None
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            m = _ICICI_TXN_RE.match(line)
+            if m:
+                date_raw = m.group(2)
+                a1 = _clean_dec(m.group(3))
+                a2 = _clean_dec(m.group(4)) if m.group(4) else None
+                balance = _clean_dec(m.group(5))
+
+                # Collect narration: look back one line for merchant short name,
+                # then forward for UPI detail lines until next txn or blank section
+                narration_parts = []
+                if i > 0:
+                    prev = lines[i - 1].strip()
+                    # Only include if it looks like a merchant name (not a date/number line)
+                    if prev and not _ICICI_TXN_RE.match(prev) and not re.match(r"^\d{2}\.\d{2}\.\d{4}", prev):
+                        narration_parts.append(prev)
+
+                j = i + 1
+                while j < len(lines):
+                    nxt = lines[j].strip()
+                    if not nxt or _ICICI_TXN_RE.match(nxt):
+                        break
+                    # Stop at footer markers
+                    if any(kw in nxt for kw in ("Never share", "www.icici", "Dial your", "Please call", "Sincerely", "Legends", "RCHG", "This is a system")):
+                        break
+                    narration_parts.append(nxt)
+                    j += 1
+
+                narration = " ".join(narration_parts).strip()
+
+                # Determine direction from balance movement
+                if prev_balance is not None:
+                    direction = Direction.credit if balance > prev_balance else Direction.debit
+                else:
+                    # First transaction: if two amounts present, figure out which is which;
+                    # otherwise default to debit (most common first entry)
+                    direction = Direction.debit
+
+                # Amount: if two amounts given, pick the non-zero one matching direction
+                if a2 is not None:
+                    # Both withdrawal and deposit columns have values — use balance delta
+                    if prev_balance is not None:
+                        delta = abs(balance - prev_balance)
+                        amount = delta if delta > 0 else a1
+                    else:
+                        amount = a1
+                else:
+                    amount = a1
+
+                try:
+                    iso_date = normalize_date(date_raw)
+                except IngestionError:
+                    i += 1
+                    continue
+
+                transactions.append(Transaction(
+                    date=iso_date,
+                    description_raw=narration,
+                    amount=abs(amount),
+                    direction=direction,
+                    balance_after=balance,
+                ))
+                prev_balance = balance
+                i = j
+                continue
+            i += 1
+
+        return transactions
 
 log = logging.getLogger(__name__)
 
@@ -75,6 +198,16 @@ class StatementsparserExtractor:
 
     def extract(self, file_path: Path) -> list[Transaction]:
         import statementparser  # lazy: heavy import only when actually parsing a PDF
+
+        # Patch ICICI date formats to include DD.MM.YYYY (e.g. 02.06.2026) which the
+        # library omits but ICICI PDFs use.
+        try:
+            from statementparser.parsers.base import DATE_FORMATS
+            if "%d.%m.%Y" not in DATE_FORMATS.get("ICICI", []):
+                DATE_FORMATS.setdefault("ICICI", []).insert(0, "%d.%m.%Y")
+                DATE_FORMATS.setdefault("ICICI", []).insert(1, "%d.%m.%y")
+        except Exception:
+            pass
 
         # categorize/verify_balance off: we run our own Tier-1/2 categorization (Epic 3) and
         # don't want the library's balance check to raise on a benign mismatch.
@@ -154,7 +287,7 @@ class PDFParser:
         self._extractors: list[Extractor] = (
             list(extractors)
             if extractors is not None
-            else [StatementsparserExtractor(), PdfplumberExtractor(), CamelotExtractor()]
+            else [StatementsparserExtractor(), ICICITextExtractor(), PdfplumberExtractor(), CamelotExtractor()]
         )
         self._has_text_layer = text_probe if text_probe is not None else _pdf_has_text_layer
 

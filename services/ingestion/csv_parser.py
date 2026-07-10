@@ -70,7 +70,10 @@ class BankCSVProfile:
 
 
 def _norm_header(name: str) -> str:
-    return name.strip().lower()
+    # Collapse newlines and excess whitespace — pdfplumber splits multi-line header
+    # cells with \n (e.g. "Transaction\nDate", "Withdrawal\nAmount (INR)").
+    import re as _re
+    return _re.sub(r"\s+", " ", name).strip().lower()
 
 
 #: Known bank profiles, tried in registration order (FR-2.1: ≥2 Indian shapes).
@@ -90,6 +93,14 @@ PROFILES: tuple[BankCSVProfile, ...] = (
         debit_col="Debit",
         credit_col="Credit",
         balance_col="Balance",
+    ),
+    BankCSVProfile(
+        name="ICICI",
+        date_col="Transaction Date",
+        description_col="Transaction Remarks",
+        debit_col="Withdrawal Amount (INR)",
+        credit_col="Deposit Amount (INR)",
+        balance_col="Balance (INR)",
     ),
 )
 
