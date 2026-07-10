@@ -33,6 +33,7 @@ from services.ingestion.pdf_parser import (
     Extractor,
     PDFParser,
     PdfplumberExtractor,
+    PositionalColumnExtractor,
     StatementsparserExtractor,
 )
 from services.ingestion.persist import (
@@ -57,6 +58,7 @@ __all__ = [
     "PersistResult",
     "PDFParser",
     "Extractor",
+    "PositionalColumnExtractor",
     "StatementsparserExtractor",
     "PdfplumberExtractor",
     "CamelotExtractor",

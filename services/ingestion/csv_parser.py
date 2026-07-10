@@ -128,12 +128,64 @@ def _is_valid_date(raw: str) -> bool:
         return False
 
 
+#: Keyword sets for generic (unnamed-bank) column detection. Matched as substrings against
+#: normalized header names. Order inside each tuple is a preference hint (earlier = stronger).
+_GENERIC_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "date": ("transaction date", "txn date", "value date", "posting date", "date"),
+    "description": (
+        "narration", "transaction remarks", "remarks", "particulars",
+        "description", "details",
+    ),
+    "debit": ("withdrawal", "debit", "dr amount", "paid out"),
+    "credit": ("deposit", "credit", "cr amount", "paid in"),
+    "balance": ("balance",),
+}
+
+
+def _find_column(header: set[str], keywords: tuple[str, ...], *, exclude: tuple[str, ...] = ()) -> str | None:
+    """First header (by keyword preference, then shortest) containing a keyword, else None."""
+    for kw in keywords:
+        matches = [
+            h for h in header if kw in h and not any(x in h for x in exclude)
+        ]
+        if matches:
+            return min(matches, key=len)  # shortest = least-decorated header wins ties
+    return None
+
+
+def _generic_profile_or_none(header: set[str]) -> BankCSVProfile | None:
+    """Build a profile for an unknown bank by matching column *roles* by keyword.
+
+    This is what lets an arbitrary bank's split debit/credit statement parse without a
+    hand-written profile: as long as the header names carry the usual words (date /
+    narration|remarks / withdrawal|debit / deposit|credit / balance), the columns are found
+    by meaning rather than exact string. Description keywords are excluded from the date match
+    so "Transaction Remarks" is never mistaken for "Transaction Date".
+    """
+    date_col = _find_column(header, _GENERIC_KEYWORDS["date"], exclude=_GENERIC_KEYWORDS["description"])
+    desc_col = _find_column(header, _GENERIC_KEYWORDS["description"])
+    debit_col = _find_column(header, _GENERIC_KEYWORDS["debit"])
+    credit_col = _find_column(header, _GENERIC_KEYWORDS["credit"])
+    balance_col = _find_column(header, _GENERIC_KEYWORDS["balance"])
+    if date_col and desc_col and debit_col and credit_col:
+        return BankCSVProfile(
+            name="Generic",
+            date_col=date_col,
+            description_col=desc_col,
+            debit_col=debit_col,
+            credit_col=credit_col,
+            balance_col=balance_col,
+        )
+    return None
+
+
 def _match_profile_or_none(header: set[str]) -> BankCSVProfile | None:
-    """First bank profile whose required columns are all present, else None (non-raising)."""
+    """First named bank profile whose columns are all present; else a keyword-derived generic
+    profile; else None (non-raising)."""
     for profile in PROFILES:
         if profile.required_columns() <= header:
             return profile
-    return None
+    return _generic_profile_or_none(header)
 
 
 class CSVParser:
