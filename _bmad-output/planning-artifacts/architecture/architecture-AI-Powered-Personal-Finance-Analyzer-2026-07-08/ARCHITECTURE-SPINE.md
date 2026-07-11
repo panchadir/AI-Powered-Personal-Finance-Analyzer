@@ -108,7 +108,7 @@ graph TD
 
 - **Binds:** services/ingestion/, all parsers, services/categorize/, services/engine/, FR-2.3, FR-3.3
 - **Prevents:** two parsers (CSV vs PDF) creating incompatible row shapes; downstream services forking on source format
-- **Rule:** Every parser must normalize its output to the canonical `Transaction` schema before returning. No parser-specific shape may cross the boundary of `services/ingestion/`. The canonical schema fields are: `id, user_id, source_file_id, date, description_raw, merchant_normalized, amount, direction (credit|debit), balance_after, category, category_source (rule|llm|user), category_confidence, created_at`.
+- **Rule:** Every parser must normalize its output to the canonical `Transaction` schema before returning. No parser-specific shape may cross the boundary of `services/ingestion/`. The canonical schema fields are: `id, user_id, source_file_id, date, description_raw, merchant_normalized, amount, direction (credit|debit), balance_after, category, category_source (rule|llm|user), category_confidence, reasoning, created_at`. (`reasoning` added Story 3.2 — the Tier-2 LLM's one-sentence rationale; `None` for rule/user-sourced rows.)
 
 ### AD-7 — Category enum hard-constraint [ADOPTED]
 

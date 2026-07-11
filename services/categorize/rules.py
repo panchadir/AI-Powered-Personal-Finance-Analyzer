@@ -9,6 +9,13 @@ category='Uncategorized', source='rule', confidence=0.0 so downstream code
 (and the UI filter chip) can identify them as "needs review".
 
 No LLM, no network call — runs in-process at parse time.
+
+Story 3.3 ("Teach Me"): ``categorize_rules`` accepts an optional ``user_rules`` sequence of
+``(pattern, category)`` pairs, checked *before* the built-in ``RULES`` table below — a user's
+correction always wins over the default heuristic for that merchant. ``categorize_rules``
+itself stays a pure, framework-agnostic function (AD-2/AD-14): loading a user's taught rules
+from the DB is the caller's job (``services/categorize/teach_me.py::load_user_merchant_rules``,
+called from ``finance_app/state/upload_state.py``, the composition root).
 """
 from __future__ import annotations
 
@@ -158,18 +165,38 @@ RULES: tuple[Rule, ...] = (
 _NEEDS_REVIEW = "Uncategorized"
 
 
-def _match(description: str) -> tuple[str, float]:
-    """Return (category, confidence) for a description string."""
+def _match(description: str, user_rules: Sequence[tuple[str, str]] = ()) -> tuple[str, float]:
+    """Return (category, confidence) for a description string.
+
+    ``user_rules`` (Story 3.3, "Teach Me") is checked first — a user's own correction always
+    wins over the built-in ``RULES`` table for that merchant. A user-rule match is full
+    confidence, same as a built-in match: the user is now the authority.
+    """
     text = description.lower()
+    for pattern, category in user_rules:
+        needle = pattern.strip().lower()
+        # Defensive: a blank/whitespace pattern would otherwise be "contained in" every
+        # description and match everything (belt-and-suspenders — the write path in
+        # teach_me.py already refuses to store one).
+        if not needle:
+            continue
+        if needle in text:
+            return category, 1.0
     for rule in RULES:
         if any(kw in text for kw in rule.keywords):
             return rule.category, 1.0
     return _NEEDS_REVIEW, 0.0
 
 
-def categorize_rules(transactions: Sequence[Transaction]) -> list[Transaction]:
+def categorize_rules(
+    transactions: Sequence[Transaction], user_rules: Sequence[tuple[str, str]] = ()
+) -> list[Transaction]:
     """Apply Tier-1 rules to every transaction; return new Transaction objects with
     category/category_source/category_confidence filled.
+
+    ``user_rules`` is an optional sequence of ``(pattern, category)`` pairs — a user's
+    "Teach Me" corrections (Story 3.3), checked before the built-in ``RULES`` table. Pure and
+    framework-agnostic (AD-2/AD-14): loading a user's rules from the DB is the caller's job.
 
     Credits (salary/transfer-in) are handled by the rules above; unrecognized
     credits default to 'Income / Transfer In' rather than 'Uncategorized' so
@@ -177,7 +204,7 @@ def categorize_rules(transactions: Sequence[Transaction]) -> list[Transaction]:
     """
     result: list[Transaction] = []
     for txn in transactions:
-        category, confidence = _match(txn.description_raw)
+        category, confidence = _match(txn.description_raw, user_rules)
 
         # Unrecognized credits default to Transfer In rather than Uncategorized
         if category == _NEEDS_REVIEW and txn.direction == Direction.credit:

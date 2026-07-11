@@ -78,6 +78,7 @@ def _to_model(txn_model: type, txn: Transaction):
         category=txn.category,
         category_source=txn.category_source,
         category_confidence=txn.category_confidence,
+        reasoning=txn.reasoning,
     )
 
 

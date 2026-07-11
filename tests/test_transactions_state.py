@@ -36,7 +36,7 @@ from reflex_local_auth.user import LocalUser
 def _row(**kwargs) -> TxnRow:
     defaults = dict(
         id=1, date_label="1 Jun 2026", merchant="Zomato", category="Food & Dining",
-        icon="🍽️", amount_label="₹500", is_credit=False, needs_review=False,
+        icon="🍽️", amount_label="₹500", is_credit=False, needs_review=False, is_ai=False,
     )
     defaults.update(kwargs)
     return TxnRow(**defaults)
@@ -93,7 +93,78 @@ class TestLoadUserTransactionRows:
 
         rows = load_user_transaction_rows(session, Transaction, user.id)
         assert rows[0].needs_review is False
+        assert rows[0].is_ai is False
         assert rows[0].category == "Food & Dining"
+
+    def test_user_corrected_row_has_no_review_flag_and_is_not_ai(self, session) -> None:
+        # Story 3.3's save_correction always writes source='user'/confidence=1.0 — this row
+        # must never show either badge after this story's changes.
+        user = _make_user(session, "priya@example.com")
+        _add_txn(
+            session, user.id, category="Personal Project", category_source="user",
+            category_confidence=1.0,
+        )
+
+        rows = load_user_transaction_rows(session, Transaction, user.id)
+        assert rows[0].needs_review is False
+        assert rows[0].is_ai is False
+
+    def test_llm_sourced_row_with_low_confidence_is_ai_not_needs_review(self, session) -> None:
+        # The core regression this story fixes: Tier-2's self-reported confidence is a real
+        # 0.0-1.0 value the LLM chooses per transaction (services/categorize/llm_categorizer.py's
+        # CategorizationResult), not a fixed constant — a naive `confidence < 1.0` check would
+        # flag a large share of AI-categorized rows as "needs review" instead of showing the
+        # distinct "AI" badge. The fix doesn't gate on confidence at all (see the next test).
+        user = _make_user(session, "priya@example.com")
+        _add_txn(
+            session, user.id, category="Shopping", category_source="llm",
+            category_confidence=0.3,
+        )
+
+        rows = load_user_transaction_rows(session, Transaction, user.id)
+        assert rows[0].is_ai is True
+        assert rows[0].needs_review is False
+
+    def test_llm_sourced_row_at_full_confidence_is_still_ai_not_needs_review(self, session) -> None:
+        # AC #2: the AI badge is unconditional on category_source='llm' — no confidence
+        # carve-out, even when the LLM happens to report full confidence.
+        user = _make_user(session, "priya@example.com")
+        _add_txn(
+            session, user.id, category="Entertainment", category_source="llm",
+            category_confidence=1.0,
+        )
+
+        rows = load_user_transaction_rows(session, Transaction, user.id)
+        assert rows[0].is_ai is True
+        assert rows[0].needs_review is False
+
+    def test_null_category_source_is_not_ai(self, session) -> None:
+        # category_source is a nullable column (finance_app/models.py) — a plausible legacy
+        # row that never ran through any categorization tier at all. It must never be
+        # mistaken for an llm-sourced row.
+        user = _make_user(session, "priya@example.com")
+        _add_txn(session, user.id, category=None, category_source=None, category_confidence=None)
+
+        rows = load_user_transaction_rows(session, Transaction, user.id)
+        assert rows[0].is_ai is False
+        assert rows[0].needs_review is True
+
+    def test_llm_sourced_uncategorized_row_is_flagged_needs_review_not_ai(self, session) -> None:
+        # Code-review follow-up: the documented Tier-2 write path can never leave a row
+        # llm-sourced yet Uncategorized (services/categorize/llm_categorizer.py's
+        # CategorizationResult.category is a Literal that excludes it), but category_source
+        # and category are plain, independently-nullable columns with no DB constraint tying
+        # them together — a legacy/corrupted row in this exact state must still be flagged
+        # needs_review, not shown a confident-looking "AI" badge.
+        user = _make_user(session, "priya@example.com")
+        _add_txn(
+            session, user.id, category="Uncategorized", category_source="llm",
+            category_confidence=0.9,
+        )
+
+        rows = load_user_transaction_rows(session, Transaction, user.id)
+        assert rows[0].is_ai is False
+        assert rows[0].needs_review is True
 
     def test_unmatched_row_is_flagged_needs_review(self, session) -> None:
         user = _make_user(session, "priya@example.com")
@@ -104,6 +175,7 @@ class TestLoadUserTransactionRows:
 
         rows = load_user_transaction_rows(session, Transaction, user.id)
         assert rows[0].needs_review is True
+        assert rows[0].is_ai is False
         assert rows[0].category == "Uncategorized"
 
     def test_null_category_confidence_is_treated_as_needs_review(self, session) -> None:
@@ -150,7 +222,9 @@ class TestLoadUserTransactionRows:
     def test_confidence_0_5_transfer_in_row_is_flagged_needs_review(self, session) -> None:
         # The engine's unrecognized-credit fallback (category='Transfer In', confidence=0.5,
         # per services/categorize/rules.py) is one of exactly two ways a row becomes
-        # needs_review — the other (confidence=0.0) was already covered above.
+        # needs_review — the other (confidence=0.0) was already covered above. Regression:
+        # this row is source='rule', not 'llm' — Story 3.4's is_ai exclusion must not weaken
+        # this pre-existing fallback-flagging behavior.
         user = _make_user(session, "priya@example.com")
         _add_txn(
             session, user.id, description_raw="NEFT CR unknown sender", direction="credit",
@@ -159,6 +233,7 @@ class TestLoadUserTransactionRows:
 
         rows = load_user_transaction_rows(session, Transaction, user.id)
         assert rows[0].needs_review is True
+        assert rows[0].is_ai is False
         assert rows[0].category == "Transfer In"
 
     def test_malformed_row_is_skipped_not_fatal(self, session) -> None:
@@ -204,6 +279,25 @@ class TestNeedsReviewCount:
     def test_zero_when_no_rows(self) -> None:
         assert needs_review_count([]) == 0
 
+    def test_ai_rows_never_count_toward_needs_review(self) -> None:
+        # AC #7 self-consistency: is_ai and needs_review are mutually exclusive by
+        # construction (_to_row's is_ai short-circuit) — an AI-badged row must never also
+        # count toward the "Needs review" chip.
+        rows = [_row(is_ai=True, needs_review=False), _row(needs_review=True)]
+        assert needs_review_count(rows) == 1
+
+    def test_chip_count_matches_amber_badge_condition_exactly(self) -> None:
+        # AC #7: "the Needs review count in the filter chip matches the actual count of
+        # amber-badged transactions" — proves both derive from the same per-row field, not
+        # two independently-computed paths that could drift apart.
+        rows = [
+            _row(id=1, needs_review=True),
+            _row(id=2, needs_review=False, is_ai=True),
+            _row(id=3, needs_review=False, is_ai=False),
+            _row(id=4, needs_review=True),
+        ]
+        assert needs_review_count(rows) == len([r for r in rows if r.needs_review])
+
 
 class TestDistinctCategories:
     def test_dedupes_and_preserves_first_seen_order(self) -> None:
@@ -217,6 +311,12 @@ class TestDistinctCategories:
     def test_excludes_needs_review_rows(self) -> None:
         rows = [_row(category="Food & Dining", needs_review=True)]
         assert distinct_categories(rows) == []
+
+    def test_includes_ai_categorized_rows(self) -> None:
+        # An AI-categorized row is confidently categorized (needs_review=False) and must be
+        # filterable by its category, exactly like a rule-matched row.
+        rows = [_row(category="Shopping", is_ai=True, needs_review=False)]
+        assert distinct_categories(rows) == ["Shopping"]
 
 
 class TestBuildChipItems:
@@ -240,6 +340,12 @@ class TestBuildChipItems:
         keys = {c.key for c in build_chip_items(rows)}
         assert keys == {ALL_KEY, "Food & Dining", "Transport"}
 
+    def test_ai_categorized_row_does_not_inflate_needs_review_chip(self) -> None:
+        rows = [_row(category="Shopping", is_ai=True, needs_review=False)]
+        keys = [c.key for c in build_chip_items(rows)]
+        assert NEEDS_REVIEW_KEY not in keys
+        assert "Shopping" in keys
+
 
 class TestFilterRows:
     def test_all_key_returns_everything(self) -> None:
@@ -258,4 +364,9 @@ class TestFilterRows:
             _row(id=3, category="Food & Dining", needs_review=True),
         ]
         result = filter_rows(rows, "Food & Dining")
+        assert [r.id for r in result] == [1]
+
+    def test_category_filter_includes_ai_categorized_rows(self) -> None:
+        rows = [_row(id=1, category="Shopping", is_ai=True, needs_review=False)]
+        result = filter_rows(rows, "Shopping")
         assert [r.id for r in result] == [1]

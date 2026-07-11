@@ -5,10 +5,13 @@ transparent parse card (Reading -> Identifying -> Rules -> AI assist) and shows 
 "N by rules · M by AI · K need your help" summary before enabling the Dashboard CTA.
 
 Story 2.4 wires the **real** parser: ``services.ingestion.parse_statement`` turns the uploaded
-bytes into canonical transactions, so the transaction *total* is real. Categorization (the
-"by rules" / "by AI" split) is Epic 3 (S3.1/S3.2) — until then steps 3 and 4 fire as skeleton
-events and every parsed row counts as "needs your help". Persisting the parsed rows (with dedup
-and ``user_id``/``source_file``) is Story 2.5; 2.4 parses and reports the honest count.
+bytes into canonical transactions. Story 3.1 wires the real Tier-1 rules engine (step 3).
+Story 3.2 wires the real Tier-2 LLM categorizer (step 4) — both tiers now run **before** the
+single persist call, so the DB is only ever written once per upload with the fully-categorized
+result (no persist-then-update two-pass). If Tier-2 fails (network/auth/rate-limit — a real,
+reachable failure mode for an external API call), the upload does not fail: the Tier-1-only
+result is used and those rows simply stay ``UNCATEGORIZED`` (AD-12 honest degradation, same
+instinct as Story 3.1's malformed-row skip).
 
 Progress is pushed to the browser over Reflex's existing WebSocket via ``yield`` (no polling
 needed — Reflex state sync is already a server push; the 1-second-polling fallback in the AC is
@@ -20,8 +23,9 @@ import asyncio
 import logging
 
 import reflex as rx
+from anthropic import Anthropic
 
-from finance_app.models import Transaction as TxnModel, UploadedFile
+from finance_app.models import MerchantRule, Transaction as TxnModel, UploadedFile
 from finance_app.state.auth_state import (  # noqa: F401
     AuthState,
     HOME_ROUTE,
@@ -29,9 +33,19 @@ from finance_app.state.auth_state import (  # noqa: F401
     user_for_token,
 )
 from services.categorize import categorize_rules
+from services.categorize.llm_categorizer import ClaudeCategorizer
+from services.categorize.protocol import Categorizer
+from services.categorize.summary import summarize_categorization
+from services.categorize.teach_me import load_user_merchant_rules
 from services.ingestion import IngestionError, parse_statement, persist_transactions
 
 log = logging.getLogger(__name__)
+
+# Composition root (project-context Dependency Injection rule): the Anthropic client is
+# constructed once here, not inside services/categorize/. Construction never fails even
+# without ANTHROPIC_API_KEY set (the SDK only raises on an actual request) — a missing key
+# surfaces as the Tier-2-failure fallback below, not an app-startup crash.
+_categorizer: Categorizer = ClaudeCategorizer(Anthropic())
 
 UPLOAD_ID = "upload-statement"
 _MAX_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -52,7 +66,7 @@ _SAMPLE_CSV = (
 
 # (key, label) for the four transparent-parse steps shown in order. Labels follow the WDS
 # prototype; the AC's step *concepts* (Reading / Identifying / Categorising by Rules / AI Assist)
-# map 1:1. Steps "rules"/"ai" are skeleton until Epic 3 fills real categorization counts.
+# map 1:1. All four are real as of Story 3.2 (Tier-1 since 3.1, Tier-2 since 3.2).
 PARSE_STEPS = (
     ("read", "Reading your statement"),
     ("identify", "Identifying transactions"),
@@ -114,8 +128,7 @@ class UploadState(AuthState):
     done_steps: list[str] = []  # completed steps (checked)
     summary_visible: bool = False  # parse summary + enabled CTA
 
-    # Parse results. `total` is real (from the parser); the rules/ai split is skeleton until
-    # Epic 3, where every row is currently "needs review".
+    # Parse results — all real as of Story 3.2 (Tier-1 + Tier-2 both run before persist).
     total: int = 0
     rules: int = 0
     ai: int = 0
@@ -199,16 +212,36 @@ class UploadState(AuthState):
         self.done_steps = self.done_steps + ["identify"]
         yield
 
-        # Step 3 — Categorising with Tier-1 rules engine.
+        # Step 3 — Categorising with Tier-1 rules engine (the user's own taught "Teach Me"
+        # rules, Story 3.3, are checked before the built-in table). Loading rules is a cheap
+        # DB read — no to_thread needed, unlike the categorization call itself.
         self.active_step = "rules"
         yield
-        categorized = await asyncio.to_thread(categorize_rules, transactions)
-        rules_matched = sum(
-            1 for t in categorized
-            if t.category_confidence == 1.0
-        )
+        user_rules: list[tuple[str, str]] = []
+        with rx.session() as session:
+            user = user_for_token(session, self.auth_token)
+            if user is not None:
+                user_rules = load_user_merchant_rules(session, MerchantRule, user.id)
+        categorized = await asyncio.to_thread(categorize_rules, transactions, user_rules)
+        self.active_step = ""
+        self.done_steps = self.done_steps + ["rules"]
+        yield
 
-        # Persist categorized rows so DB always has category/category_source/category_confidence.
+        # Step 4 — AI assist: Tier-2 LLM categorizer on whatever Tier-1 left UNCATEGORIZED.
+        # ClaudeCategorizer.categorize() already catches its own failures (network/auth/
+        # rate-limit/malformed-response) and returns the input unchanged — this try/except
+        # is a defense-in-depth backstop, not the primary fallback mechanism.
+        self.active_step = "ai"
+        yield
+        try:
+            categorized = await asyncio.to_thread(_categorizer.categorize, categorized)
+        except Exception:  # noqa: BLE001
+            log.exception("Tier-2 categorization failed for %r; continuing with Tier-1 only", name)
+        self.active_step = ""
+        self.done_steps = self.done_steps + ["ai"]
+        yield
+
+        # Persist the fully-categorized (Tier-1 + Tier-2) rows in a single write.
         try:
             with rx.session() as session:
                 user = user_for_token(session, self.auth_token)
@@ -229,22 +262,13 @@ class UploadState(AuthState):
             yield
             return
 
-        self.active_step = ""
-        self.done_steps = self.done_steps + ["rules"]
-        yield
-
-        # Step 4 — AI assist: skeleton until Epic 3 Tier-2 is implemented.
-        self.active_step = "ai"
-        yield
-        await asyncio.sleep(0.3)
-        self.active_step = ""
-        self.done_steps = self.done_steps + ["ai"]
-        yield
-
-        # Real summary: rule-matched count from Tier-1; remainder flagged as "needs review".
-        self.rules = rules_matched
-        self.ai = 0
-        self.need_review = self.total - rules_matched
+        # Real, honest three-way summary — see summarize_categorization()'s docstring for
+        # why a real category (e.g. the rules engine's low-confidence "Transfer In"
+        # fallback) can still count toward need_review, not rules.
+        summary = summarize_categorization(categorized)
+        self.rules = summary.rules
+        self.ai = summary.ai
+        self.need_review = summary.need_review
         self.summary_visible = True
         yield rx.call_script(_CLEAR_LEAVE_GUARD)
         yield

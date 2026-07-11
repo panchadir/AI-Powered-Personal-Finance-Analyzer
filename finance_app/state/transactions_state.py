@@ -4,38 +4,41 @@ Loads the signed-in user's transactions (AD-4: explicit ``user_id`` filter), for
 through ``formatINR``/``formatDate`` (AD-13), and derives the filter-chip bar and the
 "needs review" badge/banner state the prototype's JS computes client-side.
 
-This story does not build the Teach Me correction panel (Story 3.3) or the confidence-badge
-threshold logic (Story 3.4, once Tier-2 exists) — only two badge states are reachable here:
-a full-confidence rule match (no badge) and an unmatched/low-confidence row (amber "?" badge).
+Story 3.3 ("Teach Me"): rows are interactive again (Story 3.1's review had deliberately made
+them a non-interactive ``div`` — "until Story 3.3 gives them real behavior"). Clicking a row
+opens a correction panel (category picker + "re-apply" toggle); saving writes a
+``merchant_rules`` row and, if re-apply is on, updates every matching transaction now — see
+``services/categorize/teach_me.py`` for the session-injected DB writes this delegates to.
 
-Code-review follow-up (2026-07-10): the chip/filter derivation (``needs_review_count``,
-``distinct_categories``, ``build_chip_items``, ``filter_rows``) was pulled out into plain,
-session-free pure functions — same treatment ``_to_row``/``load_user_transaction_rows``
-already had — so AC #6's chip/filter behavior is unit-testable without a running Reflex app
-(a review found this logic had zero test coverage; ``reflex compile`` proves the component
-tree builds, but never executes this branching). Row-building is also now defensive: a
-malformed DB row (bad date/amount) is skipped with a logged warning instead of raising and
-failing the whole page load — not reachable via the current ingestion path (parsers validate
-first), but a real robustness gap the review flagged.
+Code-review follow-up (2026-07-10, Story 3.1/3.2 reviews): the chip/filter derivation
+(``needs_review_count``, ``distinct_categories``, ``build_chip_items``, ``filter_rows``) is
+pulled out into plain, session-free pure functions so it's unit-testable without a running
+Reflex app. Row-building is defensive: a malformed DB row (bad date/amount) is skipped with a
+logged warning instead of raising and failing the whole page load.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import reflex as rx
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from sqlmodel import select
 
-from finance_app.models import Transaction as TxnModel
+from finance_app.models import MerchantRule, Transaction as TxnModel
 from finance_app.state.auth_state import AuthState
-from services.categorize.schema import UNCATEGORIZED
+from services.categorize.schema import CATEGORIES, UNCATEGORIZED
+from services.categorize.teach_me import reapply_correction, write_merchant_rule
+from services.utils.enums import CategorySource, Direction
 from services.utils.format import formatDate, formatINR
 
 log = logging.getLogger(__name__)
 
-#: Rows with confidence below this are shown with the amber "?" needs-review badge. Every
-#: Tier-1 rule match is confidence 1.0; the engine's unrecognized-credit fallback is 0.5 and
-#: an unmatched row is 0.0 — both count as "needs review" until Tier-2 (Story 3.2) exists.
+#: Rows with confidence below this are shown with the amber "?" needs-review badge. A
+#: `rule`-sourced match is confidence 1.0; the rules engine's unrecognized-credit fallback is
+#: 0.5; an unmatched row is 0.0 — those are the only two ways a *non*-`llm`-sourced row is
+#: flagged "needs review" (Story 3.4: an `llm`-sourced row is never gated by this threshold
+#: at all — see `TxnRow.is_ai`/``_to_row``, which check `category_source` first).
 NEEDS_REVIEW_THRESHOLD = 1.0
 
 ALL_KEY = "all"
@@ -69,7 +72,21 @@ _UNCATEGORIZED_ICON = "❓"
 
 
 class TxnRow(BaseModel):
-    """One pre-formatted transaction row for display (AD-13: no raw numbers/dates in the UI)."""
+    """One pre-formatted transaction row for display (AD-13: no raw numbers/dates in the UI).
+
+    ``needs_review``/``is_ai`` drive the 3-state badge (Story 3.4): ``is_ai`` wins
+    unconditionally (a blue "AI" badge for any ``category_source='llm'`` row, regardless of
+    the LLM's own self-reported confidence); otherwise ``needs_review`` (confidence below
+    threshold) shows the amber "?" badge; otherwise no badge.
+
+    Code-review follow-up (2026-07-10): the two are mutually exclusive by construction in
+    ``_to_row`` (``needs_review = (not is_ai) and ...``), but nothing on this plain
+    ``BaseModel`` enforced that invariant against a future construction site building a row
+    directly. A model validator now rejects ``needs_review=True, is_ai=True`` together —
+    fail loudly at construction rather than silently rendering the wrong badge (the page's
+    ``rx.cond`` checks ``needs_review`` first, so a row with both set would show "?" and
+    silently swallow the AI signal).
+    """
 
     id: int
     date_label: str
@@ -79,6 +96,16 @@ class TxnRow(BaseModel):
     amount_label: str
     is_credit: bool
     needs_review: bool
+    is_ai: bool
+
+    @model_validator(mode="after")
+    def _needs_review_and_is_ai_are_mutually_exclusive(self) -> "TxnRow":
+        if self.needs_review and self.is_ai:
+            raise ValueError(
+                "TxnRow cannot have both needs_review and is_ai set — the 3-state badge "
+                "(review/AI/none) is defined by exactly one of these being true at a time."
+            )
+        return self
 
 
 class ChipItem(BaseModel):
@@ -86,6 +113,14 @@ class ChipItem(BaseModel):
 
     key: str
     label: str
+
+
+class CategoryOption(BaseModel):
+    """One category choice in the Teach Me picker; ``is_selected`` avoids a Reflex Var
+    comparison inside the component (mirrors ``ChipItem``'s ``is-active`` pattern)."""
+
+    category: str
+    is_selected: bool
 
 
 def _icon_for(category: str) -> str:
@@ -96,9 +131,20 @@ def _icon_for(category: str) -> str:
 
 def _to_row(txn: TxnModel) -> TxnRow:
     confidence = txn.category_confidence if txn.category_confidence is not None else 0.0
-    needs_review = confidence < NEEDS_REVIEW_THRESHOLD
-    is_credit = txn.direction == "credit"
     category = txn.category or UNCATEGORIZED
+    # is_ai wins unconditionally (AC #2 — no confidence carve-out for an LLM-sourced row) —
+    # but only for a row that actually got a real category out of it. The documented Tier-2
+    # write path (services/categorize/llm_categorizer.py) can never leave a row
+    # llm-sourced-yet-Uncategorized, but category_source/category_confidence are plain
+    # nullable columns with no DB constraint tying them together; a legacy/corrupted row
+    # could exist in that state, and it must still surface as "needs review", not silently
+    # show a confident-looking "AI" badge (code-review follow-up, 2026-07-10).
+    is_ai = txn.category_source == CategorySource.llm.value and category != UNCATEGORIZED
+    # Otherwise fall back to the pre-existing confidence-threshold check, which is what
+    # actually catches a fully-unmatched Uncategorized row (confidence 0.0) and the rules
+    # engine's 0.5-confidence "Transfer In" credit fallback (both source='rule').
+    needs_review = (not is_ai) and confidence < NEEDS_REVIEW_THRESHOLD
+    is_credit = txn.direction == Direction.credit.value
     amount = formatINR(txn.amount)
     return TxnRow(
         id=txn.id,
@@ -109,6 +155,7 @@ def _to_row(txn: TxnModel) -> TxnRow:
         amount_label=(f"+{amount}" if is_credit else amount),
         is_credit=is_credit,
         needs_review=needs_review,
+        is_ai=is_ai,
     )
 
 
@@ -174,6 +221,12 @@ class TransactionsState(AuthState):
     rows: list[TxnRow] = []
     active_filter: str = ALL_KEY
 
+    # Teach Me correction panel (Story 3.3).
+    open_row_id: int | None = None
+    selected_category: str = ""
+    reapply: bool = True  # AC #2: defaults ON
+    confirmation: str = ""
+
     @rx.event
     def load_transactions(self):
         user = self.authenticated_user
@@ -186,6 +239,97 @@ class TransactionsState(AuthState):
     @rx.event
     def set_filter(self, key: str):
         self.active_filter = key
+
+    @rx.event
+    def toggle_row(self, row_id: int):
+        """Open this row's Teach Me panel, or close it if already open (mirrors the WDS
+        prototype's toggleRow — opening one row closes any other)."""
+        self.confirmation = ""
+        if self.open_row_id == row_id:
+            self.open_row_id = None
+            self.selected_category = ""
+            return
+        self.open_row_id = row_id
+        # AC #2: the re-apply toggle defaults ON for every panel — the WDS prototype rebuilds
+        # the checkbox as `checked` from scratch on each open, so it must reset here too, not
+        # just once at state-init (a prior correction turning it off must not leak into the
+        # next row's panel).
+        self.reapply = True
+        row = next((r for r in self.rows if r.id == row_id), None)
+        # Pre-select the row's current category, same as the prototype's `current` logic —
+        # an UNCATEGORIZED row starts with nothing picked.
+        self.selected_category = "" if row is None or row.category == UNCATEGORIZED else row.category
+
+    @rx.event
+    def select_category(self, category: str):
+        # The taxonomy is the single source of truth (AD-7) — a client can call this handler
+        # directly over the websocket, so it must not accept a value the chip UI would never
+        # have offered.
+        if category not in CATEGORIES:
+            return
+        self.selected_category = category
+
+    @rx.event
+    def toggle_reapply(self):
+        self.reapply = not self.reapply
+
+    @rx.event
+    def save_correction(self):
+        """AC #1-#4: write a merchant_rules row, optionally re-apply it to every matching
+        transaction, and show the exact confirmation copy the AC specifies."""
+        if (
+            not self.selected_category
+            or self.selected_category not in CATEGORIES
+            or self.open_row_id is None
+        ):
+            return
+        row = next((r for r in self.rows if r.id == self.open_row_id), None)
+        if row is None:
+            # The row this panel was opened for is no longer in view (e.g. a reload changed
+            # the list) — nothing left to correct. Close the panel instead of leaving it
+            # stuck open with no control left that can reset it.
+            self.open_row_id = None
+            self.selected_category = ""
+            return
+        user = self.authenticated_user
+        if user.id is None or user.id < 0:
+            return
+
+        updated = True
+        with rx.session() as session:
+            write_merchant_rule(session, MerchantRule, user.id, row.merchant, self.selected_category)
+            if self.reapply:
+                reapply_correction(session, TxnModel, user.id, row.merchant, self.selected_category)
+            else:
+                # Re-apply is off: correct only the one transaction the user actually opened,
+                # not every matching row (AD-4: still scoped to this user's own row).
+                single = session.get(TxnModel, row.id)
+                updated = single is not None and single.user_id == user.id
+                if updated:
+                    single.category = self.selected_category
+                    single.category_source = CategorySource.user.value
+                    single.category_confidence = 1.0
+                    session.add(single)
+                    session.commit()
+            self.rows = load_user_transaction_rows(session, TxnModel, user.id)
+
+        self.confirmation = (
+            f"Got it — I'll call {row.merchant} '{self.selected_category}' from now on."
+            if updated
+            else "Couldn't save that correction — please try again."
+        )
+        self.open_row_id = None
+        self.selected_category = ""
+        return TransactionsState.dismiss_confirmation_after_delay
+
+    @rx.event(background=True)
+    async def dismiss_confirmation_after_delay(self):
+        """Auto-dismisses the confirmation toast a few seconds after it appears, so it
+        doesn't linger indefinitely until the next row is opened or corrected."""
+        await asyncio.sleep(4)
+        async with self:
+            if self.confirmation:
+                self.confirmation = ""
 
     @rx.var
     def has_transactions(self) -> bool:
@@ -202,3 +346,10 @@ class TransactionsState(AuthState):
     @rx.var
     def visible_rows(self) -> list[TxnRow]:
         return filter_rows(self.rows, self.active_filter)
+
+    @rx.var
+    def category_options(self) -> list[CategoryOption]:
+        return [
+            CategoryOption(category=c, is_selected=c == self.selected_category)
+            for c in CATEGORIES
+        ]
