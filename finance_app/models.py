@@ -82,6 +82,7 @@ class Transaction(rx.Model, table=True):
     category: str | None = None
     category_source: str | None = None  # CategorySource: 'rule' | 'llm' | 'user'
     category_confidence: float | None = None  # display/threshold only, never money math
+    reasoning: str | None = None  # Tier-2 LLM's one-sentence rationale (Story 3.2); rule/user rows leave this None
     created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
 
 

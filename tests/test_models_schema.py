@@ -67,7 +67,7 @@ def test_transactions_has_canonical_ad6_columns(tmp_path) -> None:
     canonical = {
         "id", "user_id", "source_file_id", "date", "description_raw",
         "merchant_normalized", "amount", "direction", "balance_after",
-        "category", "category_source", "category_confidence", "created_at",
+        "category", "category_source", "category_confidence", "reasoning", "created_at",
     }
     assert canonical <= cols, f"transactions missing canonical columns: {canonical - cols}"
 

@@ -187,7 +187,11 @@ def _success_view() -> rx.Component:
     """Prototype success state: no auto-login — the user returns to Login to sign in."""
     return rx.el.section(
         rx.el.div("✓", class_name="success-check", aria_hidden="true"),
-        rx.el.h2("Registration successful!", class_name="register-success-headline"),
+        rx.el.h2(
+            "Registration successful!",
+            class_name="register-success-headline",
+            aria_live="assertive",
+        ),
         rx.el.p(
             "Your account has been created. For your security, please log in to continue.",
             class_name="text-muted register-success-sub",

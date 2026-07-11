@@ -18,13 +18,19 @@ evidence pack that the deterministic engine already produced into prose. It must
 from __future__ import annotations
 
 #: Tier-2 transaction categorization (Epic 3). Cheap, high-volume, structured output.
-CATEGORIZATION_MODEL = "claude-haiku-4-5"
+TIER2_CATEGORIZATION_MODEL = "claude-haiku-4-5-20251001"
 
 #: Morning briefing (Epic 5) and Copilot (Epic 6). Tone quality matters most here.
 NARRATION_MODEL = "claude-opus-4-8"
 
 #: Drop-in replacement for ``NARRATION_MODEL`` if the API budget tightens (NFR-4).
 COST_LEVER_MODEL = "claude-sonnet-5"
+
+#: Briefing narration and Copilot chat (high quality, cached system prompt).
+COPILOT_MODEL = "claude-opus-4-8"
+
+#: Cost lever — swap COPILOT_MODEL for this string to reduce spend.
+COPILOT_MODEL_COST_LEVER = "claude-sonnet-5"
 
 #: A briefing is 2–4 sentences (FR-6.2). Cap generation so a runaway response cannot burn
 #: budget or overflow the panel.
@@ -36,13 +42,3 @@ NARRATION_TEMPERATURE = 0.0
 #: Environment variable holding the API key. Absent -> narration degrades to a deterministic
 #: fallback rather than crashing the dashboard (NFR-1: degrade visibly, never silently wrong).
 API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
-"""
-
-#: Tier-2 transaction categorization (cheap, fast structured output).
-CATEGORIZE_MODEL = "claude-haiku-4-5-20251001"
-
-#: Briefing narration and Copilot chat (high quality, cached system prompt).
-COPILOT_MODEL = "claude-opus-4-8"
-
-#: Cost lever — swap COPILOT_MODEL for this string to reduce spend.
-COPILOT_MODEL_COST_LEVER = "claude-sonnet-5"
