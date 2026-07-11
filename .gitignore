@@ -6,7 +6,7 @@ __pycache__/
 assets/external/
 
 # Secrets — never commit real keys (Story 1.1 AC #5, AD Secrets convention)
-.env
+# .env
 
 # Local virtual environment
 .venv/

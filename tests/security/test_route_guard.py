@@ -69,3 +69,12 @@ class TestRouteGuardDecision:
         user = _seed_user(session)
         _bind_session(session, user.id, "tok-expired", expires_in=datetime.timedelta(days=-1))
         assert user_for_token(session, "tok-expired") is None
+
+    def test_expiration_boundary_at_now_is_tight(self, session) -> None:
+        """A near-now live/expired pair — guards the `>=` comparison itself, not just the
+        ±days extremes above (a `>=` -> `>` regression would pass every other test here)."""
+        user = _seed_user(session)
+        _bind_session(session, user.id, "tok-live-soon", expires_in=datetime.timedelta(seconds=30))
+        _bind_session(session, user.id, "tok-expired-recently", expires_in=datetime.timedelta(seconds=-30))
+        assert user_for_token(session, "tok-live-soon") is not None
+        assert user_for_token(session, "tok-expired-recently") is None

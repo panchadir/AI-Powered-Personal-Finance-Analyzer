@@ -19,8 +19,9 @@ Field provenance (AD-6 lists all twelve canonical fields):
   and ``merchant_normalized``.
 * **Assigned downstream** (default ``None`` here): ``user_id`` and ``source_file_id`` are
   set by the persistence layer; ``id`` and ``created_at`` are assigned by the DB;
-  ``category`` / ``category_source`` / ``category_confidence`` are filled by Epic 3
-  categorization. A fresh parse leaves them unset.
+  ``category`` / ``category_source`` / ``category_confidence`` / ``reasoning`` are filled by
+  Epic 3 categorization (``reasoning`` only set by Tier-2/Story 3.2; rule/user rows leave it
+  ``None``). A fresh parse leaves them unset.
 
 Invariants baked in:
 
@@ -61,6 +62,7 @@ class Transaction:
     category: str | None = None
     category_source: str | None = None  # CategorySource: 'rule' | 'llm' | 'user'
     category_confidence: float | None = None  # threshold/display only, never money math
+    reasoning: str | None = None  # Tier-2 LLM's one-sentence rationale (Story 3.2)
     user_id: int | None = None  # set by the persistence layer
     source_file_id: int | None = None  # set by the persistence layer
     id: int | None = None  # assigned by the DB

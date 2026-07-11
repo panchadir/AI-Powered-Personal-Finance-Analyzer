@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import reflex as rx
 
-from finance_app.pages.register import TRUST_HEADLINE, register
+from finance_app.pages.register import TRUST_HEADLINE, _success_view, register
 from finance_app.state.auth_state import RegisterState
 
 
@@ -25,6 +25,15 @@ def test_register_page_builds() -> None:
 def test_password_toggle_defaults_hidden() -> None:
     # AC #5: show/hide toggle exists and starts hidden.
     assert RegisterState.__fields__["show_password"].default is False
+
+
+def test_success_headline_has_aria_live_assertive() -> None:
+    # Story 1.5 · AC #2: aria-live="assertive" on the "Registration successful!" headline
+    # (role="status" alone on the container isn't enough — screen readers need the live
+    # region on the headline itself to announce it immediately).
+    rendered = str(_success_view().render())
+    assert '"aria-live":"assertive"' in rendered
+    assert "Registration successful!" in rendered
 
 
 def test_no_preticked_consent_checkbox() -> None:

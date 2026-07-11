@@ -4,8 +4,8 @@ Asserts the AC directly:
 
 * the ``StatementParser`` protocol is a single-method ``parse(file_path) -> list[Transaction]``
   contract, and a stub parser that implements it type-checks and runs;
-* everything a parser returns conforms to the canonical schema (AD-6) — all twelve fields
-  present, ``Decimal`` money, ``Direction`` enum;
+* everything a parser returns conforms to the canonical schema (AD-6) — all thirteen fields
+  present (``reasoning`` added Story 3.2), ``Decimal`` money, ``Direction`` enum;
 * the schema's honesty guards fire (no float amounts, no raw-string direction) so a
   malformed parser fails loudly at the boundary instead of poisoning the engine (AD-8).
 
@@ -25,7 +25,8 @@ import pytest
 from services.ingestion import StatementParser, Transaction
 from services.utils.enums import Direction
 
-# The twelve canonical fields the ingestion contract must carry (AD-6).
+# The thirteen canonical fields the ingestion contract must carry (AD-6).
+# `reasoning` added Story 3.2 (Tier-2 LLM's one-sentence rationale).
 CANONICAL_FIELDS = {
     "id",
     "user_id",
@@ -39,6 +40,7 @@ CANONICAL_FIELDS = {
     "category",
     "category_source",
     "category_confidence",
+    "reasoning",
     "created_at",
 }
 
@@ -82,7 +84,7 @@ def test_parse_returns_list_of_canonical_transactions() -> None:
 
 
 def test_transaction_exposes_every_canonical_field() -> None:
-    """AD-6: the canonical schema is exactly the twelve documented fields."""
+    """AD-6: the canonical schema is exactly the thirteen documented fields."""
     field_names = {f.name for f in dataclasses.fields(Transaction)}
     assert field_names == CANONICAL_FIELDS
 

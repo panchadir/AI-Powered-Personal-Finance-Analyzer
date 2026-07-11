@@ -416,7 +416,7 @@ So that I know exactly what happened to my data.
 **Given** parsing completes successfully
 **When** the completion summary renders
 **Then** it shows `"{n} categorized by rules · {n} by AI · {n} need your help"` derived from real parse output — not placeholder text
-**And** for the demo fixture (24 transactions): `"18 categorized by rules · 3 by AI · 3 need your help"`
+**And** for the demo fixture (24 transactions), the split is derived from whichever Tier-1 rules engine is live at the time — this was originally estimated as `"18 categorized by rules · 3 by AI · 3 need your help"`, but the Tier-1 engine actually built in Story 3.1 (a broader, ~90-rule India-merchant table that landed ahead of that story and was kept as-is, then extended by 2 rules during that story's code review — see 3-1 story's Change Log) rule-matches **all 24 of 24** rows on its own, leaving nothing for Tier-2/needs-review on this fixture. The literal numbers here are illustrative, not a fixed contract — the AC's requirement is that the three counts are always derived from real parse output, whatever they are. A future demo fixture revision (or a real user statement) is what will actually exercise the `by AI` / `need your help` counts once Story 3.2 lands.
 **And** the `"Review transactions"` CTA becomes active (aria-disabled removed)
 
 **Given** I navigate back during an in-progress upload

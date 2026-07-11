@@ -112,3 +112,31 @@ def test_dedup_key_normalizes_description_whitespace() -> None:
     existing = {dedup_key(_t("2026-06-01", "ATM WITHDRAWAL", "450.00").with_fields(user_id=1))}
     spaced = _t("2026-06-01", "ATM   WITHDRAWAL", "450.00").with_fields(user_id=1)
     assert filter_new_transactions([spaced], existing) == []
+
+
+def test_reasoning_field_round_trips_through_persist(session) -> None:
+    """Story 3.2: Tier-2's reasoning must survive the parse -> persist -> DB round-trip,
+    same as category/category_source/category_confidence already do."""
+    txn = _t("2026-06-01", "XYZCORP PAYMENT", "100.00").with_fields(
+        category="Shopping", category_source="llm", category_confidence=0.82,
+        reasoning="Generic merchant settlement, likely retail.",
+    )
+    persist_transactions(session, TxnModel, 1, None, [txn])
+
+    row = session.exec(
+        sqlmodel.select(TxnModel).where(TxnModel.user_id == 1)
+    ).one()
+    assert row.reasoning == "Generic merchant settlement, likely retail."
+
+
+def test_rule_matched_row_has_no_reasoning(session) -> None:
+    """A Tier-1-only row (no LLM involvement) leaves reasoning unset."""
+    txn = _t("2026-06-01", "Zomato", "100.00").with_fields(
+        category="Food & Dining", category_source="rule", category_confidence=1.0,
+    )
+    persist_transactions(session, TxnModel, 1, None, [txn])
+
+    row = session.exec(
+        sqlmodel.select(TxnModel).where(TxnModel.user_id == 1)
+    ).one()
+    assert row.reasoning is None

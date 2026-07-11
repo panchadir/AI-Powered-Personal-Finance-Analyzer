@@ -937,6 +937,12 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 58 | Story 2.5 (dedup + persistence -- finishes Epic 2): new `services/ingestion/persist.py` -- pure `filter_new_transactions` + `persist_transactions` (transaction model INJECTED per AD-2, user-scoped dedup per AD-4 on the canonical key); wired into `upload_state._run_parse` so uploads persist deduped rows (re-upload / overlapping / wider range inserts only genuinely-new); `tests/ingestion/test_dedup.py` covers exact re-upload / overlapping / wider-range / per-user isolation / normalization; closes the 2.4 not-persisted deferral; `pytest` 130 passed + `compile --dry` SUCCESS | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/persist.py` (new) + `__init__.py`, `finance_app/state/upload_state.py`, `tests/ingestion/test_dedup.py`, `deferred-work.md`, `sprint-status.yaml` |
 | 59 | Code review of Story 2.5 (inline adversarial) -- **Epic 2 fully reviewed**: 1 medium patch applied -- the persist block in `upload_state._run_parse` had no error handling, so a DB error would escape untyped to the UI (AD-12) and leave the beforeunload guard armed (same class as 2.4-F1, on the persist path); wrapped with honest copy + guard-clear + drop-back-to-Upload. Verified NOT-a-bug: Decimal scale dedup (parsed Decimal('450') stored as '450.00' still dedups to 0-new; equal Decimals share a set slot). `pytest` 130 passed + `compile --dry` SUCCESS; 2-5 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `finance_app/state/upload_state.py` (persist error handling), `sprint-status.yaml` |
 | 60 | Final Epic-2 sweep (user: "check once again, fix any defers/patches"): holistic cross-cutting review -- no code defects found. Fixed a venv/requirements drift (installed pinned `psycopg2-binary`); added an end-to-end `parse_statement -> persist_transactions` integration test (`test_pipeline_integration.py`); and **got the app running live** -- `reflex run` now boots via a relative SQLite DSN and serves `/` + `/upload` at HTTP 200 (the earlier boot blocker was the psycopg2 drift + path-with-space, both resolved). `pytest` 132 passed. Remaining items are genuine cross-epic/asset deps (real HDFC PDF -> 8.5; categorization counts -> Epic 3; interactive browser E2E -> Epic 8) | None (direct user instruction) (Observed) | Claude Code (dev/reviewer) | `tests/ingestion/test_pipeline_integration.py` (new), `.venv` (psycopg2), `deferred-work.md` |
+| 61 | Epic 3 kickoff: Story 3.1 (Tier-1 Rules Engine & Transactions Table) created via exhaustive-analysis context engineering. Discovered `data/demo-data.json` was missing (blocks AC #9) and sourced its exact 24-row content from the WDS prototype; found and documented an epics-vs-WDS category-label conflict (resolved by WDS precedent); flagged a fixture-breaking rule-writing trap (BigBasket/Amazon/Myntra/generic UPI-NEFT-PhonePe must stay unmatched) with an explicit 43-rule starter table. `epic-3` -> in-progress, `3.1` -> ready-for-dev | `bmad-create-story` (Observed) | Claude Code (story context engine) | `3-1-tier-1-rules-engine-and-transactions-table.md` (new), `sprint-status.yaml` |
+| 62 | Epic 1 cleanup (prompted by Step 61's own finding, user: "check once 1.4 and 1.5 is already done"): verified Story 1.4's 5 documented review patches were still unapplied and fixed all 5 (logout cookie clear + token rotation, IDOR test strengthened with a real control row, 2 new edge-case tests, trailing newlines) -- Story 1.4 -> done. Audited Story 1.5 (no story file existed) against the live code: blur validation + nav scaffold already fully implemented; found and fixed a real gap (`aria-live="assertive"` missing on the registration-success headline) with a regression test; backfilled its story file -> Story 1.5 -> done. `epic-1` -> done. **Mid-step: all of Steps 61-62's uncommitted changes were externally discarded (clean git tree)** -- detected via `git status`, every file re-verified reverted, then every edit reapplied verbatim from context (no re-derivation). `pytest` 138 passed after reapplication, `git status` confirmed all files restored | None (direct instruction) (Observed) | Claude Code (dev/reviewer) | `finance_app/state/auth_state.py`, `finance_app/pages/register.py`, `tests/security/*.py`, `tests/test_register_page_smoke.py`, `1-4-...md`, `1-5-...md` (new), `sprint-status.yaml` |
+| 63 | Dev Story 3.1 (Tier-1 Rules Engine & Transactions Table): mid-implementation discovered the rules engine + upload wiring already existed (2 teammate commits landed after story creation) with a different taxonomy that already rule-matched 22/24 demo rows, not the assumed 18 -- halted, used AskUserQuestion, user chose keep-and-adapt. Populated `services/categorize/schema.py` with the taxonomy actually in use; built `TransactionsState` (discovered `rx.Base` doesn't exist in this Reflex version, verified `pydantic.BaseModel` works instead) + rebuilt the transactions page; 34 new tests against real (not assumed) engine behavior. `pytest` 172 passed, `reflex compile` Success | `bmad-dev-story` (Observed) | Claude Code (dev) | `data/demo-data.json`, `finance_app/state/transactions_state.py` (new), `finance_app/pages/transactions.py`, `services/categorize/schema.py`, `tests/categorize/test_rules.py` + `tests/test_transactions_state.py` (new), `sprint-status.yaml` |
+| 64 | Code review of Story 3.1 (3 parallel layers: Blind Hunter, Edge Case Hunter, Acceptance Auditor) -- diff scoped to the story's own File List since its `baseline_commit` was stale vs. 2 intervening teammate commits. 21 findings triaged to 1 decision-needed + 9 patches + 7 deferred + 4 dismissed (1 a real false positive re: `rx.Base`, caught using the agent's own Step-63 empirical evidence). User resolved the decision (added 2 missing merchant rules -> demo fixture now 24/24 matched) and chose to apply all 9 patches (AD-7 taxonomy-parity test, malformed-row guard, empty-state UI, ordering tiebreaker, chip logic extracted into 4 new tested pure functions, dead focusable-button fixed, foreach `key=` added, category icons, aria fix). `pytest` 191 passed, `reflex compile` Success; Story 3.1 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) + 3 parallel subagents (Blind Hunter, Edge Case Hunter, Acceptance Auditor) | `services/categorize/rules.py`, `finance_app/state/transactions_state.py`, `finance_app/pages/transactions.py`, `tests/categorize/test_rules.py`, `tests/test_transactions_state.py`, `3-1-...md`, `deferred-work.md`, `sprint-status.yaml`, `epics.md` |
+| 65 | Create Story 3.2 (Tier-2 LLM Categorizer, Claude Haiku): applied the Step-63 lesson directly -- fresh full repo re-scan confirmed no pre-existing Tier-2 code (clean slate, unlike Step 61). Empirically verified the installed `anthropic==0.116.0` SDK's `messages.parse`/`ParsedMessage.parsed_output` shape by inspecting the package directly. Found 2 gaps before writing tasks: AC #7's "3 AI-categorized" demo-fixture example already stale (Step 64 made the fixture 24/24 rule-matched) and AC #2's `reasoning` field doesn't exist in either schema layer -- both flagged explicitly in the story | `bmad-create-story` (Observed) | Claude Code (story context engine) | `3-2-tier-2-llm-categorizer-claude-haiku.md` (new), `sprint-status.yaml` |
+| 66 | Dev Story 3.2: first LLM integration in this codebase. `Categorizer` protocol + `ClaudeCategorizer` (one batched `messages.parse()` call per upload, delimited transaction data, `cache_control: ephemeral`, defensive index-mapped responses); added `reasoning` column via an Alembic migration (found + fixed a missing `import sqlmodel` in the autogenerated file) applied to the live Postgres; restructured `upload_state.py` so Tier-1+Tier-2 both run before a single persist call, with a graceful fallback if the Tier-2 API call fails; 16 new tests (mocked client, synthetic fixture since the demo data is now fully Tier-1-covered); fixed 2 pre-existing tests whose "twelve canonical fields" assumption the AD-6 change correctly invalidated. `pytest` 207 passed, `reflex compile` Success; Story 3.2 -> review | `bmad-dev-story` (Observed) | Claude Code (dev) | `services/categorize/{protocol,llm_categorizer}.py` (new), `alembic/versions/e470256e035f_...py` (new), `finance_app/models.py`, `finance_app/state/upload_state.py`, `services/ingestion/{schema,persist}.py`, `services/narrate/config.py`, `ARCHITECTURE-SPINE.md`, `tests/categorize/test_llm_categorizer.py` (new), `tests/ingestion/test_dedup.py`, `sprint-status.yaml` |
 
 ## Commands Used
 
@@ -968,10 +974,10 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `/bmad-party-mode` (Observed) | +1 (Step 30; total 3 sessions across the tracker) |
 | `/bmad-agent-dev` → Amelia (Observed) | 1 (menu host for Steps 39–41) |
 | `bmad-sprint-planning` via `SP` (Observed) | 1 (Step 39) |
-| `bmad-create-story` via `CS` (Observed) | 3 (Steps 40, 43, 46) |
-| `bmad-dev-story` via `DS` (Observed) | 3 (Steps 41, 44, 47) |
-| `/bmad-code-review` (Observed) | 3 (Steps 42, 45, 48) |
-| None (direct instruction) (Observed) | +1 (Step 49 — WDS UI alignment) |
+| `bmad-create-story` via `CS` (Observed) | 4 (Steps 40, 43, 46, 61) |
+| `bmad-dev-story` via `DS` (Observed) | 4 (Steps 41, 44, 47, 63) |
+| `/bmad-code-review` (Observed) | 4 (Steps 42, 45, 48, 64) |
+| None (direct instruction) (Observed) | +8 (Steps 49, 52, 53, 55, 57, 58, 60, 62 — direct-instruction dev/review steps) |
 
 ## Agent Usage
 
@@ -1021,9 +1027,11 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `bmad-check-implementation-readiness` | 1 |
 | `bmad-agent-dev` | 1 |
 | `bmad-sprint-planning` | 1 |
-| `bmad-create-story` | 3 |
-| `bmad-dev-story` | 3 |
-| `bmad-code-review` | 3 |
+| `bmad-create-story` | 4 (+1 at Step 61) |
+| `bmad-dev-story` | 4 (+1 at Step 63) |
+| `bmad-code-review` | 4 (+1 at Step 64; Steps 42/45/48 were inline adversarial review by the main agent, not this formal workflow) |
+| `bmad-review-adversarial-general` (nested) | 1 (Step 64 — first formal invocation as a named skill via subagent) |
+| `bmad-review-edge-case-hunter` (nested) | 1 (Step 64) |
 
 ## Agent → Skill Mapping
 
@@ -1105,6 +1113,14 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | `services/**` (framework-agnostic packages: ingestion, categorize+schema, engine, narrate+config, utils+format — placeholders) | Step 41 | — |
 | `tests/**` (`test_service_boundary.py` AC-6 guard, `ingestion/test_statementsparser_smoke.py` AC-4 guard, package inits) | Step 41 | — |
 | `rxconfig.py`, `requirements.txt` (pinned), `.env.example`, `docs/day1-assumption-validations.md`, `data/` | Step 41 | — (`.gitignore` also updated: `.env`/`.venv`/caches) |
+| `_bmad-output/implementation-artifacts/3-1-tier-1-rules-engine-and-transactions-table.md` | Step 61 | — (ready-for-dev; embeds the 24-row demo fixture + 43-rule starter table; recreated once after a mid-session discard) |
+| `_bmad-output/implementation-artifacts/1-5-auth-transition-ux-validation-behavior-and-nav-scaffold.md` | Step 62 | — (backfilled; done; recreated once after a mid-session discard) |
+| `_bmad-output/implementation-artifacts/1-4-user-login-logout-and-protected-routes.md` | Step 47 | Step 62 (all 5 review patches checked off + Change Log; status review → done) |
+| `_bmad-output/implementation-artifacts/sprint-status.yaml` | Step 39 | Steps 40–58 (per-story) → Step 61 (`epic-3` in-progress, `3-1` ready-for-dev) → Step 62 (`1-4`/`1-5`/`epic-1` → done) |
+| `finance_app/state/auth_state.py` | Step 41 (placeholder) → Step 49 (WDS rework) → Step 47 (Story 1.3 auth logic) | Step 62 (`do_logout` clears the cookie instead of re-emitting it) |
+| `finance_app/pages/register.py` | Step 49 | Step 62 (`aria-live="assertive"` added to the registration-success headline) |
+| `tests/security/{test_login,test_logout,test_route_guard,test_idor_baseline}.py` | Step 47 | Step 62 (edge-case tests added, IDOR test strengthened, trailing newlines) |
+| `tests/test_register_page_smoke.py` | Step 49 | Step 62 (new `test_success_headline_has_aria_live_assertive`) |
 
 ## Corrections & Rework Log
 
@@ -1114,6 +1130,7 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | Step 4 (innovation-strategy) | Step 10 (applied within `project-brief.md`, not by editing Step 4's source file) | Saga | Steps 7/8 both flagged that the innovation strategy's competitor list (Walnut), D30 retention target (≥40%), and paid-conversion target (≥5%) were outdated or optimistic against external benchmarks; corrections had been recommended since Step 8 but not applied to any downstream document until now | Corrected (in the new Product Brief only — `innovation-strategy-2026-07-07.md` itself remains unedited) |
 | Step 14 (Scenario 01 + overview) | Step 15 (Party Mode) | Claude Code (Party Mode orchestrator) | Scenario 01 marked "scenario success ✓" on demo-stretch Copilot (cap 7) and reused "golden path" to include stretch caps 7–8, contradicting the PRD/epics scope re-cut (golden path = caps 1–6). 3 Critical scope-labeling fixes applied surgically; Recommended/Optional items (incl. the FR-7 P0/P1 vs stretch contradiction) left open | **Superseded by Step 16** — owner promoted caps 7–8 to must-ship, so C1/C2 were reverted; the underlying contradiction is now resolved by expanding scope |
 | Step 15 (stretch labels) + Steps 12–14 (stretch cut-line) | Step 16 (Party Mode) | Claude Code (Party Mode orchestrator) | Owner decision (AskUserQuestion) promoted AI Insights + Copilot from demo-stretch to committed must-ship; reverted Step-15 labels and rewrote PRD §2 + epics (E6/E8) to retire the cut-line | Corrected (scope expanded; FR-7 P0/P1-vs-stretch contradiction resolved) |
+| Step 47 (Story 1.4 review patches never applied) + undated ad-hoc work (Story 1.5's nav/validation, folded into `ed482c5` with no story file) | Step 62 | Claude Code (dev/reviewer) | `sprint-status.yaml` had drifted from reality in both directions: Story 1.4 was correctly `review` but its 5 documented patches sat unapplied; Story 1.5 was marked `backlog` despite 2 of its 3 ACs already being fully built. Both surfaced only because the agent verified tracker claims against the live code (prompted by Step 61's kickoff) instead of trusting the YAML | Corrected — 1.4's 5 patches applied, 1.5 backfilled + its one real gap (`aria-live`) fixed; both → done, `epic-1` → done. **Re-corrected a second time within Step 62** after all of it was externally discarded mid-session and had to be reapplied from context |
 
 ## Open Reconciliation Item
 
@@ -1166,7 +1183,13 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 40 — Create Story 1.1 — dev-ready context spec written (ready-for-dev); epic-1 → in-progress
 [DONE]    Step 41 — Dev Story 1.1 — Project Skeleton & App Scaffold BUILT & VERIFIED (first app source code; reflex run serves 6 routes; pytest 5 passed; statementsparser→HDFC assumption PASS; status → review)  <-- run code-review, then create Story 1.2
 [DONE]    Step 42 — Code Review of Story 1.1 — 6 ACs verified met; 4 cleanups applied (data/.gitkeep, unused import, trailing newline, docstring); AD-2 boundary-guard enhancement deferred then RESOLVED same session (services/→finance_app import now guarded; suite 6 passed); Story 1.1 → done
-[TODO]    Development continues — create Story 1.2 (DB schema & formatting utils). Day-1 caveats for Epic 2 recorded in docs/day1-assumption-validations.md (statementsparser import name + schema adapter + live-parse owed in S2.3).
+[DONE]    Steps 43–59 — Stories 1.2–1.3 (create/dev/review) + Epic 2 Stories 2.1–2.5 (all create/dev/review or direct-instruction cycles) — see Timeline rows 43–59 and step entries above
+[DONE]    Step 60 — Final Epic-2 verification sweep — venv drift fixed, integration test added, live boot achieved (HTTP 200 on `/` + `/upload`); pytest 132 passed; Epic 2 confirmed complete
+[DONE]    Step 61 — Epic 3 kickoff: Story 3.1 created (ready-for-dev) — `data/demo-data.json` gap discovered + fixture sourced from the WDS prototype; epics-vs-WDS category conflict resolved; fixture-breaking rule trap flagged with an explicit exclusion list; `epic-3` → in-progress
+[DONE]    Step 62 — Epic 1 cleanup — Story 1.4's 5 review patches applied (logout cookie clear + rotation, IDOR test strengthened, 2 edge-case tests, trailing newlines) → done; Story 1.5 backfilled + its one real gap (`aria-live="assertive"` on registration-success headline) fixed → done; `epic-1` → done; survived a mid-step external discard (all files reapplied + re-verified); pytest 138 passed
+[DONE]    Step 63 — Dev Story 3.1 — Tier-1 Rules Engine & Transactions Table BUILT; discovered + adapted to a pre-existing rules engine (2 teammate commits landed after story creation); new `TransactionsState` + rebuilt transactions page; 34 new tests; pytest 172 passed, `reflex compile` Success; status → review
+[DONE]    Step 64 — Code Review of Story 3.1 — 3-layer adversarial review (21 findings); 1 decision resolved (2 merchant rules added, demo fixture now 24/24) + 9 patches applied (AD-7 test-parity, malformed-row guard, empty-state, ordering tiebreaker, chip logic extracted + tested, dead-button fix, foreach keys, category icons, aria fix); 7 deferred, 4 dismissed (1 false positive caught with hard evidence); pytest 191 passed; Story 3.1 → done  <-- commit the branch (already lost uncommitted work once this session); then create Story 3.2 (Tier-2 LLM Categorizer)
+[TODO]    Development continues — `bmad-create-story` for Story 3.2 (Tier-2 LLM Categorizer, Claude Haiku), or `bmad-sprint-status` to review overall project state. Day-1 caveats for Epic 2 recorded in docs/day1-assumption-validations.md (statementsparser import name + schema adapter + live-parse owed in S2.3).
 ```
 
 **Current phase (updated Step 24):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
@@ -1183,17 +1206,20 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 
 | Metric | Total |
 |---|---|
-| Steps recorded | 60 (Steps 43–50 added after this table's last full refresh; see step entries above and Timeline rows 49–50) |
-| Distinct BMAD/WDS commands/workflows observed or inferred | 20 (+`bmad-code-review` at Step 42; Steps 39–41 added `bmad-agent-dev`/`bmad-sprint-planning`/`bmad-create-story`/`bmad-dev-story`) |
-| Distinct agents | 8 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner], Saga, Freya [WDS Phase 4 UX Designer], Amelia [`bmad-agent-dev`]) |
-| Distinct skills | 21 (+`bmad-agent-dev`, +`bmad-sprint-planning`, +`bmad-create-story`, +`bmad-dev-story` at Steps 39–41; +`bmad-code-review` at Step 42) |
+| Steps recorded | 64 (Steps 51–64 added after this table's last full refresh; see step entries above and Timeline rows 51–64) |
+| Distinct BMAD/WDS commands/workflows observed or inferred | 22 (+`bmad-code-review` at Step 42; Steps 39–41 added `bmad-agent-dev`/`bmad-sprint-planning`/`bmad-create-story`/`bmad-dev-story`; `bmad-create-story`/`bmad-dev-story`/`bmad-code-review` reused standalone at Steps 61/63/64; +`bmad-review-adversarial-general`/`bmad-review-edge-case-hunter` as formally-invoked nested skills at Step 64) |
+| Distinct agents | 8 (ALPHA, Carson [Inferred], Unknown, Claude Code [Process Historian / build-handoff author / UX Scenario Facilitator / Party Mode orchestrator / WDS Phase 5 Implementation Partner / dev / reviewer / story context engine], Saga, Freya [WDS Phase 4 UX Designer], Amelia [`bmad-agent-dev`]) — Step 64 additionally used 3 parallel review subagents (Blind Hunter, Edge Case Hunter, Acceptance Auditor), not counted as new named agents |
+| Distinct skills | 23 (+`bmad-agent-dev`, +`bmad-sprint-planning`, +`bmad-create-story`, +`bmad-dev-story` at Steps 39–41; +`bmad-code-review` at Step 42; +`bmad-review-adversarial-general`, +`bmad-review-edge-case-hunter` at Step 64) |
 | Deliverables (complete) | 10 (brainstorm-intent.md, innovation-strategy-2026-07-07.md, market-personal-finance-copilot-market-india-research-2026-07-07.md, domain-ai-driven-personal-finance-management-apps-india-research-2026-07-07.md, A-Product-Brief/project-brief.md, B-Trigger-Map/** [Phase 2, 7 files], technical-ai-financial-copilot-mvp-technical-architecture-stack-research-2026-07-07.md, prd.md, epics-and-stories.md, C-UX-Scenarios/** [Phase 4, 9 page specs complete]) |
 | Deliverables (partial) | 2 (design-thinking-2026-07-07.md, problem-solution-2026-07-07.md) |
-| Artifact groups tracked | 31 (+`sprint-status.yaml`, +story 1.1 spec at Steps 39–40; +`finance_app/**`, +`services/**`, +`tests/**`, +config/docs group at Step 41; +`deferred-work.md`, +`data/.gitkeep` at Step 42) |
-| Application source code | First shipped at Step 41 (Story 1.1) — Steps 1–38 were ideation/research/planning/UX/prototype only. Epic 2 ingestion (services/ingestion) first shipped at Step 50 (Stories 2.1-2.2) |
-| Corrections logged | 4 |
-| Rework events | 0 (Step 7/Step 8 reconciliation resolved at the conclusions level in Step 10, not counted as rework since neither source document was discarded or redone) |
+| Artifact groups tracked | 42 (+`sprint-status.yaml`, +story 1.1 spec at Steps 39–40; +`finance_app/**`, +`services/**`, +`tests/**`, +config/docs group at Step 41; +`deferred-work.md`, +`data/.gitkeep` at Step 42; +`services/ingestion/**` + fixtures across Steps 50–59; +story 3.1 spec + story 1.5 spec + auth_state.py/register.py/security-tests updates at Steps 61–62; +transactions_state.py + demo-data.json + categorize test suite at Steps 63–64) |
+| Application source code | First shipped at Step 41 (Story 1.1) — Steps 1–38 were ideation/research/planning/UX/prototype only. Epic 2 ingestion (services/ingestion) first shipped at Step 50 (Stories 2.1-2.2), fully reviewed + live-booted by Step 60. Epic 3's first shipped app code (Story 3.1 — Tier-1 categorization + transactions page) landed and was reviewed at Steps 63–64 |
+| Epics status | Epic 1 (Foundation & Auth): **done**, all 5 stories (Step 62). Epic 2 (Statement Upload & Ingestion): all 5 stories done + fully reviewed + live-boot verified (Step 60), epic-level status flag not yet flipped in `sprint-status.yaml`. Epic 3 (Categorization & Teach Me): in-progress, Story 3.1 **done** (Steps 63–64), Stories 3.2–3.4 backlog |
+| Corrections logged | 5 (+1 at Step 62: tracker-vs-code drift on Stories 1.4/1.5, resolved same step — and re-resolved once more within the same step after a mid-session discard) |
+| Rework events | 1 (Step 62: a mid-session external discard reverted every uncommitted file from Steps 61–62 to a clean git tree; all content was still held in conversation context and was reapplied + re-verified rather than lost — logged as rework, not a correction, since nothing about the *content* was wrong) |
 | Open findings from Step 30 | 0 unapplied — all 10 resolved across Steps 31–34 (6 build-blocker fixes + `days=0` scenario + X1 desktop-only propagated across 12 docs + Confidence Score contradiction closed + Commitments promoted P1 + both broken cross-refs + PRD typo + spine citation) |
+| Open findings from Step 47 (Story 1.4 code review) | 0 unapplied — all 5 patches (2 medium, 3 low) resolved at Step 62 |
+| Open findings from Step 64 (Story 3.1 code review) | 0 unapplied — 1 decision-needed + 9 patches all resolved same step; 7 deferred items logged to `deferred-work.md` (real but low-severity/unreachable-today, not blocking) |
 
 ---
 
@@ -2852,5 +2878,476 @@ The user's own nav diagram (`Dashboard → Transactions → Safe-to-Spend → AI
 - **Dependencies:** all of Epic 2 (Steps 50-59).
 - **Next Recommended Command:** Commit the Epic-2 branch (code-complete, reviewed, integration-tested, boots live), then Epic 3 (categorization) or open a PR. Uncommitted on branch `epic-2-statement-upload-ingestion`.
 - **Notes:** A stray reflex listener (PID 45140) on :3000 resisted Stop-Process -- the same unreaped-process nuisance documented since Step 49; harmless. No commit (commit only when the user asks).
+
+---
+
+## Step 61 — Epic 3 Kickoff: Create Story 3.1 (Tier-1 Rules Engine & Transactions Table)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3 (Transaction Categorization & Teach Me), first story
+**Workflow:** `bmad-create-story` (Observed).
+**User Goal:** "start epic 3" — begin implementation of Epic 3 per the standard BMAD create-story → dev-story flow.
+**BMAD Command:** `bmad-create-story 3.1`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (story context engine, no BMAD persona active).
+- **Role:** Exhaustive-analysis story authoring per the skill's mandate — read epics.md, ARCHITECTURE-SPINE.md, project-context.md, the full existing `finance_app`/`services` tree, the WDS prototype's transactions screen + its `data/demo-data.json`, and Epic 1/2's `deferred-work.md` before writing the story file.
+- **Input:** `epics.md` Story 3.1 AC; `ARCHITECTURE-SPINE.md` AD-2/4/6/7; `services/categorize/schema.py` (empty placeholder), `finance_app/models.py`, `services/ingestion/{schema,persist}.py`, `finance_app/state/upload_state.py`, `finance_app/pages/transactions.py` (placeholder), `finance_app/components/nav.py`, the WDS `01.4-transactions-table.html` + its `data/demo-data.json`, `deferred-work.md`.
+- **Output:** `3-1-tier-1-rules-engine-and-transactions-table.md` (ready-for-dev).
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story` (arg: `3.1`). Auto-discovered `epic-3`'s only backlog story via `sprint-status.yaml`, flipped `epic-3` → `in-progress`.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Read `sprint-status.yaml` (Epic 3 fully backlog) + `epics.md` full Story 3.1 AC -> resolve workflow customization + load `project-context.md` as a persistent fact -> discover no story files exist for Epic 2 (done ad-hoc, same as this project's established pattern) -> read every file Story 3.1 will touch or build on (`models.py`, `services/categorize/schema.py`, `services/ingestion/{schema,persist,__init__}.py`, `upload_state.py`, `transactions.py`, `nav.py`, `ARCHITECTURE-SPINE.md` AD sections + source tree) -> **discover `data/demo-data.json` does not exist** (only `.gitkeep`) despite being referenced by this story's AC #9 and Epic 2 Story 2.4's AC -> read the WDS prototype's own `data/demo-data.json` (24-transaction Priya fixture) and its `01.4-transactions-table.html` to source exact values -> hand-verify the fixture's designed 18-rule/3-AI/3-needs-review split against every merchant string -> write the story file (Tasks 1-6, Dev Notes, category-taxonomy decision, 43-rule starter table) -> update `sprint-status.yaml` (`epic-3` -> in-progress, `3-1` -> ready-for-dev).
+- **Key Decisions / Findings (all Observed):**
+  - **`data/demo-data.json` is missing** — a real, previously-undocumented gap (distinct from the Story 2.3 PDF-fixture deferral) that would have silently blocked this story's AC #9. Story 3.1 now carries the exact 24-row canonical JSON to write, sourced from the prototype's copy.
+  - **Epics-vs-WDS category-label conflict found and resolved by precedent:** epics.md's own FR-3.1 examples ("Swiggy→Dining", "Netflix→Entertainment") don't match the WDS prototype's actual 9-category taxonomy ("Food & Dining", "Subscriptions"). Documented as a decision to follow WDS (same precedent as Stories 1.3/1.4's epics-vs-WDS reconciliations).
+  - **Fixture-breaking rule trap identified:** a naive "≥40 merchant rules" implementation would very likely add rules for BigBasket/Amazon/Myntra/generic UPI-NEFT-PhonePe strings — each of which the demo fixture deliberately reserves for Story 3.2's AI tier or permanent needs-review. Flagged explicitly with an exclusion list and a concrete 43-rule table that avoids all six.
+  - Flagged that `services/categorize/schema.py` (currently an empty "populated in 3.2" placeholder) actually needs populating now, since Tier-1 needs the same taxonomy Tier-2 will later import (AD-7's single-source-of-truth intent starts at 3.1, not 3.2).
+- **Verification:** No code was written this step (context-engineering only, per the skill's scope) — verification is deferred to `dev-story`.
+- **Deliverables:** Story 3.1 file, ready-for-dev, with an embedded 24-row demo fixture, a 43-rule starter table, and explicit epics-vs-WDS + fixture-integrity guardrails.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/3-1-tier-1-rules-engine-and-transactions-table.md`.
+- **Artifacts Updated:** `_bmad-output/implementation-artifacts/sprint-status.yaml` (`epic-3` in-progress, `3-1` ready-for-dev).
+- **Dependencies:** Epic 2 (Stories 2.1–2.5, all done); Epic 1 auth/nav scaffold.
+- **Next Recommended Command:** `bmad-dev-story` on 3.1.
+- **Notes:** In the course of this research, the agent also independently verified that Epic 1's own tracker state looked stale (Story 1.4 stuck at "review", Story 1.5 at "backlog" with no story file) — reported to the user rather than silently proceeding; this became the trigger for Step 62.
+
+---
+
+## Step 62 — Epic 1 Cleanup: Story 1.4 Review-Patch Resolution + Story 1.5 Backfill
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — retroactive Epic 1 closeout (not part of the Epic 3 critical path, but blocking an honest `epic-1: done` status)
+**Workflow:** None (direct user instruction, prompted by the agent's own Step-61 finding).
+**User Goal:** "can you check once 1.4 and 1.5 is already done" → then, after the agent reported concrete gaps: fix Story 1.4's open review patches and mark it done; backfill a Story 1.5 file and fix its real gap, then mark it done too. **Redone in full** after the user reported (same session) that the changes had been discarded/lost and asked for them to be restored — re-verified against the live code (confirmed reverted) and reapplied identically.
+**BMAD Command:** None — direct instruction + `AskUserQuestion` to scope the cleanup. **Source: Observed** (this session).
+**Trigger:** User (following up on a gap the agent surfaced in Step 61, not on a stale tracker claim)
+
+### Agent Log
+- **Agent Name:** Claude Code (developer + reviewer; no BMAD persona).
+- **Role:** Verify tracker claims against the actual code (not assume `sprint-status.yaml` is current), apply the 5 previously-documented-but-unapplied Story 1.4 review patches, audit Story 1.5's 3 ACs against the live codebase, backfill its story file, and fix the one real gap found. Reapplied a second time in the same step after an external discard reverted all files to pre-fix state.
+- **Input:** `1-4-user-login-logout-and-protected-routes.md` (its own "Review Findings" patch list), `finance_app/state/auth_state.py`, `tests/security/*.py`, `finance_app/pages/{register,auth}.py`, `finance_app/components/nav.py`, `finance_app/pages/{dashboard,transactions,insights,copilot}.py`.
+- **Output:** 5/5 Story-1.4 patches applied + verified; Story 1.5 backfilled with 1 real fix (`aria-live="assertive"`) + a regression test; both stories → done; `epic-1` → done. Verified intact after reapplication.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** N/A — direct code audit + implementation, no BMAD skill invoked for this step.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Grep/read `auth_state.py` + all 4 `tests/security/*.py` files against each of Story 1.4's 5 documented patches -> confirm **all 5 were still unapplied** (not a stale-doc false alarm) -> report findings with file:line citations -> `AskUserQuestion` on scope -> user selected both "fix 1.4" and "backfill 1.5" -> **1.4 fixes:** `do_logout` now clears the cookie (`self.auth_token = ""`, also rotates the token on next login via `_login`'s `or` fallback); strengthened the vacuous IDOR test (User A now seeded with its own row, asserted by id/description, not just an empty-list check); added `test_none_email_returns_none` + `test_whitespace_only_email_returns_none` to `test_login.py`; added a tight ±30s `test_expiration_boundary_at_now_is_tight` to `test_route_guard.py`; appended trailing newlines to all 4 test files -> full suite run: **136 passed** -> updated the 1.4 story file's patch checklist (all 5 checked, "Fixed:" notes added) + Change Log + Status -> done -> **1.5 audit:** read `register.py`/`auth.py` for blur/change handlers (AC #1: fully present, verified) and `nav.py` + all 4 app pages for the sidebar (AC #3: fully present, verified) -> found AC #2's real gap: the registration-success `<h2>` had `role="status"` on its *container* but no `aria-live="assertive"` on the *headline itself* -> fixed with a one-line prop addition + a new regression test (`test_success_headline_has_aria_live_assertive`, asserting the rendered component tree) -> full suite re-run: **136 passed** -> wrote `1-5-...md` documenting the audit + fix -> updated `sprint-status.yaml` (`1-4` done, `1-5` done, `epic-1` done) -> **user reported all changes discarded/lost** -> `git status` confirmed a clean tree (only the untracked `reflex_run_3001.log` remained) -> re-read every affected file fresh to confirm the revert -> reapplied every edit above verbatim from in-context memory (no re-derivation needed) -> full suite re-run: **138 passed** -> `git status` confirmed all 9 expected files + 2 new files present again.
+- **Key Decisions / Findings (all Observed):**
+  - **Story 1.4 was correctly "review", not stale** — all 5 of its own documented patches (2 medium: logout not clearing the cookie, a vacuous IDOR test; 3 low: missing email-edge-case tests, missing expiration-boundary test, missing trailing newlines) were verified still unapplied in the code before any fix was made.
+  - **Story 1.5 was ~90% done but entirely untracked** — its nav scaffold and blur/clear validation shipped organically in the `ed482c5` ("epic1 completed") commit alongside other stories' work (the same "no story file" pattern later repeated across all of Epic 2), while `sprint-status.yaml` still showed it as `backlog`. Only AC #2's `aria-live="assertive"` had a genuine, previously-undetected gap.
+  - Chose to give the fixed IDOR test a real control row for User A (not just strengthen the assertion on B) so the test can distinguish "the `user_id` filter works" from "the table happens to be empty" — matching the patch's own stated intent.
+  - **Mid-step data loss and recovery:** every file this step touched (plus Step 61's Story 3.1 file and the `sprint-status.yaml`/`PROJECT-PROGRESS.md` updates from both steps) was discarded externally to a clean working tree before this step's work was logged. Nothing was re-derived from scratch — the full content was still present in conversation context and was reapplied identically, then re-verified (full suite, `git status`) rather than assumed correct.
+- **Verification:** Full `pytest` suite — **138 passed** (final count, post-reapplication; the small delta from the originally-reported 136 reflects a recount, not missing/duplicate tests — `--collect-only` confirmed 138 unique node IDs), 0 failures. Run three times total across the step (after the 1.4 patches, after the 1.5 fix, and again after reapplication).
+- **Deliverables:** Story 1.4 fully closed (patches applied + verified); Story 1.5 given an honest paper trail + its one real gap fixed; `epic-1` now genuinely `done`. Confirmed durable after the mid-step discard.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/1-5-auth-transition-ux-validation-behavior-and-nav-scaffold.md`.
+- **Artifacts Updated:** `finance_app/state/auth_state.py` (`do_logout` cookie clear), `finance_app/pages/register.py` (`aria_live="assertive"`), `tests/security/{test_idor_baseline,test_login,test_route_guard,test_logout}.py` (patches + trailing newlines), `tests/test_register_page_smoke.py` (new regression test), `_bmad-output/implementation-artifacts/1-4-user-login-logout-and-protected-routes.md` (patch checklist, Change Log, Status → done), `_bmad-output/implementation-artifacts/sprint-status.yaml` (`1-4`/`1-5`/`epic-1` → done).
+- **Dependencies:** Story 1.4's own code-review findings (documented same-session, Story 1.4 original implementation); Story 1.5's ad-hoc pre-existing implementation (undated, folded into `ed482c5`).
+- **Next Recommended Command:** Resume Epic 3 — `bmad-dev-story` on 3.1 (Step 61). No commit made this step (commit only when the user asks); working tree still has all Step 61 + Step 62 changes uncommitted on branch `epic-3` — **recommend committing soon given the mid-step discard already lost this work once.**
+- **Notes:** This step is a good example of the tracker-vs-code drift this project has repeatedly exhibited (Epic 2's 5 stories similarly have no story files despite `sprint-status.yaml` marking them done) — worth a standing reminder to verify sprint-status claims against the code rather than trusting the YAML at face value, especially before starting a new epic on top of a possibly-incomplete prior one. Separately: an uncommitted working tree on a long session is one accidental discard away from silent data loss (as happened mid-step here) — committing completed, reviewed work promptly (with user approval) is cheap insurance against exactly this.
+
+---
+
+## Step 63 — Dev Story 3.1: Tier-1 Rules Engine & Transactions Table (mid-flight scope pivot)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, Story 3.1 build
+**Workflow:** `bmad-dev-story` (Observed).
+**User Goal:** "move to dev in 3.1" — implement Story 3.1 per its story file.
+**BMAD Command:** `bmad-dev-story 3.1`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer, no BMAD persona).
+- **Role:** Execute Story 3.1's 6 tasks; discovered mid-implementation that two of them (Tier-1 rules engine, upload-pipeline wiring) already existed under a different design than the story assumed, and adapted rather than blindly overwrote.
+- **Input:** The 3-1 story file, `services/categorize/rules.py` (pre-existing, ~90 rules), `finance_app/state/upload_state.py` (pre-existing wiring), `finance_app/pages/dashboard.py` (page-pattern reference), `services/utils/format.py`.
+- **Output:** `data/demo-data.json`, `services/categorize/schema.py` populated, `finance_app/state/transactions_state.py` (new), `finance_app/pages/transactions.py` rebuilt, `tests/categorize/test_rules.py` + `tests/test_transactions_state.py` (new) — 34 new tests.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`. `AskUserQuestion` invoked mid-workflow (not part of the skill's own steps) to resolve a real architecture conflict before writing Task 2/3/6 code.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Load story + `sprint-status.yaml` (`3-1` ready-for-dev, preserved existing `baseline_commit`) -> mark `3-1` in-progress -> Task 1: write `data/demo-data.json` verbatim from the story's embedded JSON -> Task 2: about to populate `services/categorize/schema.py` -> **read the actual current `services/categorize/__init__.py` and discover it already imports `categorize_rules, RULES` from a `services/categorize/rules.py` that does not appear in the story's own research** -> `git log` shows 2 new commits (`9b0954c`, `f47af57`, both teammate pushes) sitting above what was `HEAD` when the story was drafted -> ran the existing engine against the demo fixture: **22/24 matched**, not the 18 the story assumed, because it already recognizes `BigBasket`/`Amazon`/`Myntra`/`UPI-`/`NEFT-`/`PhonePe-` as real categories -> also found `upload_state.py`'s Tier-1 wiring (Task 4) already implemented -> **halted before writing conflicting code** and used `AskUserQuestion` (3 options: keep-and-adapt / replace-with-WDS-design / merge-and-remap) -> user chose keep-and-adapt -> Task 2 (adapted): `schema.py` canonicalizes the *actual* 19-category taxonomy `rules.py` uses (not the WDS 9), with a drift-guard test instead of rewriting `rules.py` -> Tasks 3/4 marked satisfied-by-existing-code, verified not rewritten -> Task 5: new `TransactionsState` (discovered `rx.Base` doesn't exist in `reflex==0.9.6.post1` mid-build — `AttributeError` — empirically verified `pydantic.BaseModel` works identically as a state var item type, since no `reflex-docs` skill was available in this environment) + full transactions-page rebuild against the WDS prototype's markup/CSS -> Task 6 (adapted): 34 tests asserting the *real* 22-matched/2-uncategorized split, not the originally-assumed 18/3/3 -> full suite 172 passed; `reflex compile` Success (32/31) -> checked off all tasks, wrote Dev Agent Record, Status -> review.
+- **Key Decisions / Findings (all Observed):**
+  - **The story's own premise was stale by the time implementation started** — a legitimate risk of any create-story -> dev-story gap on a multi-contributor branch; the agent caught it by reading actual current code rather than trusting the story file's "what already exists" table, and stopped to ask rather than silently reconciling a real architecture choice.
+  - **`rx.Base` API drift** — confirmed empirically (not from memory/training data) that this Reflex version's typed-state-model pattern uses plain `pydantic.BaseModel`, not `rx.Base`. Documented in Debug Log References for future stories to reuse without re-discovering.
+  - Epic 2 Story 2.4's own AC text ("18 by rules · 3 by AI · 3 need your help") flagged as stale for this fixture — fixed in `epics.md` per user's separate later instruction (Step 64 note below covers the full doc fix).
+- **Verification:** `pytest` — **172 passed** (138 baseline + 34 new); `reflex compile` — Success, 32/31 components.
+- **Deliverables:** Story 3.1 implemented and self-consistent with the actual codebase; the demo-fixture-split discrepancy explicitly documented rather than silently forced to match stale assumptions.
+- **Artifacts Created:** `data/demo-data.json`, `finance_app/state/transactions_state.py`, `tests/categorize/__init__.py`, `tests/categorize/test_rules.py`, `tests/test_transactions_state.py`.
+- **Artifacts Updated:** `services/categorize/schema.py`, `finance_app/pages/transactions.py`, `_bmad-output/implementation-artifacts/3-1-tier-1-rules-engine-and-transactions-table.md` (Dev Agent Record, Status → review), `sprint-status.yaml` (`3-1` → review).
+- **Dependencies:** Step 61 (story creation); the two teammate commits (`9b0954c`, `f47af57`) that landed the pre-existing Tier-1 engine.
+- **Next Recommended Command:** `bmad-code-review` on 3.1 (see Step 64).
+- **Notes:** This step is the clearest example yet in this project of why "read the current code before trusting a story's premise" matters even for freshly-created stories — the gap here was hours, not days, but on an actively multi-committer branch that's enough.
+
+---
+
+## Step 64 — Code Review of Story 3.1 (3-layer adversarial review, 1 decision + 9 patches applied)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, Story 3.1 quality gate
+**Workflow:** `bmad-code-review` (Observed), plus a direct-instruction documentation follow-up (Story 2.4's stale AC note).
+**User Goal:** After Step 61/62, asked what to do next; selected "fix the stale 18/3/3 note in Story 2.4" and "run code review on Story 3.1" from a suggested list.
+**BMAD Command:** `bmad-code-review 3.1`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (code reviewer) orchestrating 3 parallel background subagents (Blind Hunter via `bmad-review-adversarial-general`, Edge Case Hunter via `bmad-review-edge-case-hunter`, Acceptance Auditor via direct instruction).
+- **Role:** Gather the correct diff scope (the story's stale `baseline_commit` predated 2 unrelated teammate commits, so the diff was scoped to Story 3.1's own file list instead), launch the 3 review layers, triage findings, resolve the one decision-needed item with the user, apply the 9 patches.
+- **Input:** The Story-3.1-scoped diff (7 files, ~636 lines), the 3-1 story file (esp. its Completion Notes explaining the adapted-scope decisions from Step 63, so the Acceptance Auditor wouldn't re-flag already-approved deviations), `services/categorize/rules.py`.
+- **Output:** 21 total findings triaged to 1 decision-needed (resolved) + 9 patches (all applied) + 7 deferred + 4 dismissed; `services/categorize/rules.py` gained 2 keywords; `transactions_state.py`/`transactions.py` substantially hardened; 17 new tests.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`, invoking `bmad-review-adversarial-general` and `bmad-review-edge-case-hunter` as nested subagent skills; the Acceptance Auditor layer used a direct custom prompt (no dedicated skill) per the workflow's own step-02 instructions.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Gather context (arg "3.1" resolved to the story file; noticed its `baseline_commit` was 2 commits stale, scoped the diff to the story's own File List instead of the stale baseline) -> checkpoint presented to user -> launched all 3 review layers in parallel as background agents -> collected findings (Blind Hunter: 12; Edge Case Hunter: 10; Acceptance Auditor: 3) -> triaged: read code at each finding's location before rating (per the skill's own "read before rating" rule) -> merged 3 independent reports of the same AD-7 taxonomy-duplication issue into 1 -> dismissed 1 finding as an outright false positive using the agent's own empirical evidence from Step 63 (`rx.Base` doesn't exist in this Reflex version) -> dismissed 2 more as already-documented/out-of-scope, 1 as working-as-designed -> deferred 7 low-severity/unreachable-today findings to `deferred-work.md` -> wrote 1 decision-needed + 9 patches into the story's new "Review Findings" section -> presented the decision-needed item (missing "Tata Power"/"Reliance Digital" rules) with 3 options -> **user chose: add the 2 rules** -> added `"tata power"` to the existing electricity `Rule` and a new `Rule(("reliance digital",), "Shopping")`, verified 24/24 now match, updated the 2 test assertions that had locked in the old 22/2 split, updated the `epics.md` Story 2.4 note a second time (22→24) -> asked how to handle the 9 patches -> **user chose: apply every patch** -> applied all 9 (AD-7 parity test, per-row malformed-data guard, empty-state UI, date+id ordering tiebreaker, chip/filter logic extracted into 4 new tested pure functions, row changed from focusable `<button>` to plain `<div>`, `key=` added to foreach-rendered elements — verified empirically that this Reflex version takes `key` as a prop on the rendered element, not a `foreach` argument — per-category icon map added, badge `aria-hidden`/`aria-label` corrected) -> full suite 191 passed; `reflex compile` Success (32/31) -> Story 3.1 Status → done; `sprint-status.yaml` synced.
+- **Key Decisions / Findings (all Observed):**
+  - **The Acceptance Auditor's context-loading paid off directly:** because it was told to read the story's own Completion Notes before judging deviations, it correctly did NOT re-flag the 18→24 rule-match count or the taxonomy swap as violations — those were already documented, user-approved decisions from Step 63, not new findings. Only 2 genuinely new gaps survived from that layer (AD-7 duplication test-parity gap; AC #6 chip logic's zero test coverage) plus 1 minor design note (dismissed as working-as-designed on inspection).
+  - **A real false positive was caught and dismissed with hard evidence**, not by assertion: Blind Hunter flagged `pydantic.BaseModel` vs `rx.Base` as an "unexplained one-off," but the triage step re-verified against the agent's own Step-63 empirical finding (`rx.Base` genuinely doesn't exist in the installed Reflex version) and dismissed it — an example of the "read the code before rating" triage rule catching a subagent's information-asymmetry mistake.
+  - **The decision-needed item's user answer ("2") required inferring which item was being resolved** — the review had presented exactly one decision-needed finding, so a bare "2" (option 2 of that finding's 3 choices) was unambiguous in context; handled as "add the 2 rules now."
+- **Verification:** Full `pytest` suite — **191 passed** (174 after the decision-needed resolution, +17 more after the 9 patches), 0 failures; `reflex compile` — Success, 32/31, run twice (once after the decision, once after all patches).
+- **Deliverables:** Story 3.1 fully reviewed, all findings resolved (fixed, deferred, or dismissed with reasoning), Status → `done`. `services/categorize/rules.py` extended by 2 keywords (first actual edit to that pre-existing file this session). `transactions_state.py`/`transactions.py` substantially hardened (empty state, malformed-row resilience, ordering, icons, a11y, dead-control fix).
+- **Artifacts Created:** none new this step (all changes were to files already touched in Step 63, plus `deferred-work.md`'s new section).
+- **Artifacts Updated:** `services/categorize/rules.py`, `services/categorize/schema.py` (via test only, no content change), `finance_app/state/transactions_state.py` (substantial rewrite), `finance_app/pages/transactions.py` (substantial rewrite), `tests/categorize/test_rules.py`, `tests/test_transactions_state.py`, `_bmad-output/implementation-artifacts/3-1-tier-1-rules-engine-and-transactions-table.md` (Review Findings section, Status → done), `_bmad-output/implementation-artifacts/deferred-work.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml` (`3-1` → done), `_bmad-output/planning-artifacts/epics.md` (Story 2.4 AC note, fixed twice — 18→22 in Step 63, then 22→24 in this step).
+- **Dependencies:** Step 63 (implementation being reviewed).
+- **Next Recommended Command:** Commit the branch (Story 3.1 done, epic-1 done, all uncommitted — still one accidental-discard risk away from repeating Step 62's mid-session data loss), then `bmad-create-story` for 3.2 (Tier-2 LLM Categorizer) or `bmad-sprint-status` to check overall project state.
+- **Notes:** The diff-scoping decision (story file's own File List instead of its stale `baseline_commit`) is a pattern worth repeating on this branch specifically — multiple contributors are pushing directly to `epic-3`/predecessor branches during active story work, so any future code-review's `baseline_commit` should be treated as a starting hint, not ground truth, and cross-checked against `git log` before building a diff.
+
+---
+
+## Step 65 — Create Story 3.2 (Tier-2 LLM Categorizer, Claude Haiku)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, second story
+**Workflow:** `bmad-create-story` (Observed).
+**User Goal:** "start building 3.2" (preceded by an offer of next-step options; user chose Story 3.2 over committing first).
+**BMAD Command:** `bmad-create-story 3.2`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (story context engine).
+- **Role:** Apply the lesson from Step 63 directly — do a full, fresh re-scan of the repo (git log + complete file tree) *before* drafting anything, specifically to rule out another "pre-existing code the story doesn't know about" surprise.
+- **Input:** `epics.md` Story 3.2 AC; a fresh `git log`/file-tree scan (confirmed clean — no Tier-2/Categorizer code exists yet); the installed `anthropic==0.116.0` package (`messages.parse`/`ParsedMessage` inspected directly, not recalled from training data); `services/ingestion/protocol.py` (pattern to mirror); `finance_app/models.py` + `services/ingestion/schema.py` (confirmed no `reasoning` field exists); `alembic/versions/31751a886cde_.py` (migration pattern).
+- **Output:** `3-2-tier-2-llm-categorizer-claude-haiku.md` (ready-for-dev).
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story` (arg: `3.2`). Auto-flipped nothing epic-level (Epic 3 already in-progress since Step 61); set `3-2` → ready-for-dev.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Re-read `git log --oneline` + full `finance_app`/`services`/`tests` tree fresh (no new commits since Step 64; no Tier-2 code found — clean slate, unlike Step 61's discovery) -> read epics.md Story 3.2 AC -> **empirically verify the Anthropic SDK's structured-output API** by inspecting the installed package directly (`inspect.signature(client.messages.parse)`, then locating `ParsedMessage`/`parsed_output` in `anthropic/types/parsed_message.py`) rather than trusting memory of a fast-moving SDK -> discover AC #7's "3 AI-categorized demo transactions" is now stale before writing a single task, because Step 64's rules.py fix already made the demo fixture 24/24 rule-matched -> discover AC #2's "reasoning" field doesn't exist anywhere in the schema (neither the DB model nor the canonical ingestion dataclass) -> check `alembic/versions/` for the migration pattern -> write the story: `Categorizer` protocol (mirroring `StatementParser`), a batched-not-per-row `ClaudeCategorizer` design (cost/NFR-4 reasoning spelled out, including why the async Batch API doesn't fit this synchronous upload flow), defensive index-mapping for batch responses, the `reasoning` schema/migration task, the upload-pipeline persist-reordering requirement, and an explicit "don't use the demo fixture, build a synthetic one" test instruction -> update `sprint-status.yaml` (`3-2` -> ready-for-dev).
+- **Key Decisions / Findings (all Observed):**
+  - **The pre-check worked.** Unlike Step 61, this fresh scan found nothing surprising — confirms the discovery process (not luck) is what caught Step 63's gap, and repeating it here is now the established habit for this branch.
+  - **A second stale-AC gap found before implementation started, not during it** (unlike Step 63's mid-flight discovery): AC #7's demo-fixture example was already invalidated by this session's own Step 64 work. Flagged explicitly in the story rather than either quietly dropping it or leaving a developer to discover it mid-build.
+  - **A real, unavoidable architecture-doc touch identified upfront:** storing `reasoning` requires extending AD-6's canonical field list (`ARCHITECTURE-SPINE.md`), not just adding a column — flagged as an explicit task rather than left implicit.
+- **Verification:** No code written this step (context-engineering only) — verification deferred to `dev-story`.
+- **Deliverables:** Story 3.2 file, ready-for-dev, with the Anthropic SDK's exact structured-output shape pre-verified and both known stale-AC/schema gaps flagged upfront.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/3-2-tier-2-llm-categorizer-claude-haiku.md`.
+- **Artifacts Updated:** `_bmad-output/implementation-artifacts/sprint-status.yaml` (`3-2` → ready-for-dev).
+- **Dependencies:** Step 64 (Story 3.1's review fix, which is why AC #7 is already stale); `services/categorize/schema.py` (Story 3.1's taxonomy, reused not redeclared).
+- **Next Recommended Command:** `bmad-dev-story` on 3.2.
+- **Notes:** User was offered the choice to commit the (still fully uncommitted) branch before continuing and explicitly chose to keep building instead — third time this risk has been surfaced and deferred this session.
+
+---
+
+## Step 66 — Dev Story 3.2: Tier-2 LLM Categorizer (Claude Haiku)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, Story 3.2 build
+**Workflow:** `bmad-dev-story` (Observed).
+**User Goal:** "start building 3.2" — implement Story 3.2 per its story file.
+**BMAD Command:** `bmad-dev-story 3.2`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer, no BMAD persona).
+- **Role:** Execute Story 3.2's 5 tasks in order — first LLM integration in this codebase, first schema migration since Story 1.2, first restructuring of an already-real pipeline (Story 3.1's upload wiring) rather than building on a skeleton.
+- **Input:** The 3-2 story file; `services/ingestion/protocol.py` (pattern mirrored for `Categorizer`); the installed `anthropic` package; the running `docker-compose` Postgres container (port 5433) for the migration; `finance_app/state/upload_state.py` (the pipeline being restructured).
+- **Output:** `services/categorize/protocol.py`, `services/categorize/llm_categorizer.py` (new); `reasoning` field + Alembic migration; restructured `upload_state.py`; 16 new tests; 2 pre-existing tests updated for the AD-6 field-count change.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Mark `3-2` in-progress -> Task 1: `services/categorize/protocol.py` (`Categorizer`) + `CategorizationResult`/`CategorizationBatch` Pydantic models -> Task 2: `ClaudeCategorizer` (one batched `messages.parse()` call, `<transaction index="N"><description>` delimiting, `cache_control: ephemeral` system prompt, defensive index-mapped response parsing) + `TIER2_CATEGORIZATION_MODEL` constant in `services/narrate/config.py` -> Task 3: added `reasoning` to both `finance_app.models.Transaction` and the canonical `services/ingestion/schema.py` dataclass, updated `persist.py`, extended `ARCHITECTURE-SPINE.md`'s AD-6 field list, ran `alembic revision --autogenerate` against the live Postgres container, **found and fixed a bug in the autogenerated migration** (referenced `sqlmodel.sql.sqltypes.AutoString()` without importing `sqlmodel` — unlike the committed first migration, which does), applied it, verified the column via `information_schema.columns` -> Task 4: restructured `upload_state.py` so persist happens once, after both Tier-1 and Tier-2 run in-memory (previously persist sat between steps 3 and 4); added a try/except around the Tier-2 call so a network/auth/rate-limit failure falls back to Tier-1-only instead of failing the whole upload (not explicitly itemized in the story's task list, added because the existing AD-12 "honest degradation" pattern from Story 3.1 made the gap obvious once the wiring was in front of the agent) -> Task 5: 14 new tests in `tests/categorize/test_llm_categorizer.py` (mocked client throughout; a synthetic fixture checked against the live `RULES` table rather than the now-fully-covered demo fixture) + 2 new tests in `tests/ingestion/test_dedup.py` for `reasoning` round-tripping -> full suite run: **1 pre-existing failure** (`test_transaction_exposes_every_canonical_field`, hardcoded "twelve fields") -> fixed it and a second similar test (`test_models_schema.py`) to thirteen fields, both changes matching the already-updated AD-6 doc -> full suite 207 passed; `reflex compile` Success (32/31) -> Status → review; `sprint-status.yaml` synced.
+- **Key Decisions / Findings (all Observed):**
+  - **No repeat of Step 63's surprise** — the Step 65 pre-scan held up; every task landed exactly where the story said it would.
+  - **A second real migration-tooling gap found and fixed**, same class as the first migration's correct pattern showed: Alembic's `--autogenerate` inconsistently omits the `import sqlmodel` line certain column types need. Worth a standing note for any future migration on this project: always diff the generated file against `31751a886cde_.py`'s import block before running `upgrade`.
+  - **A test failure was diagnosed as "working as intended," not a regression to route around** — `test_transaction_exposes_every_canonical_field` failing was the AD-6 change (already made deliberately, already documented in the architecture doc) surfacing correctly; the fix was updating the test's stale assumption, not touching the new field.
+  - **One design addition beyond the literal task list** (the Tier-2-failure try/except) — flagged explicitly in Completion Notes as an addition, with the reasoning for why it was in-scope despite not being itemized, rather than silently expanding scope.
+- **Verification:** Full `pytest` suite — **207 passed** (191 baseline + 16 new), 0 failures after the 2 test-assumption fixes; `reflex compile` — Success, 32/31; migration verified applied via a direct `information_schema.columns` query against the live Postgres.
+- **Deliverables:** Story 3.2 implemented — first LLM integration, first schema migration since Story 1.2, upload pipeline now fully real end-to-end (all 4 progress steps, both categorization tiers) with a documented graceful-degradation path if the AI call fails.
+- **Artifacts Created:** `services/categorize/protocol.py`, `services/categorize/llm_categorizer.py`, `tests/categorize/test_llm_categorizer.py`, `alembic/versions/e470256e035f_add_reasoning_to_transactions.py`.
+- **Artifacts Updated:** `finance_app/models.py`, `services/ingestion/schema.py`, `services/ingestion/persist.py`, `services/narrate/config.py`, `finance_app/state/upload_state.py`, `ARCHITECTURE-SPINE.md` (AD-6), `tests/ingestion/test_dedup.py`, `tests/ingestion/test_parser_protocol.py`, `tests/test_models_schema.py`, `_bmad-output/implementation-artifacts/3-2-tier-2-llm-categorizer-claude-haiku.md` (Status → review), `sprint-status.yaml` (`3-2` → review).
+- **Dependencies:** Step 65 (story creation); the running Postgres container (pre-existing, not started by this session).
+- **Next Recommended Command:** `bmad-code-review` on 3.2.
+- **Notes:** Not yet verified: a live upload through the real Anthropic API with an actual key (no `ANTHROPIC_API_KEY` set in this environment's `.env`, and spending real API budget isn't appropriate for an automated dev pass) — flagged to the user as an open manual-verification item, consistent with this project's running practice of stating unverified claims honestly rather than implying full coverage.
+
+---
+
+## Step 67 — Code Review of Story 3.2 (3-layer adversarial review, 5 patches applied)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, Story 3.2 quality gate
+**Workflow:** `bmad-code-review` (Observed).
+**User Goal:** "move to code review" — review Story 3.2's implementation.
+**BMAD Command:** `bmad-code-review 3.2`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (code reviewer) orchestrating 3 parallel background subagents (Blind Hunter, Edge Case Hunter, Acceptance Auditor).
+- **Role:** Discover the branch had been committed since Step 66 finished (a new commit "epic 3.1" appeared, containing all of Steps 61-65's work), rescope the diff to exactly Story 3.2's uncommitted changes, launch the 3 review layers, triage, apply patches.
+- **Input:** The Story-3.2-scoped diff (12 files, ~718 lines: `services/categorize/{protocol,llm_categorizer}.py`, the migration, `upload_state.py`, schema/persist changes, `ARCHITECTURE-SPINE.md`, tests); the 3-2 story file's Dev Notes + Completion Notes (so the Acceptance Auditor wouldn't re-flag the documented try/except addition); the installed `anthropic` SDK (verified again for API-call-shape correctness).
+- **Output:** 17 raw findings across 3 layers, triaged to 0 decision-needed + 5 patches (all applied) + 4 deferred + 4 dismissed; `llm_categorizer.py` substantially hardened; new `services/categorize/summary.py`; 14 new tests.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`, invoking `bmad-review-adversarial-general` and `bmad-review-edge-case-hunter` as nested subagent skills; Acceptance Auditor via direct custom prompt.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Gather context (arg "3.2" -> story file; discovered `git log` had moved since Step 66 -- a new commit "epic 3.1" had landed containing all of Steps 61-65's work, meaning the earlier uncommitted-work risk had resolved itself; rescoped the diff to exactly the uncommitted Story-3.2 files rather than the stale `baseline_commit`) -> checkpoint presented -> launched all 3 review layers in parallel, explicitly prompting each to check the installed SDK directly rather than trust memory (this being the project's first LLM integration) and to walk every branching/boundary condition given the external-API surface -> collected findings (Blind Hunter: 8 substantive + several "verified sound" notes; Edge Case Hunter: 7; Acceptance Auditor: 2, both independently confirming a delimiter-escaping gap the other two layers also found) -> triaged: merged 3 independent reports of the same prompt-delimiter-breakout issue into 1 high-severity patch, merged 2-3 reports each of the whole-batch-failure and need-review-miscount clusters -> **reframed, not dismissed, the need-review "bug"**: re-derived from the actual code (Story 3.1's `NEEDS_REVIEW_THRESHOLD` design) that the counting was correct, just unclear -- routed to a clarifying extraction+test rather than a logic change -> dismissed 3 findings using project-internal evidence (an existing Story-3.1 guard test already prevents the taxonomy-drift scenario one reviewer raised; the project's own AC text specifies the exact unpinned model alias a reviewer suggested pinning; a cache-effectiveness concern was self-flagged by the reviewer as speculative) -> wrote 0 decision-needed + 5 patches + 4 deferred + 4 dismissed into the story's Review Findings section -> asked the user how to handle the 5 patches -> **user chose: apply every patch** -> applied all 5: JSON-encoded the prompt (replacing hand-built XML-ish tags) to structurally prevent delimiter breakout; scaled `max_tokens` to batch size and moved the request+parse failure boundary inside `ClaudeCategorizer.categorize()` itself; fixed duplicate-index handling to actually leave the row `UNCATEGORIZED` (it had been silently keeping the first of two conflicting results, contradicting the story's own written task text); extracted `summarize_categorization()` into a new pure, tested module `services/categorize/summary.py` -> full suite 221 passed; `reflex compile` Success (32/31) -> Story 3.2 Status -> done; `sprint-status.yaml` synced.
+- **Key Decisions / Findings (all Observed):**
+  - **This review surfaced a materially more serious class of finding than Story 3.1's** — a real prompt-injection/delimiter-breakout gap and a whole-batch-silent-failure mode, both independently found by 2-3 reviewer layers each, which is a strong convergent signal given the layers ran with no shared context. Both were genuine, reachable defects (not theoretical), consistent with this being the project's first external-API integration and highest-novelty surface area so far.
+  - **A precise auditor finding caught the agent's own spec-vs-implementation drift**: the story's own Task 2 text said "if the LLM ... returns a duplicate, leave that transaction as UNCATEGORIZED" but the shipped code kept the first of two duplicates instead — the Acceptance Auditor is specifically built to catch exactly this class of gap (implementation vs. the reviewed agent's own prior stated intent), and it did.
+  - **Two independent reviewers making the same "bug" call on the same code, that turned out to be correct-but-unclear, is itself useful signal** — not that the reviewers were wrong to flag it, but that unclear code invites exactly this kind of false-positive investigation cost; the fix (extract + document + test) addresses the actual root cause (unclear intent) rather than either dismissing the finding or fatalistically leaving it alone.
+- **Verification:** Full `pytest` suite — **221 passed** (207 pre-review + 14 more from the 5 patches), 0 failures; `reflex compile` — Success, 32/31.
+- **Deliverables:** Story 3.2 fully reviewed and hardened — prompt-injection-resistant request encoding, resilient batch-failure handling, a spec-compliant duplicate-index rule, and a newly-extracted, tested, documented summary-counting module. Status → `done`.
+- **Artifacts Created:** `services/categorize/summary.py`, `tests/categorize/test_summary.py`.
+- **Artifacts Updated:** `services/categorize/llm_categorizer.py` (substantial rewrite: JSON encoding, scaled `max_tokens`, internal error handling, duplicate-index fix), `finance_app/state/upload_state.py` (summary computed via the new pure function), `tests/categorize/test_llm_categorizer.py` (rewrote/added tests for all 5 patches), `_bmad-output/implementation-artifacts/3-2-tier-2-llm-categorizer-claude-haiku.md` (Review Findings section, Status → done), `_bmad-output/implementation-artifacts/deferred-work.md`, `sprint-status.yaml` (`3-2` → done).
+- **Dependencies:** Step 66 (implementation being reviewed).
+- **Next Recommended Command:** Commit the branch, then `bmad-create-story` for Story 3.3 ("Teach Me" — user correction & merchant rules).
+- **Notes:** Confirmed the diff-scoping lesson from Step 64 generalizes: checking `git log` against the story's `baseline_commit` before building a review diff is now a standing first move on this actively-multi-committer branch, not a one-off workaround.
+
+---
+
+## Step 68 — Create Story 3.3 ("Teach Me" — User Correction & Merchant Rules)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, third story
+**Workflow:** `bmad-create-story` (Observed).
+**User Goal:** "we can move to 3.3" — begin Story 3.3.
+**BMAD Command:** `bmad-create-story 3.3`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (story context engine).
+- **Role:** Fresh full-repo re-scan first (now a standing habit after Steps 61/65's discoveries), then design the "Teach Me" feature's data flow across 3 layers (Tier-1 engine, DB persistence, UI) before writing tasks.
+- **Input:** `epics.md` Story 3.3 AC; fresh `git log`/file-tree scan (clean — no pre-existing Teach Me code); `finance_app/models.py`'s existing `MerchantRule` table (Story 1.2, already the AC's exact shape — no migration needed this time); `services/categorize/rules.py`, `finance_app/state/transactions_state.py` + `finance_app/pages/transactions.py` (Story 3.1, hardened in its review — rows deliberately non-interactive with an explicit "until Story 3.3" note); the WDS prototype's `buildTeachMe`/`toggleRow`/`saveCorrection` JS.
+- **Output:** `3-3-teach-me-user-correction-and-merchant-rules.md` (ready-for-dev).
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story` (arg: `3.3`).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Fresh re-scan (git log unchanged since Step 67; `grep` for any `MerchantRule`/`merchant_rules` usage outside `models.py` — none found, confirming a clean slate) -> read epics.md Story 3.3 AC -> read `finance_app/models.py`'s `MerchantRule` (already has the AC's exact `user_id`/`pattern`/`category`/`source` shape from Story 1.2 — no schema change needed) -> read `services/categorize/rules.py`'s `categorize_rules`/`_match` to plan the additive `user_rules` extension -> read `transactions_state.py`/`transactions.py` in full, finding Story 3.1's review had left an explicit breadcrumb comment ("until Story 3.3 gives it real behavior") on the exact `div` this story needs to turn back into a button -> read `upload_state.py`'s current step-3 wiring to plan where user-rule loading inserts -> identify and resolve two scope ambiguities upfront rather than leaving them for dev-time guessing: (1) AC #3's "current statement" scope, given the app has no per-statement grouping UI anywhere — resolved to "the user's full transaction history," matching both the app's actual structure and the WDS prototype's own re-apply logic; (2) what `pattern` should be, given `merchant_normalized` is declared but never populated by any parser (a known gap from Story 3.1) — resolved to the full `description_raw` text -> write the story (5 tasks: extend `categorize_rules`, new session-injected `teach_me.py`, wire into upload pipeline, transactions-page interactivity + panel, tests) -> update `sprint-status.yaml` (`3-3` -> ready-for-dev).
+- **Key Decisions / Findings (all Observed):**
+  - **No pre-existing-code surprise this time** — third story in a row where the proactive re-scan habit (adopted after Step 61's discovery) confirmed a clean slate before any code was planned.
+  - **Two scope ambiguities resolved by the story author, not deferred to the dev pass or the user** — both are documented, defensible reads of the actual codebase (no per-statement UI exists; no merchant-normalization exists), consistent with this project's pattern of surfacing epics-vs-reality gaps explicitly rather than silently picking one interpretation during implementation.
+  - **Found Story 3.1's own review had left a literal instruction for this story** — the `div`-not-button comment in `transactions.py` said almost verbatim what Task 4 needed to do, a nice case of one story's documentation directly informing a later one's scope.
+- **Verification:** No code written this step (context-engineering only).
+- **Deliverables:** Story 3.3 file, ready-for-dev, with both scope ambiguities pre-resolved and documented.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/3-3-teach-me-user-correction-and-merchant-rules.md`.
+- **Artifacts Updated:** `_bmad-output/implementation-artifacts/sprint-status.yaml` (`3-3` → ready-for-dev).
+- **Dependencies:** Story 3.1 (`categorize_rules`, transactions page/state, the `div`-not-button placeholder), Story 1.2 (`MerchantRule` table).
+- **Next Recommended Command:** `bmad-dev-story` on 3.3.
+- **Notes:** None.
+
+---
+
+## Step 69 — Dev Story 3.3: "Teach Me" — User Correction & Merchant Rules
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, Story 3.3 build
+**Workflow:** `bmad-dev-story` (Observed).
+**User Goal:** "build the story" — implement Story 3.3.
+**BMAD Command:** `bmad-dev-story 3.3`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer, no BMAD persona).
+- **Role:** Execute Story 3.3's 5 tasks in order — the first story to touch 3 architectural layers at once (a pure Tier-1 engine extension, new session-injected persistence, and interactive UI) without any surprises this time.
+- **Input:** The 3-3 story file; `services/ingestion/persist.py` (session-injection pattern mirrored for `teach_me.py`); the installed Reflex version (verified empirically for checkbox `on_change` handler arity before writing the toggle).
+- **Output:** `services/categorize/teach_me.py` (new); `categorize_rules` extended; `upload_state.py`/`transactions_state.py`/`transactions.py` updated; 12 new tests.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Mark `3-3` in-progress (preserved existing `baseline_commit`) -> Task 1: `categorize_rules(transactions, user_rules=())` — additive, verified `tests/categorize/test_rules.py`'s 29 tests still pass unmodified -> Task 2: new `services/categorize/teach_me.py` (`load_user_merchant_rules`, `write_merchant_rule` upsert, `reapply_correction` — Python-side substring filtering chosen over SQL `LIKE`/`ILIKE` specifically so its matching semantics are provably identical to `categorize_rules`'s, sidestepping a wildcard-escaping bug class entirely) -> wrote `tests/categorize/test_teach_me.py` alongside Task 2 (red-green within the task, not deferred to the end) -> Task 3: wired user-rule loading into `upload_state.py`'s step 3 -> Task 4: extended `TransactionsState` with the Teach Me panel state/handlers + a `category_options` computed var sourced from `schema.CATEGORIES`; verified empirically that a zero-arg event handler bound to a checkbox `on_change` compiles without an arity error in this Reflex version before writing the toggle switch; restored `transactions.py`'s row from the placeholder `div` (Story 3.1's review had left it non-interactive specifically for this story to complete) to a real button, with the Teach Me panel rendered as a sibling (not nested inside the button — invalid HTML otherwise) -> Task 5: found the 12 tests written alongside Task 2 already covered every AC #6 requirement including the direct end-to-end proof that a user rule outranks the built-in table -> full suite 233 passed; `reflex compile` Success (32/31) -> Status -> review; `sprint-status.yaml` synced.
+- **Key Decisions / Findings (all Observed):**
+  - **Three stories into Epic 3, zero implementation-time surprises** — a direct result of the fresh-rescan-first habit adopted after Step 61 and reinforced at Step 65; this is the first Epic-3 story where the actual build matched the story's plan with no discovered gaps requiring a mid-flight pivot or `AskUserQuestion`.
+  - **A wildcard-escaping bug class was avoided by design, not caught by review** — choosing Python-side substring filtering for `reapply_correction` instead of SQL `LIKE`/`ILIKE` (which needs `%`/`_` escaping to match literal characters safely) sidesteps an entire category of the kind of edge case Story 3.2's Edge Case Hunter had to find after the fact.
+  - **Front-loaded RED-GREEN discipline**: tests for Task 2 were written in the same working session as the implementation (not deferred to a separate "Task 5" pass), and Task 5 turned out to already be satisfied as a result — an example of the workflow's own red-green-refactor instruction paying off structurally rather than just procedurally.
+- **Verification:** Full `pytest` suite — **233 passed** (221 baseline + 12 new), 0 failures; `reflex compile` — Success, 32/31.
+- **Deliverables:** Story 3.3 implemented — users can now correct a transaction's category, optionally re-apply the fix to every matching transaction, and have the correction remembered for all future uploads.
+- **Artifacts Created:** `services/categorize/teach_me.py`, `tests/categorize/test_teach_me.py`.
+- **Artifacts Updated:** `services/categorize/rules.py` (`categorize_rules`/`_match` extended), `finance_app/state/upload_state.py` (user-rule loading), `finance_app/state/transactions_state.py` (Teach Me panel state/handlers), `finance_app/pages/transactions.py` (interactive rows + panel), `_bmad-output/implementation-artifacts/3-3-teach-me-user-correction-and-merchant-rules.md` (Status → review), `sprint-status.yaml` (`3-3` → review).
+- **Dependencies:** Step 68 (story creation).
+- **Next Recommended Command:** `bmad-code-review` on 3.3.
+- **Notes:** Not yet verified: an actual live click-through (open a row, pick a category, toggle re-apply, save, confirm the exact copy string and row-list refresh) — no browser driver in this environment, same documented limitation since Story 1.3.
+
+---
+
+## Step 70 — Code Review of Story 3.3 (3-layer adversarial review, 11 patches applied, 2 deferred)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, Story 3.3 quality gate
+**Workflow:** `bmad-code-review` (Observed).
+**User Goal:** "move to code review" — review Story 3.3's implementation.
+**BMAD Command:** `bmad-code-review 3.3`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (code reviewer) orchestrating 3 parallel background subagents (Blind Hunter, Edge Case Hunter, Acceptance Auditor).
+- **Role:** Verify `baseline_commit` against `HEAD` (unmoved since Step 68 — no drift, but `upload_state.py`'s diff against `HEAD` still mixed in Story 3.2's own uncommitted changes since nothing has been committed since `e646b07`); manually isolate just Story 3.3's `upload_state.py` hunk (the `user_rules` loading block) and pass it to reviewers separately, explicitly marked as the only new-in-3.3 portion of that file; launch the 3 review layers, triage, resolve the one decision-needed item with the user, apply patches.
+- **Input:** A cleanly-scoped ~635-line diff (`transactions.py`, `transactions_state.py`, `rules.py`, new `teach_me.py`, new `test_teach_me.py`) plus the manually-isolated `upload_state.py` snippet; the 3-3 story file's Dev Notes (the two pre-resolved scope decisions) and Completion Notes (the whole-row-clickable and reapply-off-still-corrects-the-single-row decisions), so the Acceptance Auditor wouldn't re-flag already-documented, approved choices.
+- **Output:** 3 review reports (8 findings from Blind Hunter, 8 from Edge Case Hunter, 2 from Acceptance Auditor), heavily overlapping; triaged to 1 decision-needed + 11 patches (all applied) + 2 deferred + 2 dismissed as noise; 7 files touched; 6 new tests.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`, invoking `bmad-review-adversarial-general` and `bmad-review-edge-case-hunter` as nested subagent skills; Acceptance Auditor via direct custom prompt.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Confirmed `git rev-parse HEAD` unchanged since story creation, then discovered (again, per the Step 64/67-established habit) that `upload_state.py`'s diff against `HEAD` was not purely Story 3.3's — manually isolated just the `user_rules`-loading hunk and labeled it explicitly in every review prompt so reviewers wouldn't re-review or misattribute Story 3.2's already-reviewed changes to this file -> launched all 3 layers in parallel with the isolated snippet embedded in each prompt -> collected findings: Blind Hunter and Edge Case Hunter independently converged on the same core defects (no category-taxonomy validation on `select_category`, a case-sensitive upsert lookup fighting case-insensitive matching everywhere else, no deterministic ordering among stored rules, a blank-pattern mass-recategorization risk) -- strong convergent signal since the two layers ran with no shared context; Acceptance Auditor cross-checked against the story's own Task 2 spec text and caught 2 findings the other layers missed entirely because they required reading the story file itself: the `reapply` toggle not resetting to ON between panels (a literal AC #2 violation) and `write_merchant_rule` not refreshing `created_at` on upsert (the story's own Task 2 subtask text explicitly required it) -> triaged 18 raw findings down to 1 decision-needed (the full-description-as-pattern design limitation, already a documented Dev Notes scope call but re-surfaced independently by all 3 layers as a real functional concern worth confirming) + 11 patches + 2 deferred (the same pattern-scope item, deferred rather than fixed now; no DB-level unique constraint on `merchant_rules(user_id, pattern)`) + 2 dismissed as noise (the established `rx.State`-handler app-verified-only testing convention; the already-accepted in-memory `reapply_correction` scan) -> presented the decision-needed item and the patch list to the user in plain language -> **user chose: leave the pattern-scope decision as documented/deferred, and apply every patch** -> applied all 11: taxonomy validation on `select_category`/`save_correction`; `reapply` reset to `True` on every panel open; a blank/whitespace-pattern guard added in `write_merchant_rule`, `reapply_correction`, and `_match` (defense in depth across all three); the upsert lookup switched to `func.lower(...)` case-insensitive comparison; `created_at` refreshed on rule update; `load_user_merchant_rules` ordered `created_at desc, id desc` for deterministic most-recently-taught-wins precedence; `save_correction` now resets/closes the panel instead of getting stuck when its row has vanished from state; the re-apply-off branch now tracks whether the single-row update actually happened and only shows the success toast if it did (a "Couldn't save that correction" message otherwise); a `disabled=` guard added to the Save button; `aria_controls`/panel `id` added linking the row toggle to its Teach Me panel; a `dismiss_confirmation_after_delay` background event added to auto-clear the toast after 4 seconds -> added 6 new tests to `test_teach_me.py` (12 → 18: blank-pattern guards for both write and reapply, case-insensitive upsert, `created_at` refresh, deterministic ordering, and a blank user-rule pattern being ignored by `_match`) -> full suite 239 passed; `reflex compile` Success (32/31, confirming the new `disabled=`/`aria_controls`/background-event wiring compiles) -> Story 3.3 Status -> done; `sprint-status.yaml` synced; 2 items appended to `deferred-work.md`.
+- **Key Decisions / Findings (all Observed):**
+  - **The Acceptance Auditor earned its distinct role again**: both of its 2 findings (the `reapply` reset gap, the missing `created_at` refresh) were invisible to the other two layers precisely because they required cross-referencing the story file's own spec text (AC #2's literal "defaulting ON" wording; Task 2's explicit parenthetical "(and `created_at`)") against the diff — a pure code-reading review has no way to know the spec demanded that behavior.
+  - **Two independently-run, context-blind reviewers converging on the same case-sensitivity and blank-pattern defects is a strong signal of a real, not speculative, class of bug** — both are the kind of "looks fine in the happy-path demo, breaks on real messy data" gap this project's review process exists to catch before it reaches a user's actual bank statement.
+  - **The decision-needed item was handled correctly by re-confirming rather than silently re-litigating**: the full-description-as-pattern scope was already a documented Dev Notes decision from Step 68, but 3 independent reviewers flagging the same functional consequence was reason enough to put it back in front of the user rather than assume the original call still stood unexamined — the user re-confirmed the original call, so it stayed deferred, but on a fresh, informed basis rather than by default.
+- **Verification:** Full `pytest` suite — **239 passed** (233 pre-review + 6 new in `test_teach_me.py`), 0 failures; `reflex compile` — Success, 32/31.
+- **Deliverables:** Story 3.3 fully reviewed and hardened — a validated category taxonomy boundary, a toggle that honors its own "defaults ON" contract, guardrails against a blank-pattern mass-recategorization failure mode, a consistent case-insensitive upsert, deterministic rule precedence, graceful stuck-panel recovery, an honest success/failure toast, and accessibility/polish fixes. Status → `done`. Epic 3 now has 3 of 4 stories done (3.4 remains, backlog).
+- **Artifacts Created:** None (no new source files this step; `test_teach_me.py` extended, not created).
+- **Artifacts Updated:** `services/categorize/teach_me.py` (case-insensitive upsert, blank-pattern guards, `created_at` refresh, deterministic ordering), `services/categorize/rules.py` (blank user-rule-pattern skip in `_match`), `finance_app/state/transactions_state.py` (category validation, reapply-reset-on-open, stuck-panel recovery, accurate toast copy, `dismiss_confirmation_after_delay`), `finance_app/pages/transactions.py` (`disabled=`, `aria_controls`, panel `id`), `tests/categorize/test_teach_me.py` (+8 tests), `_bmad-output/implementation-artifacts/3-3-teach-me-user-correction-and-merchant-rules.md` (Review Findings section, Status → done), `_bmad-output/implementation-artifacts/deferred-work.md` (+2 entries), `sprint-status.yaml` (`3-3` → done).
+- **Dependencies:** Step 69 (implementation being reviewed).
+- **Next Recommended Command:** Commit the branch (nothing has been committed since `e646b07` — Stories 3.1's review, all of 3.2, and all of 3.3 remain uncommitted; flagged repeatedly this session), then `bmad-create-story` for Story 3.4 (confidence badges & transaction table polish) to close out Epic 3.
+- **Notes:** The uncommitted-work backlog is now large (3 full stories' worth). Still the user's call each time it's been raised, but worth flagging plainly at the next natural pause.
+
+---
+
+## Step 71 — Create Story 3.4 (Confidence Badges & Transaction Table Polish)
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, fourth (final) story
+**Workflow:** `bmad-create-story` (Observed).
+**User Goal:** "2." (selecting "Start Story 3.4 ... to close out Epic 3" from the post-review next-steps menu).
+**BMAD Command:** `bmad-create-story 3.4`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (story context engine).
+- **Role:** Design the 3-state badge system (rule/user → none, llm → AI, low-confidence → needs-review) that Story 3.1's binary system never anticipated; surface and resolve a genuine epics-vs-WDS-prototype conflict on virtual scroll before writing the story, per project-context's own "raise the conflict, don't silently resolve it" rule.
+- **Input:** `epics.md` Story 3.4 AC; the 3-3 story file (previous-story intelligence — confirmed `CategorySource` is already imported in `transactions_state.py`); `services/categorize/llm_categorizer.py` (Tier-2's real, LLM-self-reported `category_confidence` range — the root cause of why the existing `needs_review` formula would misfire on AI-categorized rows); the WDS prototype's `01.4-transactions-table.html` (`badgeFor()`, confirming the exact `.txn-badge--ai` class/copy already exists in `assets/wds.css` unused, and confirming the prototype's list rendering has **no virtualization**); the project's own UX-scenario doc for this screen (`_bmad-output/C-UX-Scenarios/.../01.4-transactions-table.md`), which had already flagged virtual scroll as a "candidate simplification... flagged for review, not removed."
+- **Output:** `3-4-confidence-badges-and-transaction-table-polish.md` (ready-for-dev); a new `deferred-work.md` entry recording the virtual-scroll deferral as a tracked future improvement.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-create-story` (arg: `3.4`).
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Read epics.md Story 3.4 AC -> traced the AC's literal wording ("category_source='needs_review'... confidence below threshold") against the actual `CategorySource` enum (`rule`/`llm`/`user` only — no `'needs_review'` value exists) and the existing rules-engine fallback (a `rule`-sourced, `0.5`-confidence "Transfer In" row that must still count as needs-review) -> derived and resolved a priority-ordered 3-state badge decision tree (llm-source wins unconditionally -> confidence-below-threshold next -> else no badge) that satisfies every AC line and preserves every existing Story 3.1 test -> identified the root defect the story exists to fix: `NEEDS_REVIEW_THRESHOLD = 1.0` compared directly against Tier-2's own self-reported confidence would flag nearly every AI-categorized row as "needs review" instead of "AI", since LLM confidence is essentially never exactly `1.0` -> separately, read the AC's virtual-scroll requirement, checked the WDS prototype's actual list-rendering JS (plain full-list append, zero virtualization) and the project's own UX-scenario notes for this screen (already explicitly flagged the same doubt, unresolved) -> recognized this as a genuine, already-partially-surfaced epics-vs-WDS conflict, not a minor wording nuance like prior stories' click-target gaps, and raised it to the user via `AskUserQuestion` before drafting rather than silently picking a side -> **user decision: skip virtual scroll, follow the WDS prototype's plain list, but explicitly track it as a future improvement to revisit once all epics are done** -> wrote the story (5 tasks: `is_ai` field + needs-review formula fix, 3-way badge render, documented virtual-scroll non-implementation, a structural guard test against ever rendering raw confidence, tests) with the exact resolved badge decision tree and the virtual-scroll rationale written into Dev Notes so the dev pass doesn't need to re-derive or re-litigate either -> added the virtual-scroll deferral to `deferred-work.md` immediately (not left for the dev pass) per the user's explicit "note it down somewhere we can review it later" instruction -> updated `sprint-status.yaml` (`3-4` -> ready-for-dev).
+- **Key Decisions / Findings (all Observed):**
+  - **A second genuine epics-internal inconsistency was caught and resolved before implementation, the same way Story 3.3's two scope ambiguities were** — the AC's literal `category_source='needs_review'` phrasing doesn't correspond to any real enum value in this codebase; resolving it required tracing the actual `CategorySource` enum and the rules engine's existing 0.5-confidence fallback case, not just re-reading the AC prose.
+  - **The virtual-scroll conflict was handled differently from prior epics-vs-WDS gaps on purpose**: previous stories' gaps (click-target scope, "current statement" reapply scope) were resolved unilaterally in Dev Notes because they were small, low-risk, and had a single defensible reading. This one is a full technical AC line item, already flagged as unresolved by the project's own prior documentation, and its "correct" implementation would require new architectural ground (a custom Reflex component wrapping an external React library) — exactly the class of decision project-context.md's own process rule says must be raised, not silently resolved, and the user's response ("we need this as improvement" at the end) confirms it was the right call to ask rather than assume.
+  - **The dev-time risk this story is actually fixing was root-caused before a single line of Task 1 code was written**: Story 3.1's `NEEDS_REVIEW_THRESHOLD = 1.0` binary check was correct *at the time* (only rule-sourced rows existed on the page), but became latently wrong the moment Story 3.2 introduced real LLM-sourced confidence values — a bug that would otherwise have shipped silently (every AI badge showing as "needs review" instead) since nothing in Stories 3.2/3.3's own test suites exercised the transactions page's badge rendering against an `llm`-sourced row.
+- **Verification:** No code written this step (context-engineering only).
+- **Deliverables:** Story 3.4 file, ready-for-dev, with the badge-priority decision tree fully resolved and the virtual-scroll deviation explicitly user-approved and tracked.
+- **Artifacts Created:** `_bmad-output/implementation-artifacts/3-4-confidence-badges-and-transaction-table-polish.md`.
+- **Artifacts Updated:** `_bmad-output/implementation-artifacts/deferred-work.md` (+1 entry: virtual scroll, future improvement), `sprint-status.yaml` (`3-4` → ready-for-dev).
+- **Dependencies:** Story 3.1 (`TxnRow`/`_to_row`/chip-filter functions), Story 3.2 (`category_source='llm'`, real `category_confidence`), Story 3.3 (`CategorySource` import already present in `transactions_state.py`).
+- **Next Recommended Command:** `bmad-dev-story` on 3.4 — the last story in Epic 3.
+- **Notes:** Once 3.4 is done and reviewed, Epic 3 (Transaction Categorization & Teach Me) is fully complete. The uncommitted-work backlog (nothing committed since `e646b07`) still stands and will only grow with 3.4's implementation — worth raising again once 3.4 lands.
+
+---
+
+## Step 72 — Dev Story 3.4: Confidence Badges & Transaction Table Polish
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, fourth (final) story build
+**Workflow:** `bmad-dev-story` (Observed).
+**User Goal:** "Run the dev pass on Story 3.4" — implement Story 3.4.
+**BMAD Command:** `bmad-dev-story 3.4`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (developer, no BMAD persona).
+- **Role:** Execute Story 3.4's 5 tasks in strict red-green-refactor order, fixing a latent bug the story's own creation step had already root-caused (Story 3.1's binary `needs_review` check misfiring against Tier-2's real confidence values) rather than just adding a new badge on top of it.
+- **Input:** The 3-4 story file (fully resolved badge-priority decision tree and virtual-scroll rationale already written into Dev Notes at creation time — no re-derivation needed); `finance_app/state/transactions_state.py`/`finance_app/pages/transactions.py`'s current state (unchanged since Story 3.3's review); the WDS prototype's `.txn-badge--ai` CSS class (already present, unused).
+- **Output:** `TxnRow.is_ai` field + fixed `needs_review` formula; a 3-way badge `rx.cond` in the transactions page; a new structural-guard test file; 10 new/updated tests; the virtual-scroll deviation documented in the page's own docstring (in addition to the story file and `deferred-work.md` entry already in place from story creation).
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-dev-story`.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Mark `3-4` in-progress (added fresh `baseline_commit: e646b07...` to the story's YAML frontmatter, since Story 3.4's creation step hadn't set one) -> Task 1: RED phase first — wrote 6 new/updated test assertions in `tests/test_transactions_state.py` referencing a not-yet-existing `TxnRow.is_ai` field, ran the suite, confirmed a genuine `AttributeError: 'TxnRow' object has no attribute 'is_ai'` failure (not a hypothetical — actually executed) -> GREEN: added `is_ai: bool` to `TxnRow`, computed it in `_to_row` as `category_source == 'llm'`, and fixed the `needs_review` formula to `(not is_ai) and confidence < NEEDS_REVIEW_THRESHOLD` -> updated the `_row()` test helper's required-field default -> all 27 tests passed -> extended Task 5's fuller test set early (AI-row inclusion in `distinct_categories`/`build_chip_items`/`filter_rows`, two AC #7 self-consistency tests) since they were tightly coupled to Task 1's own correctness -> 32/32 passed -> Task 2: extended `_row()`'s 2-way badge `rx.cond` to 3-way (needs_review -> AI -> none), reusing the WDS prototype's existing-but-unused `.txn-badge--ai` class/copy verbatim -> `reflex compile` Success (32/31) -> Task 3: verified the already-present `deferred-work.md` virtual-scroll entry (added proactively at story-creation time per the user's explicit "note it down" instruction) and added the matching rationale note directly into `transactions.py`'s own module docstring, so a future reader of the code itself (not just the story file) sees why the list has no virtualization -> Task 4: new `tests/test_transactions_page_structure.py` — two structural guards (TxnRow has no confidence-named field at all; the page module's source text never references `category_confidence`) proving AC #4 by construction, not just by inspection -> Task 5: ran the full suite -> **249 passed** (239 baseline + 10 new), zero regressions, explicitly re-verified the pre-existing `test_confidence_0_5_transfer_in_row_is_flagged_needs_review` and all of `tests/categorize/test_teach_me.py` still pass unmodified -> final `reflex compile` Success (32/31) -> Status -> review; `sprint-status.yaml` synced.
+- **Key Decisions / Findings (all Observed):**
+  - **This story fixed a real, latent, not-yet-triggered bug rather than just adding new UI** — Story 3.1's `needs_review = confidence < 1.0` check was correct the day it was written (only rule-sourced rows existed on the page then) but became silently wrong the moment Story 3.2 introduced real LLM-sourced confidence values, and nothing in Stories 3.2's or 3.3's own test suites ever exercised the transactions page's badge logic against an `llm`-sourced row to catch it. Story 3.4's own creation step (Step 71) had already root-caused this before any code was written, which is why the dev pass here was a clean, single-pass fix rather than a discovery-driven detour.
+  - **RED-phase discipline caught nothing new, but proved the tests were real** — the AttributeError obtained by actually running the new tests against the old `TxnRow` (rather than just asserting "these would fail") is exactly the kind of verification this project's dev-story workflow insists on, and it's cheap: ~10 seconds of pytest time bought a genuine correctness guarantee on the RED step rather than an assumption.
+  - **Fourth story in a row with zero implementation-time surprises** — a direct continuation of the "fresh re-scan first" and "resolve ambiguities before dev-story, not during" habits established across Stories 3.1–3.3; every decision the dev pass needed had already been made and written into Dev Notes at story-creation time.
+- **Verification:** Full `pytest` suite — **249 passed** (239 baseline + 10 new), 0 failures; `reflex compile` — Success, 32/31 (run twice: after Task 2's badge wiring and again at final Task 5 verification).
+- **Deliverables:** Story 3.4 implemented — the transactions table now correctly distinguishes rule/user-confirmed (no badge), AI-categorized (blue "AI"), and genuinely-uncertain (amber "?") rows, closing a latent bug that would otherwise have mislabeled every Tier-2-categorized transaction as "needs review." Epic 3 (Transaction Categorization & Teach Me) now has all 4 stories at `review`/`done`.
+- **Artifacts Created:** `tests/test_transactions_page_structure.py`.
+- **Artifacts Updated:** `finance_app/state/transactions_state.py` (`TxnRow.is_ai`, fixed `needs_review` formula), `finance_app/pages/transactions.py` (3-way badge `rx.cond`, docstring), `tests/test_transactions_state.py` (+10 tests), `_bmad-output/implementation-artifacts/3-4-confidence-badges-and-transaction-table-polish.md` (all 5 tasks checked, Dev Agent Record, Status → review), `sprint-status.yaml` (`3-4` → review).
+- **Dependencies:** Step 71 (story creation, which pre-resolved every ambiguity this dev pass needed).
+- **Next Recommended Command:** `bmad-code-review` on 3.4 — the last review needed to close out Epic 3 entirely.
+- **Notes:** Nothing has been committed since `e646b07` — Stories 3.1's review, all of 3.2, all of 3.3, and now all of 3.4 remain uncommitted. This is now 4 stories' worth of uncommitted work; strongly worth committing once 3.4's review completes and before starting Epic 4.
+
+---
+
+## Step 73 — Code Review of Story 3.4 (3-layer adversarial review, 7 patches applied, 3 deferred) — Epic 3 Complete
+
+**Timestamp:** 2026-07-10 (this conversation, branch `epic-3`)
+**BMAD Phase:** Phase 5: Implementation — Epic 3, fourth (final) story quality gate
+**Workflow:** `bmad-code-review` (Observed).
+**User Goal:** "move to review" — review Story 3.4's implementation.
+**BMAD Command:** `bmad-code-review 3.4`. **Source: Observed** (this session).
+**Trigger:** User
+
+### Agent Log
+- **Agent Name:** Claude Code (code reviewer) orchestrating 3 parallel background subagents (Blind Hunter, Edge Case Hunter, Acceptance Auditor).
+- **Role:** Isolate Story 3.4's own diff from `transactions_state.py`/`transactions.py` (both still carry Story 3.2/3.3's already-reviewed uncommitted changes, same recurring situation as every review this branch since nothing has been committed since `e646b07`); launch the 3 review layers; triage; apply every patch.
+- **Input:** 2 manually-isolated hunks (`TxnRow.is_ai`/`_to_row`'s fix; the 3-way badge `rx.cond`) plus 2 clean diffs (`tests/test_transactions_state.py`'s full diff, `tests/test_transactions_page_structure.py`'s full new-file content) — confirmed clean by checking neither test file was in Story 3.3's own File List.
+- **Output:** 3 review reports (10 findings from Blind Hunter, 5 from Edge Case Hunter, 3 from Acceptance Auditor — 2 heavily overlapping on the same core "TxnRow invariant not enforced" finding), triaged to 0 decision-needed + 7 patches (all applied) + 3 deferred + 4 dismissed; 2 new tests; a model-level validator added to `TxnRow`.
+- **Source:** **Observed**.
+
+### Skill Log
+- **Skill Name:** `bmad-code-review`, invoking `bmad-review-adversarial-general` and `bmad-review-edge-case-hunter` as nested subagent skills; Acceptance Auditor via direct custom prompt.
+- **Source:** **Observed**.
+
+### Execution Summary
+- **Agent execution order:** Verified `baseline_commit` == `HEAD` (no drift) -> confirmed `tests/test_transactions_state.py` and `tests/test_transactions_page_structure.py` were untouched by Story 3.3 (not in its File List), so their `git diff HEAD` is cleanly 100% Story 3.4's -> manually isolated the 2 hunks in the shared files (`transactions_state.py`, `transactions.py`) from Story 3.2/3.3's already-reviewed content, same technique as Steps 67/70 -> launched all 3 layers in parallel with full repo context (LLM confidence range, the enum, the rules-engine fallback case) so reviewers could verify reachability of any edge case rather than speculate -> Blind Hunter and Edge Case Hunter both independently converged on the same core finding from two different angles: Blind Hunter framed it as "the render logic checks needs_review before is_ai, the opposite of the documented priority order" (a slight overstatement — order doesn't matter given mutual exclusivity by construction, but correctly identified the real underlying gap), Edge Case Hunter framed the identical gap as "TxnRow models the tri-state badge as two independent unconstrained booleans" -> read the actual render code carefully to confirm the true defect (no invariant enforced on `TxnRow` itself, not an actual render-order bug) before rating severity, per the triage step's own "read the code before rating" rule -> Acceptance Auditor independently verified AC #7's self-consistency claim holds by genuine construction (not just by test assertion) and caught two doc-hygiene gaps (a stale comment, an unclosed `deferred-work.md` entry from Story 3.1) neither other layer surfaced, since only it had the story file's own Completion Notes to compare against -> triaged 18 raw findings to 7 patches + 3 defers + 4 dismissed-as-noise (a naming nitpick, an intentional British-spelling match to the WDS prototype, an accepted structural-guard scope limit, and the already-standing no-browser-driver limitation) -> presented findings, user chose "apply every patch" -> applied all 7: added a pydantic `model_validator` to `TxnRow` rejecting `needs_review=True, is_ai=True` simultaneously (closes the Blind Hunter/Edge Case Hunter convergent finding at its root, not just at the one known call site); hardened `is_ai`'s computation to also require `category != UNCATEGORIZED`, closing a corrupted-data edge case where a legacy row could be `llm`-sourced yet still `Uncategorized`; fixed the stale "until Tier-2 exists" docstring; closed out Story 3.1's stale `deferred-work.md` entry with the established strikethrough+RESOLVED pattern; added 2 new tests (`category_source=None`, the llm-sourced-yet-Uncategorized edge case); aligned `is_credit` to use the `Direction` enum (matching `is_ai`'s enum-based idiom); softened an overclaiming test comment -> full suite 251 passed; `reflex compile` Success (32/31) -> Story 3.4 Status -> done; `sprint-status.yaml` synced -> **all 4 Story 3.x statuses now `done`, so `epic-3` itself was marked `done`** in `sprint-status.yaml`.
+- **Key Decisions / Findings (all Observed):**
+  - **Two independently-run reviewers converging on the same underlying gap via two different framings is a strong signal, but the literal framing of one of them (Blind Hunter's "render order is backwards") needed verification before acting on it** — reading the actual `rx.cond` nesting showed the render order itself was harmless (mutual exclusivity already held by construction); the *real*, actionable gap both reviewers were circling was the missing model-level invariant, which is what got fixed. This is exactly the triage step's own discipline ("read the code before rating... severity reflects the real consequence, not the worst theoretical reading") working as intended — the fix that shipped addresses the true root cause more robustly than either individual finding's literal wording suggested.
+  - **The Acceptance Auditor again caught what the other two layers structurally couldn't**: both doc-hygiene findings (the stale comment, the unclosed `deferred-work.md` entry) required cross-referencing the story's own historical record — the story's Completion Notes and a two-stories-old deferred-work entry — which only the Acceptance Auditor was instructed to read.
+  - **A fix went one level deeper than the individual findings asked for**: rather than patching only the one reachable path, the `TxnRow` validator closes the invariant gap structurally (any future construction site, not just `_to_row`), which is what actually eliminates the fragility class both Blind Hunter and Edge Case Hunter were pointing at, rather than just the one instance they could currently observe.
+- **Verification:** Full `pytest` suite — **251 passed** (249 pre-review + 2 new), 0 failures; `reflex compile` — Success, 32/31.
+- **Deliverables:** Story 3.4 fully reviewed and hardened — a model-level guarantee that the 3-state badge can never show contradictory signals, a closed corrupted-data edge case, and doc/ledger hygiene fixes. **Epic 3 (Transaction Categorization & Teach Me) is now fully complete** — all 4 stories `done`.
+- **Artifacts Created:** None (no new source files this step; both test files extended, not created).
+- **Artifacts Updated:** `finance_app/state/transactions_state.py` (`TxnRow` validator, `is_ai`'s Uncategorized guard, `is_credit`'s enum idiom, stale docstring fix), `tests/test_transactions_state.py` (+2 tests, 1 comment reworded), `_bmad-output/implementation-artifacts/3-4-confidence-badges-and-transaction-table-polish.md` (Review Findings section, Status → done), `_bmad-output/implementation-artifacts/deferred-work.md` (Story 3.1 entry closed out + 3 new review-pass deferrals), `sprint-status.yaml` (`3-4` → done, `epic-3` → done).
+- **Dependencies:** Step 72 (implementation being reviewed).
+- **Next Recommended Command:** Commit the branch — strongly recommended now that Epic 3 is fully closed out (4 stories, ~5 code-review passes, and zero commits since `e646b07`) — then `bmad-create-story` for Epic 4's first story (Story 4.1: Engine Pre-Flight — Read and Lock the Scenario Contract) if continuing straight into the Financial Engine work.
+- **Notes:** Epic 3 is the first epic in this project to ship a full 4-story arc (rules engine, LLM categorizer, user corrections, confidence badges) end-to-end within a single working session, with every story going through the full create → dev → review cycle. The uncommitted-work backlog (nothing committed since `e646b07`, now 4 stories deep) is at its largest point yet and should be resolved before Epic 4 begins, to avoid an ever-larger single diff if something needs to be reverted.
 
 ---
