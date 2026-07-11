@@ -111,6 +111,23 @@ class Commitment(rx.Model, table=True):
     created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
 
 
+class CommitmentSuggestion(rx.Model, table=True):
+    """A recurring charge the detector proposed, and the user's decision on it (Story 5.6).
+
+    Only *decided* signatures are stored — one row per pattern the user confirmed or dismissed.
+    Pending candidates are recomputed from transactions on each page load, so this table holds
+    just enough to guarantee a dismissed (or already-confirmed) pattern is never re-surfaced
+    (FR-9.1). ``signature`` is the detector's stable ``"<merchant>@<due_day>"`` identity.
+    """
+
+    __tablename__ = "commitment_suggestions"
+
+    user_id: int = sqlmodel.Field(foreign_key=USER_FK, index=True)
+    signature: str = sqlmodel.Field(index=True)
+    status: str  # 'confirmed' | 'dismissed'
+    created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
 class ScoreEvent(rx.Model, table=True):
     """Auditable Confidence-Score change (AD-9). The UI score is the latest row here."""
 

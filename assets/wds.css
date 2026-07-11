@@ -892,3 +892,25 @@ a { color: inherit; }
   color: var(--muted); font-size: var(--text-sm); margin-bottom: var(--space-lg);
 }
 
+
+/* ---- Auto-detected commitment suggestions (Story 5.6) ---- */
+/* Amber, calm-nudge tone — the same "noticed, not error" register as .banner. */
+.commit-suggest {
+  background: #fdf6ec; border: 1px solid #f0d9a8;
+  border-radius: var(--radius); padding: var(--space-md) var(--space-lg);
+  margin: var(--space-md) 0 var(--space-lg);
+}
+.commit-suggest-title { font-size: var(--text-md); font-weight: 600; margin: 0 0 var(--space-sm); color: var(--ink); }
+.commit-suggest-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+.commit-suggest-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
+  flex-wrap: wrap; padding: var(--space-sm) 0; border-top: 1px solid #f0d9a8;
+}
+.commit-suggest-row:first-child { border-top: none; }
+.commit-suggest-text { flex: 1 1 260px; color: var(--gray-800); font-size: var(--text-sm); line-height: 1.5; }
+.commit-suggest-actions { display: flex; align-items: center; gap: var(--space-sm); flex: 0 0 auto; }
+.commit-suggest-confirm { padding: 6px 14px; font-size: var(--text-sm); }
+.commit-suggest-dismiss { color: var(--muted); font-size: var(--text-sm); }
+
+/* ---- Dashboard charts (Story 5.4) — supporting evidence, below the fold ---- */
+.dash-chart { width: 100%; }

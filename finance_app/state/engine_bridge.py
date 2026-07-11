@@ -26,14 +26,21 @@ from decimal import Decimal
 
 from sqlmodel import Session, select
 
-from finance_app.models import Commitment, ScoreEvent, Transaction as TxnModel
+from finance_app.models import (
+    Commitment,
+    CommitmentSuggestion,
+    ScoreEvent,
+    Transaction as TxnModel,
+)
 from services.engine import (
+    CommitmentCandidate,
     CommitmentRecord,
     EvidencePack,
     ScoreResult,
     build_engine_input,
     compute_confidence_score,
     compute_safe_to_spend,
+    detect_recurring_commitments,
 )
 from services.ingestion.schema import Transaction
 from services.utils.enums import Direction
@@ -49,6 +56,7 @@ __all__ = [
     "load_transactions",
     "load_commitments",
     "to_commitment_records",
+    "detect_commitment_candidates",
     "compute_dashboard",
     "sync_confidence_score",
     "latest_score_event",
@@ -193,6 +201,25 @@ def to_commitment_records(rows: list[Commitment]) -> list[CommitmentRecord]:
         )
         for row in rows
     ]
+
+
+def detect_commitment_candidates(
+    session: Session, user_id: int
+) -> list[CommitmentCandidate]:
+    """Recurring debits worth proposing as commitments, minus ones already decided (Story 5.6).
+
+    The user's confirmed/dismissed signatures are read from ``commitment_suggestions`` and
+    handed to the pure detector as exclusions, so a pattern the user already acted on is never
+    surfaced again (FR-9.1). Deterministic and LLM-free — the detector is a pure function; this
+    only supplies its inputs under the mandatory ``user_id`` filter (AD-4).
+    """
+    transactions = load_transactions(session, user_id)
+    decided = session.exec(
+        select(CommitmentSuggestion.signature).where(
+            CommitmentSuggestion.user_id == user_id
+        )
+    ).all()
+    return detect_recurring_commitments(transactions, exclude_signatures=decided)
 
 
 def compute_dashboard(session: Session, user_id: int) -> DashboardData:

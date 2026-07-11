@@ -46,24 +46,24 @@ def _trace_row(sources: list) -> rx.Component:
 # Message bubbles
 # ---------------------------------------------------------------------------
 
-def _user_bubble(msg: dict) -> rx.Component:
+def _user_bubble(msg) -> rx.Component:
     return rx.el.div(
-        rx.el.span(msg["content"], class_name="msg-text"),
+        rx.el.span(msg.content, class_name="msg-text"),
         class_name="msg msg--user",
     )
 
 
-def _bot_bubble(msg: dict) -> rx.Component:
+def _bot_bubble(msg) -> rx.Component:
     return rx.el.div(
-        rx.el.span(msg["content"], class_name="msg-text"),
-        _trace_row(msg["trace_sources"]),
+        rx.el.span(msg.content, class_name="msg-text"),
+        _trace_row(msg.trace_sources),
         class_name="msg msg--bot",
     )
 
 
-def _message_bubble(msg: dict) -> rx.Component:
+def _message_bubble(msg) -> rx.Component:
     return rx.cond(
-        msg["role"] == "user",
+        msg.role == "user",
         _user_bubble(msg),
         _bot_bubble(msg),
     )

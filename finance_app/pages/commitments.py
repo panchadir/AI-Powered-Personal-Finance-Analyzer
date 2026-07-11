@@ -36,6 +36,46 @@ def _impact_bar() -> rx.Component:
     )
 
 
+def _suggestion_card(suggestion) -> rx.Component:
+    """One auto-detected recurring charge with Protect / Dismiss actions (Story 5.6 / FR-9.1)."""
+    return rx.el.li(
+        rx.el.span(suggestion.prompt, class_name="commit-suggest-text"),
+        rx.el.span(
+            rx.el.button(
+                "Protect it",
+                on_click=CommitmentsState.confirm_suggestion(suggestion.signature),
+                class_name="btn btn--primary commit-suggest-confirm",
+                type="button",
+            ),
+            rx.el.button(
+                "Not a bill",
+                on_click=CommitmentsState.dismiss_suggestion(suggestion.signature),
+                class_name="link commit-suggest-dismiss",
+                type="button",
+            ),
+            class_name="commit-suggest-actions",
+        ),
+        class_name="commit-suggest-row",
+    )
+
+
+def _suggestions() -> rx.Component:
+    """"We noticed these recurring charges" panel — only shown when there's something to confirm."""
+    return rx.cond(
+        CommitmentsState.suggestions,
+        rx.el.div(
+            rx.el.h2("We noticed these recurring charges", class_name="commit-suggest-title"),
+            rx.el.ul(
+                rx.foreach(CommitmentsState.suggestions, _suggestion_card),
+                class_name="commit-suggest-list",
+            ),
+            class_name="commit-suggest",
+            role="region",
+            aria_label="Suggested commitments",
+        ),
+    )
+
+
 def _commitment_row(commitment) -> rx.Component:
     """One commitment with per-row Edit / Delete (Story 5.5 AC).
 
@@ -224,6 +264,7 @@ def commitments() -> rx.Component:
             rx.el.div(
                 rx.el.h1("Commitments", class_name="commit-page-title"),
                 _impact_bar(),
+                _suggestions(),
                 rx.cond(
                     CommitmentsState.empty,
                     rx.el.div(

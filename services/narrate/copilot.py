@@ -1,7 +1,7 @@
 """Copilot streaming service — Stories 6.1–6.3 (FR-7.1–FR-7.5).
 
 Public API:
-  ``astream_events(messages, user_id, session_factory)``
+  ``astream_events(messages, user_id, data_factory)``
     Async generator that yields typed event dicts (SSE contract, FR-7.4):
 
       {"type": "token",  "text": "<string>"}
@@ -19,7 +19,7 @@ Tool-use loop (Story 6.2 — unchanged):
   Each round streams through ``messages.stream()``. If the model requests
   tool calls, ``text_stream`` yields nothing (tool-use and text are mutually
   exclusive in one response); the final message carries ``tool_use`` blocks.
-  Tools are executed with a short-lived session from ``session_factory``
+  Tools are executed against a short-lived data provider from ``data_factory``
   (never held open during streaming). The loop continues until the model
   produces a text response — which is streamed live as token events — or
   until ``_MAX_TOOL_ROUNDS`` is exhausted, in which case a final stream call
@@ -44,10 +44,9 @@ from contextlib import AbstractContextManager
 from typing import Any
 
 import anthropic
-from sqlmodel import Session
 
 from services.narrate.config import COPILOT_MODEL
-from services.narrate.tools import TOOL_SCHEMAS, run_tool
+from services.narrate.tools import CopilotData, TOOL_SCHEMAS, run_tool
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +113,7 @@ async def astream_events(
     messages: list[dict[str, str]],
     *,
     user_id: int,
-    session_factory: Callable[[], AbstractContextManager[Session]],
+    data_factory: Callable[[], AbstractContextManager[CopilotData]],
     api_key: str | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Async-stream typed event dicts for the Copilot response.
@@ -122,15 +121,18 @@ async def astream_events(
     Yields ``token``, ``trace``, ``error`` (on failure), and ``done`` events.
     ``done`` is guaranteed from a ``finally`` block — the caller never hangs.
 
-    Each tool execution opens its own short-lived session via ``session_factory``
-    so no DB connection is held open during the streaming phase.
+    Each tool execution opens its own short-lived, user-scoped data provider via
+    ``data_factory`` so no DB connection is held open during the streaming phase, and the
+    tools never receive a raw session or ``user_id`` they could misuse (AD-4).
 
     Args:
-        messages:        Full conversation history including the new user turn.
-        user_id:         Authenticated user's id — injected into every tool call.
-        session_factory: Zero-arg callable returning an open-session context manager
-                         (e.g. ``rx.session``).
-        api_key:         Anthropic API key; falls back to ``ANTHROPIC_API_KEY`` env var.
+        messages:      Full conversation history including the new user turn.
+        user_id:       Authenticated user's id — used for logging (the data provider is
+                       already bound to it).
+        data_factory:  Zero-arg callable returning a context manager that yields a
+                       user-scoped :class:`~services.narrate.tools.CopilotData`
+                       (e.g. ``lambda: open_copilot_data(user_id)``).
+        api_key:       Anthropic API key; falls back to ``ANTHROPIC_API_KEY`` env var.
     """
     client = anthropic.AsyncAnthropic(
         api_key=api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -168,12 +170,11 @@ async def astream_events(
             tool_results: list[dict[str, Any]] = []
             for block in tool_use_blocks:
                 tools_called.append(block.name)
-                with session_factory() as session:
+                with data_factory() as data:
                     result = run_tool(
                         block.name,
                         dict(block.input),  # type: ignore[arg-type]
-                        user_id=user_id,
-                        session=session,
+                        data=data,
                     )
                 tool_results.append(
                     {

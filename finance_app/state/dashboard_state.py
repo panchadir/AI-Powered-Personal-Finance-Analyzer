@@ -18,8 +18,11 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import datetime
 import logging
+import math
 
+import plotly.graph_objects as go
 import reflex as rx
 
 from finance_app.state.auth_state import LOGIN_ROUTE, AuthState, user_for_token
@@ -30,10 +33,15 @@ from finance_app.state.engine_bridge import (
     format_day,
     format_money,
     humanize_since,
+    load_commitments,
+    load_transactions,
     recent_score_events,
     sync_confidence_score,
 )
+from services.analytics import CategorySlice, MonthPoint, monthly_spend, spending_by_category
+from services.engine import resolve_due_date
 from services.narrate import BriefingContext, generate_briefing
+from services.utils.format import formatINR
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +59,113 @@ class ScoreEventView:
     delta: str = ""  # "+4" / "-3" — signed, already formatted
     explanation: str = ""
     when: str = ""  # "2 hours ago"
+
+
+@dataclasses.dataclass
+class TimelineView:
+    """One row of the upcoming-commitments timeline (Story 5.4 AC)."""
+
+    due: str = ""  # formatDate'd next occurrence, e.g. "05 Aug 2026"
+    name: str = ""
+    amount: str = ""  # formatINR'd
+    tier: str = ""  # criticality label: "Critical" / "Important" / "Flexible"
+
+
+#: A calm, evidence-not-headline palette for the donut (UX-DR1: charts support, never shout).
+_CHART_COLORS = (
+    "#4f46e5", "#0ea5e9", "#14b8a6", "#f59e0b",
+    "#ec4899", "#8b5cf6", "#10b981", "#64748b",
+)
+_INK = "#334155"
+
+
+def _nice_ceiling(value: float) -> float:
+    """Round ``value`` up to a clean 1/2/2.5/5/10 × power-of-ten, for readable y-axis ticks."""
+    if value <= 0:
+        return 0.0
+    magnitude = 10 ** math.floor(math.log10(value))
+    for step in (1, 2, 2.5, 5, 10):
+        if value <= step * magnitude:
+            return step * magnitude
+    return 10 * magnitude
+
+
+def _empty_figure() -> go.Figure:
+    """A blank figure used as the state default and when there is nothing to plot."""
+    fig = go.Figure()
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=8, r=8, t=8, b=8),
+    )
+    return fig
+
+
+def _category_figure(slices: list[CategorySlice]) -> go.Figure:
+    """Donut of debit spend by category. Every rupee shown is ``formatINR``'d (NFR-7).
+
+    Slice labels carry the category name only; the exact amount rides in the hover via
+    ``formatINR`` — a raw ``125000.0`` on a label would fail acceptance (Story 5.4 AC).
+    """
+    fig = go.Figure(
+        go.Pie(
+            labels=[s.category for s in slices],
+            values=[float(s.total) for s in slices],
+            text=[formatINR(s.total) for s in slices],
+            hole=0.58,
+            sort=False,  # keep the analytics' largest-first order → stable colour mapping
+            marker=dict(colors=list(_CHART_COLORS)),
+            textinfo="label",
+            hovertemplate="%{label}<br>%{text} · %{percent}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="top", y=-0.05, x=0.5, xanchor="center"),
+        margin=dict(l=8, r=8, t=8, b=8),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=_INK, size=12),
+        height=320,
+    )
+    return fig
+
+
+def _month_label(month: str) -> str:
+    """``'2026-06'`` → ``'Jun 2026'`` for the x-axis (display only, not a rupee)."""
+    return datetime.datetime.strptime(month, "%Y-%m").strftime("%b %Y")
+
+
+def _pace_figure(points: list[MonthPoint]) -> go.Figure:
+    """Monthly spend as a bar trend. Y-axis tick *values* are ``formatINR``'d (Story 5.4 AC).
+
+    Plotly's default axis would print ``125000``; the AC requires Indian grouping, so the tick
+    labels are explicit ``formatINR`` strings and the exact bar total rides in the hover.
+    """
+    fig = go.Figure(
+        go.Bar(
+            x=[_month_label(p.month) for p in points],
+            y=[float(p.total) for p in points],
+            customdata=[formatINR(p.total) for p in points],
+            marker_color=_CHART_COLORS[0],
+            hovertemplate="%{x}<br>%{customdata}<extra></extra>",
+        )
+    )
+
+    top = _nice_ceiling(max((float(p.total) for p in points), default=0.0))
+    tickvals = [top * i / 4 for i in range(5)] if top > 0 else []
+    fig.update_layout(
+        margin=dict(l=8, r=8, t=8, b=8),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=_INK, size=12),
+        showlegend=False,
+        height=320,
+        yaxis=dict(
+            tickvals=tickvals,
+            ticktext=[formatINR(v) for v in tickvals],
+            gridcolor="rgba(100,116,139,0.15)",
+        ),
+        xaxis=dict(showgrid=False),
+    )
+    return fig
 
 
 class DashboardState(AuthState):
@@ -82,6 +197,12 @@ class DashboardState(AuthState):
     # --- Briefing (Story 5.3) ---
     briefing: str = ""
     briefing_loading: bool = False
+
+    # --- Charts & timeline (Story 5.4) — below the fold, supporting evidence (UX-DR1) ---
+    has_charts: bool = False
+    category_fig: go.Figure = _empty_figure()
+    pace_fig: go.Figure = _empty_figure()
+    timeline: list[TimelineView] = []
 
     @rx.event
     def toggle_why(self):
@@ -135,6 +256,12 @@ class DashboardState(AuthState):
             )
             self._apply_evidence(data, event.score)
             self._apply_score_events(recent_score_events(session, user.id))
+            # Below-the-fold supporting evidence (Story 5.4). Built from the same rows the
+            # engine ran on, so the charts can never disagree with the hero figure.
+            self._apply_charts(load_transactions(session, user.id))
+            self._apply_timeline(
+                load_commitments(session, user.id), as_of=data.statement_end_date
+            )
             context = self._briefing_context(data)
 
         self.briefing_loading = True
@@ -157,6 +284,10 @@ class DashboardState(AuthState):
         self.buffer_dented = False
         self.score_events = []
         self.briefing = ""
+        self.has_charts = False
+        self.category_fig = _empty_figure()
+        self.pace_fig = _empty_figure()
+        self.timeline = []
 
     def _apply_evidence(self, data, score: int) -> None:
         """Turn the evidence pack into display strings. No arithmetic — only formatting."""
@@ -203,6 +334,37 @@ class DashboardState(AuthState):
 
         # "Why?" traces to real engine drivers; the fallback is honest about not knowing.
         self.why_text = " ".join(evidence.drivers) if evidence.drivers else WHY_FALLBACK
+
+    def _apply_charts(self, transactions) -> None:
+        """Build the donut and pace figures from real debits (Story 5.4).
+
+        Aggregation is done in ``services/analytics`` (Decimal, unit-tested); this only turns
+        those numbers into figures and formats them. ``has_charts`` gates the whole below-fold
+        section so a statement with no debits shows nothing rather than an empty axis.
+        """
+        slices = spending_by_category(transactions)
+        points = monthly_spend(transactions)
+        self.has_charts = bool(slices)
+        self.category_fig = _category_figure(slices) if slices else _empty_figure()
+        self.pace_fig = _pace_figure(points) if points else _empty_figure()
+
+    def _apply_timeline(self, commitments, *, as_of) -> None:
+        """Upcoming commitments, soonest first, with each one's next due date (Story 5.4 AC)."""
+        anchor = as_of or datetime.date.today()
+        rows = [
+            (resolve_due_date(c.due_day, anchor), c)
+            for c in commitments
+        ]
+        rows.sort(key=lambda pair: pair[0])
+        self.timeline = [
+            TimelineView(
+                due=format_day(due_date),
+                name=c.name,
+                amount=format_money(c.amount),
+                tier=c.criticality.capitalize(),
+            )
+            for due_date, c in rows
+        ]
 
     def _apply_score_events(self, events) -> None:
         self.score_events = [

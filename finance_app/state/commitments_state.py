@@ -23,10 +23,11 @@ from decimal import Decimal, InvalidOperation
 
 import reflex as rx
 
-from finance_app.models import Commitment
+from finance_app.models import Commitment, CommitmentSuggestion
 from finance_app.state.auth_state import LOGIN_ROUTE, AuthState, user_for_token
 from finance_app.state.engine_bridge import (
     compute_dashboard,
+    detect_commitment_candidates,
     format_money,
     load_commitments,
     sync_confidence_score,
@@ -71,6 +72,22 @@ class CommitmentView:
     due_label: str = ""  # "Due end of month" / "Due 15th of every month"
     criticality: str = ""
     icon: str = ""
+
+
+@dataclasses.dataclass
+class SuggestionView:
+    """One auto-detected recurring charge awaiting the user's confirm/dismiss (Story 5.6)."""
+
+    signature: str = ""
+    prompt: str = ""  # "We noticed a recurring ₹8,500 charge around the 5th each month…"
+
+
+def _due_phrase(due_day: int) -> str:
+    """Natural-language cadence for a suggestion prompt (distinct from the list's ``Due …``)."""
+    if due_day == 31:
+        return "at the end of each month"
+    suffix = {1: "st", 2: "nd", 3: "rd", 21: "st", 22: "nd", 23: "rd"}.get(due_day, "th")
+    return f"around the {due_day}{suffix} each month"
 
 
 def as_text(value: object) -> str:
@@ -136,6 +153,9 @@ class CommitmentsState(AuthState):
     safe_to_spend: str = "₹0"
     empty: bool = True
 
+    # Auto-detected recurring charges awaiting confirm/dismiss (Story 5.6 / FR-9.1).
+    suggestions: list[SuggestionView] = []
+
     # Add/edit modal
     modal_open: bool = False
     editing_id: int = -1  # -1 == adding
@@ -190,6 +210,20 @@ class CommitmentsState(AuthState):
         # bills falling after the next payday.
         self.protecting_total = format_money(data.evidence.reserved_total)
         self.safe_to_spend = format_money(data.evidence.safe_to_spend_today)
+
+        # Recurring charges we spotted that aren't yet commitments (Story 5.6). Signatures the
+        # user already confirmed or dismissed are excluded by the detector, so this list only
+        # ever holds genuinely-open suggestions.
+        self.suggestions = [
+            SuggestionView(
+                signature=c.signature,
+                prompt=(
+                    f"We noticed a recurring {format_money(c.amount)} charge to "
+                    f"{c.merchant} {_due_phrase(c.due_day)}. Protect it as a commitment?"
+                ),
+            )
+            for c in detect_commitment_candidates(session, user_id)
+        ]
 
     # ---- Modal ----
 
@@ -360,6 +394,71 @@ class CommitmentsState(AuthState):
         self.toast = f"Removed {name} — Safe-to-Spend updated"
         self.delete_open = False
         self.delete_id = -1
+
+    # ---- Auto-detected suggestions (Story 5.6) ----
+
+    @rx.event
+    def confirm_suggestion(self, signature: str):
+        """Turn a detected recurring charge into a real commitment (FR-9.1).
+
+        Re-runs the detector server-side and matches by signature rather than trusting the
+        client for the amount/due-day — the confirmed figure is one the engine derived, never
+        one posted from the browser. Records the signature as ``confirmed`` so it is never
+        proposed again, then recomputes Safe-to-Spend exactly like a manual add.
+        """
+        with rx.session() as session:
+            user = user_for_token(session, self.auth_token)
+            if user is None:
+                return rx.redirect(LOGIN_ROUTE)
+
+            candidate = next(
+                (c for c in detect_commitment_candidates(session, user.id)
+                 if c.signature == signature),
+                None,
+            )
+            if candidate is None:
+                # Already decided, or the pattern no longer holds — refresh and move on.
+                self._refresh(session, user.id)
+                return
+
+            session.add(
+                Commitment(  # type: ignore[call-arg]
+                    user_id=user.id,
+                    name=candidate.merchant,
+                    amount=candidate.amount,
+                    due_day=candidate.due_day,
+                    criticality=candidate.criticality,
+                )
+            )
+            session.add(
+                CommitmentSuggestion(  # type: ignore[call-arg]
+                    user_id=user.id, signature=signature, status="confirmed"
+                )
+            )
+            session.commit()
+
+            data = compute_dashboard(session, user.id)
+            sync_confidence_score(
+                session, user.id, data.evidence, trigger_event="commitment_auto_confirmed"
+            )
+            self._refresh(session, user.id)
+
+        self.toast = f"Protected {candidate.merchant} — Safe-to-Spend updated"
+
+    @rx.event
+    def dismiss_suggestion(self, signature: str):
+        """Record a suggestion as dismissed so the detector never re-surfaces it (FR-9.1)."""
+        with rx.session() as session:
+            user = user_for_token(session, self.auth_token)
+            if user is None:
+                return rx.redirect(LOGIN_ROUTE)
+            session.add(
+                CommitmentSuggestion(  # type: ignore[call-arg]
+                    user_id=user.id, signature=signature, status="dismissed"
+                )
+            )
+            session.commit()
+            self._refresh(session, user.id)
 
     @rx.event
     def dismiss_toast(self):

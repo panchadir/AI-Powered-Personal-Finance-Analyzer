@@ -178,13 +178,36 @@ def _briefing_card() -> rx.Component:
     )
 
 
+def _timeline_row(item) -> rx.Component:
+    """One upcoming commitment: next due date, name, amount, criticality tier (Story 5.4 AC)."""
+    return rx.el.li(
+        rx.el.span(item.due, class_name="tl-date"),
+        rx.el.span(
+            item.name,
+            rx.el.span(item.tier, class_name="tl-tag"),
+            class_name="tl-name",
+        ),
+        rx.el.span(item.amount, class_name="tl-amt"),
+    )
+
+
 def _commitments_card() -> rx.Component:
-    """"+ Add a commitment" routes to the dedicated page (FR-6.5), not an inline modal."""
+    """Upcoming-commitments timeline + "+ Add a commitment" (Story 5.4 / FR-6.5).
+
+    "+ Add a commitment" routes to the dedicated page (FR-6.5), not an inline modal.
+    """
     return rx.el.section(
         rx.el.h2("Upcoming commitments"),
-        rx.el.p(
-            "Your protected bills and EMIs, and what they leave you.",
-            class_name="txn-cta-text",
+        rx.cond(
+            DashboardState.timeline,
+            rx.el.ul(
+                rx.foreach(DashboardState.timeline, _timeline_row),
+                class_name="timeline",
+            ),
+            rx.el.p(
+                "Your protected bills and EMIs, and what they leave you.",
+                class_name="txn-cta-text",
+            ),
         ),
         rx.el.button(
             "+ Add a commitment",
@@ -193,6 +216,30 @@ def _commitments_card() -> rx.Component:
             type="button",
         ),
         class_name="dash-section dash-card",
+    )
+
+
+def _charts_section() -> rx.Component:
+    """Below-the-fold supporting charts (Story 5.4 / UX-DR1): spending donut + monthly pace.
+
+    Rendered *after* the hero and briefing, never above the fold — these are evidence, not the
+    headline. Hidden entirely when the statement has no debits to plot.
+    """
+    return rx.cond(
+        DashboardState.has_charts,
+        rx.el.div(
+            rx.el.section(
+                rx.el.h2("Where your money went"),
+                rx.plotly(data=DashboardState.category_fig, class_name="dash-chart"),
+                class_name="dash-section dash-card",
+            ),
+            rx.el.section(
+                rx.el.h2("Your monthly pace"),
+                rx.plotly(data=DashboardState.pace_fig, class_name="dash-chart"),
+                class_name="dash-section dash-card",
+            ),
+            class_name="dash-grid",
+        ),
     )
 
 
@@ -232,6 +279,7 @@ def dashboard() -> rx.Component:
                         _commitments_card(),
                         class_name="dash-grid",
                     ),
+                    _charts_section(),
                 ),
                 rx.cond(DashboardState.loaded, _empty_state(), rx.el.div()),
             ),

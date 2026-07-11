@@ -15,6 +15,7 @@ Prior stories unchanged; see earlier story docstrings for 6.1–6.3 details.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 from datetime import datetime, timezone
@@ -24,9 +25,23 @@ from sqlmodel import select
 
 from finance_app.models import ChatMessage, Insight
 from finance_app.state.auth_state import AuthState, user_for_token
+from finance_app.state.copilot_data import open_copilot_data
 from services.narrate.copilot import astream_events
 
 log = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class ChatMessageView:
+    """One completed chat turn, typed so Reflex can ``foreach`` over the thread.
+
+    Reflex refuses to iterate an untyped ``list[dict]`` var; a dataclass gives each field a
+    concrete type (like the other pages' view models) so the thread renders.
+    """
+
+    role: str = ""  # 'user' | 'assistant'
+    content: str = ""
+    trace_sources: list[str] = dataclasses.field(default_factory=list)
 
 # Quick-prompt suggestions (FR-7.7). "Can I afford" is the STS gut-check prompt.
 QUICK_PROMPTS: list[str] = [
@@ -56,9 +71,8 @@ def _utcnow() -> datetime:
 class CopilotState(AuthState):
     """State for the Copilot chat page."""
 
-    # Completed chat turns.
-    # Each dict: {"role": str, "content": str, "trace_sources": list[str]}
-    messages: list[dict] = []
+    # Completed chat turns (typed so Reflex can foreach over the thread).
+    messages: list[ChatMessageView] = []
 
     # In-flight streaming buffer.
     streaming_content: str = ""
@@ -132,13 +146,13 @@ class CopilotState(AuthState):
                     .order_by(ChatMessage.timestamp)
                 ).all()
                 self.messages = [
-                    {
-                        "role": r.role,
-                        "content": r.content,
-                        "trace_sources": (
+                    ChatMessageView(
+                        role=r.role,
+                        content=r.content,
+                        trace_sources=(
                             json.loads(r.trace_sources) if r.trace_sources else []
                         ),
-                    }
+                    )
                     for r in rows
                 ]
             self._history_loaded = True
@@ -206,7 +220,7 @@ class CopilotState(AuthState):
             )
 
         self.messages = self.messages + [
-            {"role": "user", "content": text, "trace_sources": []}
+            ChatMessageView(role="user", content=text, trace_sources=[])
         ]
         self.input_value = ""
         self.streaming = True
@@ -230,7 +244,7 @@ class CopilotState(AuthState):
 
         # Build API conversation: all prior turns plus the (possibly annotated) new turn.
         api_messages = [
-            {"role": m["role"], "content": m["content"]}
+            {"role": m.role, "content": m.content}
             for m in self.messages[:-1]  # all but the optimistic user bubble just added
         ]
         api_messages.append({"role": "user", "content": user_content})
@@ -243,7 +257,7 @@ class CopilotState(AuthState):
             async for event in astream_events(
                 api_messages,
                 user_id=user_id,
-                session_factory=rx.session,
+                data_factory=lambda: open_copilot_data(user_id),
             ):
                 etype = event.get("type")
 
@@ -268,11 +282,11 @@ class CopilotState(AuthState):
 
                 elif etype == "done":
                     self.messages = self.messages + [
-                        {
-                            "role": "assistant",
-                            "content": assistant_content,
-                            "trace_sources": trace_sources,
-                        }
+                        ChatMessageView(
+                            role="assistant",
+                            content=assistant_content,
+                            trace_sources=trace_sources,
+                        )
                     ]
                     self.streaming_content = ""
                     self.current_trace_sources = []

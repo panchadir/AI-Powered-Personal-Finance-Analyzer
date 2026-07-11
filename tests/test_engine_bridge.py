@@ -16,12 +16,13 @@ import pytest
 import sqlmodel
 
 import finance_app.models  # noqa: F401 — registers all app tables
-from finance_app.models import Commitment, ScoreEvent, Transaction
+from finance_app.models import Commitment, CommitmentSuggestion, ScoreEvent, Transaction
 from finance_app.state.engine_bridge import (
     STALE_AFTER_DAYS,
     compute_dashboard,
     confidence_label,
     confidence_variant,
+    detect_commitment_candidates,
     humanize_since,
     latest_score_event,
     load_commitments,
@@ -85,6 +86,53 @@ def seed_statement(session, user_id, balance="25040"):
     add_txn(
         session, user_id, "2026-06-30", "SALARY ACME CORP", "85000", "credit", balance=balance
     )
+
+
+class TestDetectCommitmentCandidates:
+    """The DB-backed detection path (Story 5.6): reads decided signatures under a user filter."""
+
+    def _seed_emi(self, session, user_id):
+        add_txn(session, user_id, "2026-04-05", "HDFC EMI", "8500")
+        add_txn(session, user_id, "2026-05-05", "HDFC EMI", "8500")
+        add_txn(session, user_id, "2026-06-05", "HDFC EMI", "8500")
+
+    def test_detects_recurring_charge(self, session):
+        user = make_user(session, "emi@example.com")
+        self._seed_emi(session, user.id)
+
+        candidates = detect_commitment_candidates(session, user.id)
+
+        assert len(candidates) == 1
+        assert candidates[0].signature == "hdfc emi@5"
+        assert candidates[0].amount == Decimal("8500")
+
+    def test_decided_signature_is_excluded(self, session):
+        user = make_user(session, "emi2@example.com")
+        self._seed_emi(session, user.id)
+        session.add(
+            CommitmentSuggestion(  # type: ignore[call-arg]
+                user_id=user.id, signature="hdfc emi@5", status="dismissed"
+            )
+        )
+        session.commit()
+
+        assert detect_commitment_candidates(session, user.id) == []
+
+    def test_another_users_dismissal_does_not_leak(self, session):
+        """A dismissal is scoped to its owner (AD-4) — user B still sees the suggestion."""
+        user_a = make_user(session, "a@example.com")
+        user_b = make_user(session, "b@example.com")
+        self._seed_emi(session, user_a.id)
+        self._seed_emi(session, user_b.id)
+        session.add(
+            CommitmentSuggestion(  # type: ignore[call-arg]
+                user_id=user_a.id, signature="hdfc emi@5", status="dismissed"
+            )
+        )
+        session.commit()
+
+        assert detect_commitment_candidates(session, user_a.id) == []
+        assert len(detect_commitment_candidates(session, user_b.id)) == 1
 
 
 class TestConfidenceLabels:
