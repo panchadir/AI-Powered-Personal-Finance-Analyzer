@@ -70,3 +70,38 @@ def test_no_ui_layer_import_in_services() -> None:
         "services/ must not depend on the UI/app layer (AD-2: UI -> Service -> Data is "
         "one-way). These modules import finance_app:\n" + "\n".join(offenders)
     )
+
+
+def _full_dotted_imports(tree: ast.AST) -> set[str]:
+    """Every absolute import's *full* dotted path (unlike `_imported_roots`, which truncates
+    to the top-level package -- too coarse to distinguish `services.engine` from a sibling
+    like `services.utils`, both of which share the `services` root)."""
+    paths: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                paths.add(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0 and node.module:
+                paths.add(node.module)
+    return paths
+
+
+def test_no_engine_import_in_narrate() -> None:
+    """AD-1 engine/narrate hard boundary: `services/narrate/**` may not import
+    `services/engine/` (or any of its submodules) -- the evidence pack arrives as an argument,
+    never as an import. Scoped to `services/narrate/` only: that package legitimately imports
+    sibling `services.utils`, which a root-level check (`_offenders`) can't distinguish from
+    `services.engine` since both share the `services` top-level root."""
+    narrate_dir = SERVICES_DIR / "narrate"
+    offenders: list[str] = []
+    for path in sorted(narrate_dir.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        imports = _full_dotted_imports(tree)
+        if any(imp == "services.engine" or imp.startswith("services.engine.") for imp in imports):
+            offenders.append(str(path.relative_to(SERVICES_DIR.parent)))
+    assert not offenders, (
+        "services/narrate/ must not import services/engine/ (AD-1: the engine's evidence "
+        "pack arrives as a function argument, never as an import). These modules import "
+        "services.engine:\n" + "\n".join(offenders)
+    )

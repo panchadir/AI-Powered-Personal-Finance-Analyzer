@@ -1,11 +1,15 @@
 # AI-Powered Personal Finance Analyzer — Phase 1 MVP
 # Versions pinned to what is actually installed (Story 1.1 AC #3). Python 3.11+.
-# Note: sqlmodel and rx.plotly ship bundled with reflex. Keep this file lean: only
-# dependencies actually used.
+# Note: sqlmodel ships bundled with reflex. Keep this file lean: only dependencies
+# actually used.
 
 # --- Web framework + auth ---
 reflex==0.9.6.post1
 reflex-local-auth==0.5.0
+
+# --- Charts (Story 5.4) — rx.plotly wraps plotly.js on the frontend, but
+# `dashboard_state.py` builds the Figure objects server-side and needs the package. ---
+plotly==6.9.0
 
 # --- Statement ingestion (Epic 2) ---
 pdfplumber==0.11.10

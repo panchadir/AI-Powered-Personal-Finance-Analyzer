@@ -1,0 +1,294 @@
+NOTE TO REVIEWER: `finance_app/state/insights_bridge.py`, `finance_app/state/insights_state.py`, and
+`tests/test_insights_bridge.py` are UNTRACKED files (created whole during Story 7.3, already reviewed
+and closed to `done` in this same session). A plain `git diff HEAD` shows nothing for them (git diff
+omits untracked files), so the hunks below were extracted by hand instead of via `git diff`. Similarly,
+`finance_app/pages/insights.py` IS tracked, but its tracked baseline is a pre-Story-7.3 placeholder, so
+a raw `git diff HEAD` for it would dump Story 7.3's entire page rewrite (already reviewed) mixed in with
+Story 7.4's one real change. Per the same review-scoping decision the user made for Story 7.3 itself
+("review the new files only, skip the shared ones already reviewed"), review ONLY the hunks explicitly
+marked "STORY 7.4 ADDITION" below. Everything else in these two files is Story 7.3's already-closed
+content — do not re-review it, do not flag it as unreviewed, it is out of scope for this pass.
+
+The other two files below (`finance_app/pages/dashboard.py`, `finance_app/state/dashboard_state.py`)
+ARE plain, accurate `git diff HEAD` output in the normal unified-diff format — Story 7.4 is the only
+work ever done on these two files, so nothing needs to be excluded there.
+
+================================================================================
+FILE: finance_app/pages/dashboard.py (real `git diff HEAD`, unified diff format)
+================================================================================
+diff --git a/finance_app/pages/dashboard.py b/finance_app/pages/dashboard.py
+index 2242f76..8ba50c1 100644
+--- a/finance_app/pages/dashboard.py
++++ b/finance_app/pages/dashboard.py
+@@ -196,6 +196,27 @@ def _commitments_card() -> rx.Component:
+     )
+
+
++def _insight_teaser() -> rx.Component:
++    """Top active insight preview (Story 7.4): pattern name + Observation only, plus a
++    link to the specific insight on the Insights page. Reuses `.insight-card` and its
++    child classes verbatim from Story 7.3 -- no new CSS.
++    """
++    return rx.el.article(
++        rx.el.div(
++            rx.el.span("💡", class_name="insight-icon", aria_hidden="true"),
++            rx.el.h2(DashboardState.top_insight_pattern_name, class_name="insight-name"),
++            class_name="insight-card-head",
++        ),
++        rx.el.p(DashboardState.top_insight_observation, class_name="insight-observation"),
++        rx.el.a(
++            "See all insights →",
++            href=DashboardState.top_insight_href,
++            class_name="btn btn--secondary",
++        ),
++        class_name="insight-card",
++    )
++
++
+ def _empty_state() -> rx.Component:
+     """First-time user: welcoming and action-directing, never "No data available" (UX-DR12)."""
+     return rx.el.section(
+@@ -232,6 +253,9 @@ def dashboard() -> rx.Component:
+                         _commitments_card(),
+                         class_name="dash-grid",
+                     ),
++                    rx.cond(
++                        DashboardState.has_top_insight, _insight_teaser(), rx.el.div()
++                    ),
+                 ),
+                 rx.cond(DashboardState.loaded, _empty_state(), rx.el.div()),
+             ),
+
+================================================================================
+FILE: finance_app/state/dashboard_state.py (real `git diff HEAD`, unified diff format)
+================================================================================
+diff --git a/finance_app/state/dashboard_state.py b/finance_app/state/dashboard_state.py
+index c8e82dd..072ff90 100644
+--- a/finance_app/state/dashboard_state.py
++++ b/finance_app/state/dashboard_state.py
+@@ -33,6 +33,7 @@ from finance_app.state.engine_bridge import (
+     recent_score_events,
+     sync_confidence_score,
+ )
++from finance_app.state.insights_bridge import top_active_insight
+ from services.narrate import BriefingContext, generate_briefing
+
+ log = logging.getLogger(__name__)
+@@ -83,6 +84,12 @@ class DashboardState(AuthState):
+     briefing: str = ""
+     briefing_loading: bool = False
+
++    # --- Insight teaser (Story 7.4) ---
++    has_top_insight: bool = False
++    top_insight_pattern_name: str = ""
++    top_insight_observation: str = ""
++    top_insight_href: str = ""
++
+     @rx.event
+     def toggle_why(self):
+         """The hero card's "Why ₹X?" expander (FR-5.6)."""
+@@ -135,6 +142,7 @@ class DashboardState(AuthState):
+             )
+             self._apply_evidence(data, event.score)
+             self._apply_score_events(recent_score_events(session, user.id))
++            self._apply_top_insight(top_active_insight(session, user.id))
+             context = self._briefing_context(data)
+
+         self.briefing_loading = True
+@@ -157,6 +165,7 @@ class DashboardState(AuthState):
+         self.buffer_dented = False
+         self.score_events = []
+         self.briefing = ""
++        self._apply_top_insight(None)
+
+     def _apply_evidence(self, data, score: int) -> None:
+         """Turn the evidence pack into display strings. No arithmetic — only formatting."""
+@@ -204,6 +213,20 @@ class DashboardState(AuthState):
+         # "Why?" traces to real engine drivers; the fallback is honest about not knowing.
+         self.why_text = " ".join(evidence.drivers) if evidence.drivers else WHY_FALLBACK
+
++    def _apply_top_insight(self, row) -> None:
++        """Story 7.4's teaser: pattern name + Observation only, verbatim from the row --
++        no arithmetic (AD-1). `row` is `None` when no active insight exists yet."""
++        if row is None:
++            self.has_top_insight = False
++            self.top_insight_pattern_name = ""
++            self.top_insight_observation = ""
++            self.top_insight_href = ""
++            return
++        self.has_top_insight = True
++        self.top_insight_pattern_name = row.pattern_name
++        self.top_insight_observation = row.observation
++        self.top_insight_href = f"/insights?highlight={row.id}"
++
+     def _apply_score_events(self, events) -> None:
+         self.score_events = [
+             ScoreEventView(
+
+================================================================================
+FILE: finance_app/state/insights_bridge.py -- STORY 7.4 ADDITION (untracked file, hand-extracted)
+================================================================================
+Added to `__all__`: "top_active_insight"
+
+New function, inserted directly above the existing `dismiss_insight`:
+
++def top_active_insight(session: Session, user_id: int) -> Insight | None:
++    """The single highest-priority active insight (Story 7.4's Dashboard teaser).
++
++    Read-only: delegates entirely to `_load_active`'s existing severity-tier/newest-first
++    ordering, and deliberately never runs the detectors or calls the narrator (that only
++    happens once, on the Insights page's own load via `refresh_insights` -- see Story 7.4's
++    Dev Notes "Why this is read-only"). A user who has never opened the Insights page simply
++    has no rows yet, so this correctly returns `None`, same as "ran and found nothing."
++    """
++    rows = _load_active(session, user_id)
++    return rows[0] if rows else None
++
++
+ def dismiss_insight(session: Session, user_id: int, insight_id: int) -> None:
+
+(Everything else in this file -- `refresh_insights`, `_load_active`, `_materially_changed`,
+`_dedup_key`, `_headline_metric`, `dismiss_insight`, etc. -- is Story 7.3 content, already
+reviewed and closed. Not in scope for this pass.)
+
+================================================================================
+FILE: finance_app/state/insights_state.py -- STORY 7.4 ADDITION (untracked file, hand-extracted)
+================================================================================
+New field on `InsightsState`:
+
+     loaded: bool = False
+     cards: list[InsightCardView] = []
+     show_footer_note: bool = False
++    highlight_id: int = 0  # Story 7.4: ?highlight=<id> deep-link from the Dashboard teaser
+
+`load_insights` — new code appended after the existing `with rx.session() as session:` block
+(that block itself, and everything inside it, is unchanged Story 7.3 content):
+
+         with rx.session() as session:
+             user = user_for_token(session, self.auth_token)
+             if user is None:
+                 return rx.redirect(LOGIN_ROUTE)
+
+             data = await asyncio.to_thread(refresh_insights, session, user.id)
+             self.cards = [self._to_card(row) for row in data.active]
+             self.show_footer_note = data.data_months < MIN_DATA_MONTHS_FOOTNOTE
+             self.loaded = True
++
++        # Story 7.4: scroll to the Dashboard teaser's linked insight, if any (mirrors
++        # copilot_state.load_history's identical ?insight= parsing). A stale/no-longer-active
++        # id (dismissed or materially-changed since the teaser was rendered) is a silent
++        # no-op in the browser via `?.` -- never a crash, never checked here.
++        raw_highlight = self.router.page.params.get("highlight", "")
++        try:
++            self.highlight_id = int(raw_highlight) if raw_highlight else 0
++        except (ValueError, TypeError):
++            self.highlight_id = 0
++
++        if self.highlight_id:
++            return rx.call_script(
++                f"document.getElementById('insight-{self.highlight_id}')"
++                "?.scrollIntoView({behavior: 'smooth', block: 'center'})"
++            )
+
+(`dismiss`, `_to_card`, and the rest of this file are unchanged Story 7.3 content. Not in scope.)
+
+================================================================================
+FILE: finance_app/pages/insights.py -- STORY 7.4 ADDITION (tracked file, but baseline predates
+Story 7.3's rewrite, so only this one hunk is Story 7.4's; everything else in the file is
+Story 7.3's already-reviewed page)
+================================================================================
+     return rx.el.article(
+         ... (unchanged Story 7.3 card body: icon, name, observation, explanation, effect,
+              advice, dismiss button, "Ask the Copilot" link) ...
+         class_name="insight-card",
+         role="article",
++        id="insight-" + card.id.to_string(),  # Story 7.4: Dashboard teaser scroll target
+     )
+
+================================================================================
+FILE: tests/test_insights_bridge.py -- STORY 7.4 ADDITION (untracked file, hand-extracted)
+================================================================================
+Import line changed:
+-from finance_app.state.insights_bridge import (
+-    _headline_metric,
+-    _materially_changed,
+-    dismiss_insight,
+-    refresh_insights,
+-)
++from finance_app.state.insights_bridge import (
++    _headline_metric,
++    _materially_changed,
++    dismiss_insight,
++    refresh_insights,
++    top_active_insight,
++)
+
+New test class, appended at the end of the file:
+
++class TestTopActiveInsight:
++    """Story 7.4's read-only Dashboard-teaser query. Must delegate to `_load_active`'s
++    ordering (severity tier, then newest-first), never run detectors or narrate."""
++
++    def test_returns_none_for_a_fresh_user_with_no_insights(self, session):
++        user = make_user(session, "n@example.com")
++        assert top_active_insight(session, user.id) is None
++
++    def test_returns_the_only_active_insight(self, session):
++        user = make_user(session, "o@example.com")
++        _add_small_purchases(session, user.id, count=8, amount="300")
++        data = refresh_insights(session, user.id)
++        expected = _active_by_key(data.active, "Death by small purchases")
++
++        top = top_active_insight(session, user.id)
++        assert top is not None
++        assert top.id == expected.id
++
++    def test_returns_none_when_the_only_insight_is_dismissed(self, session):
++        user = make_user(session, "p@example.com")
++        _add_small_purchases(session, user.id, count=8, amount="300")
++        data = refresh_insights(session, user.id)
++        row = _active_by_key(data.active, "Death by small purchases")
++        dismiss_insight(session, user.id, row.id)
++
++        assert top_active_insight(session, user.id) is None
++
++    def test_returns_the_highest_severity_tier_row_first(self, session, monkeypatch):
++        """Mirrors the severity-tier ordering test for `_load_active` itself -- this test
++        only needs to confirm `top_active_insight` delegates to it, not re-derive the
++        ordering logic."""
++        from services.engine.insights import InsightCandidate
++
++        user = make_user(session, "q@example.com")
++
++        def fake_detectors(ctx):
++            return [
++                InsightCandidate(
++                    pattern_name="Zombie subscriptions",
++                    severity="flexible",
++                    evidence=(),
++                    metrics={"monthly_amount": Decimal("199"), "merchant": "Spotify"},
++                    data_months=6,
++                ),
++                InsightCandidate(
++                    pattern_name="Post-payday spike",
++                    severity="critical",
++                    evidence=(),
++                    metrics={"spike_pct": Decimal("50")},
++                    data_months=6,
++                ),
++                InsightCandidate(
++                    pattern_name="Death by small purchases",
++                    severity="important",
++                    evidence=(),
++                    metrics={"total": Decimal("2400")},
++                    data_months=6,
++                ),
++            ]
++
++        monkeypatch.setattr("finance_app.state.insights_bridge.run_all_detectors", fake_detectors)
++        refresh_insights(session, user.id)
++
++        top = top_active_insight(session, user.id)
++        assert top is not None
++        assert top.pattern_name == "Post-payday spike"
++        assert top.severity == "critical"

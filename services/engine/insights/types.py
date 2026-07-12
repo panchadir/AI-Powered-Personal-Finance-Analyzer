@@ -79,5 +79,7 @@ class InsightCandidate:
     pattern_name: str
     severity: str  # 'critical' | 'important' | 'flexible'
     evidence: tuple[EvidencePoint, ...] = ()
-    metrics: Mapping[str, object] = field(default_factory=dict)
+    # compare=False: metrics is a plain dict (unhashable) -- excluding it from the
+    # generated __eq__/__hash__ keeps InsightCandidate usable in sets/dict keys (Story 7.3).
+    metrics: Mapping[str, object] = field(default_factory=dict, compare=False)
     data_months: int = 0

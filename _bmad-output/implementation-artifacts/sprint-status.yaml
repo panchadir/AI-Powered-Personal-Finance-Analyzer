@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-09
-last_updated: 2026-07-10  # Epic 5 stories 5-1/5-2/5-3/5-5 done; 5-4 blocked on Epic 3, 5-6 P1. Epic 7: story 7-1 implemented → review (164 passed, zero LLM)
+last_updated: 2026-07-11  # Epic 5 stories 5-1/5-2/5-3/5-5 done; 5-4 blocked on Epic 3, 5-6 P1. Epic 7: 7-1/7-2/7-3 done; 7-4 next. Story 7.3 review (Blind Hunter + Edge Case Hunter + Acceptance Auditor): 8 patched, 2 decisions, 4 deferred, 4 dismissed as unreachable. 501 passed repo-wide, reflex compile clean.
 project: AI-Powered-Personal-Finance-Analyzer
 # (story 1.2 done; story 1.3 implemented + reviewed → done on 2026-07-09)
 # (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
@@ -118,10 +118,10 @@ development_status:
 
   # Epic 7: Proactive Insights
   epic-7: in-progress
-  7-1-insight-detector-engine-all-5-patterns-coded: review
-  7-2-insight-narration-o-e-e-a-shape-and-sebi-rule: backlog
-  7-3-insights-page-and-dismiss-lifecycle: backlog
-  7-4-dashboard-insight-teaser: backlog
+  7-1-insight-detector-engine-all-5-patterns-coded: done
+  7-2-insight-narration-o-e-e-a-shape-and-sebi-rule: done
+  7-3-insights-page-and-dismiss-lifecycle: done
+  7-4-dashboard-insight-teaser: review
   epic-7-retrospective: optional
 
   # Epic 8: Hardening & Demo-Readiness

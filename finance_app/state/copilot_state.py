@@ -168,15 +168,22 @@ class CopilotState(AuthState):
                 user_id = user.id
                 try:
                     insight_id = int(raw_insight)
+                    # status == "active": a dismissed (or foreign/nonexistent) insight must
+                    # never populate the "Talking about: …" chip -- Story 7.3's dismiss
+                    # lifecycle makes a stale/bookmarked ?insight= link reachable here.
                     insight = session.exec(
                         select(Insight).where(
                             Insight.id == insight_id,
                             Insight.user_id == user_id,
+                            Insight.status == "active",
                         )
                     ).one_or_none()
                     if insight is not None:
                         self.context_insight_id = insight_id
                         self.context_pattern_name = insight.pattern_name
+                    else:
+                        self.context_insight_id = 0
+                        self.context_pattern_name = ""
                 except (ValueError, TypeError):
                     pass  # malformed ?insight= param — ignore silently
         else:

@@ -219,6 +219,27 @@ def _commitments_card() -> rx.Component:
     )
 
 
+def _insight_teaser() -> rx.Component:
+    """Top active insight preview (Story 7.4): pattern name + Observation only, plus a
+    link to the specific insight on the Insights page. Reuses `.insight-card` and its
+    child classes verbatim from Story 7.3 -- no new CSS.
+    """
+    return rx.el.article(
+        rx.el.div(
+            rx.el.span("💡", class_name="insight-icon", aria_hidden="true"),
+            rx.el.h2(DashboardState.top_insight_pattern_name, class_name="insight-name"),
+            class_name="insight-card-head",
+        ),
+        rx.el.p(DashboardState.top_insight_observation, class_name="insight-observation"),
+        rx.el.a(
+            "See all insights →",
+            href=DashboardState.top_insight_href,
+            class_name="btn btn--secondary",
+        ),
+        class_name="insight-card",
+    )
+
+
 def _charts_section() -> rx.Component:
     """Below-the-fold supporting charts (Story 5.4 / UX-DR1): spending donut + monthly pace.
 
@@ -278,6 +299,9 @@ def dashboard() -> rx.Component:
                         _briefing_card(),
                         _commitments_card(),
                         class_name="dash-grid",
+                    ),
+                    rx.cond(
+                        DashboardState.has_top_insight, _insight_teaser(), rx.el.div()
                     ),
                     _charts_section(),
                 ),

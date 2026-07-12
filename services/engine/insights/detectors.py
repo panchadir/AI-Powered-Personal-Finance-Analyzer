@@ -29,6 +29,7 @@ from services.engine.insights.config import (
     SUBSCRIPTION_MIN_GAP_DAYS,
     SUBSCRIPTION_MIN_OCCURRENCES,
     WEEKEND_PACE_MIN_RATIO,
+    WEEKEND_PACE_MIN_WEEKEND_DAYS,
 )
 from services.engine.insights.protocol import InsightDetector
 from services.engine.insights.types import (
@@ -65,9 +66,23 @@ def _merchant(t: TxnRecord) -> str:
     return t.merchant_normalized or t.description_raw or "Unknown"
 
 
-def _data_months(txns: tuple[TxnRecord, ...]) -> int:
-    """Distinct calendar months present in the history (feeds FR-8.5)."""
-    return len({(_to_date(t.date).year, _to_date(t.date).month) for t in txns})
+def _has_merchant_identity(t: TxnRecord) -> bool:
+    """False when a transaction carries no merchant signal at all (neither
+    ``merchant_normalized`` nor ``description_raw``). Such rows must never be grouped
+    with each other under a shared "Unknown" bucket — that would misreport unrelated
+    debits as one recurring subscription."""
+    return bool(t.merchant_normalized or t.description_raw.strip())
+
+
+def data_months(txns: tuple[TxnRecord, ...]) -> int:
+    """Calendar-month span of the history, inclusive (AC #9: "computed from the span of
+    ctx.transactions" -- e.g. a January + June transaction pair spans 6 months, not the
+    2 distinct months actually touched). Feeds FR-8.5."""
+    if not txns:
+        return 0
+    dates = [_to_date(t.date) for t in txns]
+    start, end = min(dates), max(dates)
+    return (end.year - start.year) * 12 + (end.month - start.month) + 1
 
 
 def _evidence(txns: list[TxnRecord], limit: int = MAX_EVIDENCE_POINTS) -> tuple[EvidencePoint, ...]:
@@ -83,18 +98,28 @@ def _sum(txns: list[TxnRecord]) -> Decimal:
 
 
 def _infer_paydays(ctx: InsightContext) -> list[date]:
-    """Detected paydays: ``ctx.income_dates`` if given, else the largest-credit dates.
+    """Detected paydays: ``ctx.income_dates`` if given, else inferred from credits.
 
-    A salary is approximated as the largest credit; every credit at that amount is a
-    payday. Returns ``[]`` when no income signal exists (detector then no-ops honestly).
+    A salary is approximated as the largest *recurring* credit amount (seen >=2 times);
+    a one-off transfer/refund that happens to exceed the real recurring salary is not
+    mistaken for payday. When nothing recurs yet (a brand-new user's first month), the
+    largest single credit is still the best honest guess. Returns ``[]`` when no income
+    signal exists at all (detector then no-ops honestly).
     """
     if ctx.income_dates:
         return sorted(ctx.income_dates)
     credits = _credits(ctx.transactions)
     if not credits:
         return []
-    max_credit = max(c.amount for c in credits)
-    return sorted(_to_date(c.date) for c in credits if c.amount == max_credit)
+    by_amount: dict[Decimal, list[date]] = defaultdict(list)
+    for c in credits:
+        by_amount[c.amount].append(_to_date(c.date))
+    payday_amount = max(by_amount)
+    if len(by_amount[payday_amount]) == 1:
+        recurring = {amt: dates for amt, dates in by_amount.items() if len(dates) >= 2}
+        if recurring:
+            payday_amount = max(recurring)
+    return sorted(by_amount[payday_amount])
 
 
 def _latest_balance(txns: tuple[TxnRecord, ...]) -> Decimal | None:
@@ -118,11 +143,16 @@ class PostPaydaySpikeDetector:
         if not debits or not paydays:
             return []
 
-        payday = paydays[0]
+        # Evaluate the most recent cycle -- a proactive insight should reflect current
+        # behaviour, not stay anchored on month 1 forever. The baseline (``out_window``)
+        # is scoped to *after* this cycle's window, so earlier cycles' own spikes never
+        # pollute it (any date before this payday is, by construction, before window_end
+        # too, since window_end = payday + a few days).
+        payday = paydays[-1]
         window_end = payday + timedelta(days=POST_PAYDAY_WINDOW_DAYS)
         in_window = [d for d in debits if payday <= _to_date(d.date) <= window_end]
-        out_window = [d for d in debits if not (payday <= _to_date(d.date) <= window_end)]
-        if not in_window or not out_window:
+        out_window = [d for d in debits if _to_date(d.date) > window_end]
+        if len(in_window) < 2 or not out_window:
             return []
 
         window_days = Decimal(POST_PAYDAY_WINDOW_DAYS + 1)  # inclusive of payday itself
@@ -147,7 +177,7 @@ class PostPaydaySpikeDetector:
                     "payday": payday.isoformat(),
                     "window_days": POST_PAYDAY_WINDOW_DAYS,
                 },
-                data_months=_data_months(ctx.transactions),
+                data_months=data_months(ctx.transactions),
             )
         ]
 
@@ -172,7 +202,7 @@ class DeathBySmallPurchasesDetector:
                     "total": total,
                     "max_amount": SMALL_PURCHASE_MAX_AMOUNT,
                 },
-                data_months=_data_months(ctx.transactions),
+                data_months=data_months(ctx.transactions),
             )
         ]
 
@@ -185,6 +215,8 @@ class ZombieSubscriptionDetector:
     def detect(self, ctx: InsightContext) -> list[InsightCandidate]:
         by_merchant: dict[str, list[TxnRecord]] = defaultdict(list)
         for d in _debits(ctx.transactions):
+            if not _has_merchant_identity(d):
+                continue  # no merchant signal -- never group with unrelated debits
             by_merchant[_merchant(d)].append(d)
 
         out: list[InsightCandidate] = []
@@ -192,8 +224,9 @@ class ZombieSubscriptionDetector:
             if len(charges) < SUBSCRIPTION_MIN_OCCURRENCES:
                 continue
             charges = sorted(charges, key=lambda t: t.date)
-            amounts = [c.amount for c in charges]
-            median = sorted(amounts)[len(amounts) // 2]
+            amounts = sorted(c.amount for c in charges)
+            mid = len(amounts) // 2
+            median = amounts[mid] if len(amounts) % 2 else (amounts[mid - 1] + amounts[mid]) / 2
             if median <= _ZERO:
                 continue
             tolerance = median * SUBSCRIPTION_AMOUNT_TOLERANCE_PCT / _HUNDRED
@@ -215,7 +248,7 @@ class ZombieSubscriptionDetector:
                         "monthly_amount": median,
                         "occurrences": len(charges),
                     },
-                    data_months=_data_months(ctx.transactions),
+                    data_months=data_months(ctx.transactions),
                 )
             )
         return out
@@ -234,7 +267,7 @@ class WeekendWeekdayPaceDetector:
         weekday = [d for d in debits if _to_date(d.date).weekday() < 5]
         weekend_days = len({d.date for d in weekend})
         weekday_days = len({d.date for d in weekday})
-        if weekend_days == 0 or weekday_days == 0:
+        if weekend_days < WEEKEND_PACE_MIN_WEEKEND_DAYS or weekday_days == 0:
             return []
 
         weekend_rate = _sum(weekend) / Decimal(weekend_days)
@@ -255,7 +288,7 @@ class WeekendWeekdayPaceDetector:
                     "weekday_daily": weekday_rate.quantize(Decimal("1")),
                     "ratio": ratio.quantize(Decimal("0.1")),
                 },
-                data_months=_data_months(ctx.transactions),
+                data_months=data_months(ctx.transactions),
             )
         ]
 
@@ -287,15 +320,29 @@ class UpcomingCommitmentCollisionDetector:
         if not colliding:
             return []
 
-        evidence = tuple(
+        # Worst (lowest projected balance) first, so the evidence shown always includes
+        # the commitment actually driving the cited shortfall -- not just whichever
+        # commitments happen to be earliest-due when more than MAX_EVIDENCE_POINTS collide.
+        colliding_by_severity = sorted(colliding, key=lambda pair: pair[1])
+        worst = colliding_by_severity[0][1]
+
+        # Always lead with the current-balance snapshot: a lone colliding commitment would
+        # otherwise be a single evidence point, short of the documented 2-3 contract (AC #3).
+        evidence = (
             EvidencePoint(
-                date=commitment.due_date.isoformat(),
-                merchant=commitment.name,
-                amount=commitment.amount,
-            )
-            for commitment, _ in colliding[:MAX_EVIDENCE_POINTS]
+                date=ctx.as_of.isoformat(),
+                merchant="Current balance",
+                amount=current_balance,
+            ),
+            *(
+                EvidencePoint(
+                    date=commitment.due_date.isoformat(),
+                    merchant=commitment.name,
+                    amount=commitment.amount,
+                )
+                for commitment, _ in colliding_by_severity[: MAX_EVIDENCE_POINTS - 1]
+            ),
         )
-        worst = min(balance for _, balance in colliding)
         severity = min(
             (commitment.criticality for commitment, _ in colliding),
             key=lambda s: _SEVERITY_ORDER.get(s, 1),
@@ -311,7 +358,7 @@ class UpcomingCommitmentCollisionDetector:
                     "projected_shortfall": -worst if worst < _ZERO else _ZERO,
                     "colliding_count": len(colliding),
                 },
-                data_months=_data_months(ctx.transactions),
+                data_months=data_months(ctx.transactions),
             )
         ]
 

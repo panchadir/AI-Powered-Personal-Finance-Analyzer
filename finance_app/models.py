@@ -18,6 +18,12 @@ Design notes (see story 1-2 Dev Notes for the full rationale):
   ``commitments.amount``. ``float`` is display-only, confined to ``formatINR`` (AD-13).
 * ``rx.Model`` supplies the integer ``id`` primary key automatically (AC #2); we only add
   the ``user_id`` FK and the domain columns.
+* **``services/narrate/tools.py`` (Story 6.2) needs to query ``Transaction`` for the Copilot's
+  read-only tools, but ``services/`` must never import ``finance_app`` (AD-2).** Resolved the
+  same way ``services/ingestion/persist.py`` (Story 2.5) already resolved the identical
+  problem: the model class is *injected* as a parameter (``txn_model: type``) by the caller
+  (``finance_app/state/copilot_state.py`` passes this module's ``Transaction`` in), never
+  imported by ``services/``. ``Transaction`` stays owned here, one definition, no relocation.
 """
 from __future__ import annotations
 
@@ -143,7 +149,16 @@ class ScoreEvent(rx.Model, table=True):
 
 
 class Insight(rx.Model, table=True):
-    """A proactive behavioral insight in Observation-Evidence-Explanation-Action shape (Epic 7)."""
+    """A proactive behavioral insight in Observation-Evidence-Explanation-Action shape (Epic 7).
+
+    Story 7.3 adds 5 columns beyond the original Story 1.2 schema:
+    ``effect`` (Story 7.2's third O-E-E-A sentence had no column before this),
+    ``dismissed_at``, ``severity`` (drives Story 7.3's severity-tier ordering),
+    ``metric_value`` (the ≥15%-materially-changed resurface comparison), and
+    ``dedup_key`` (identity key for resurface/dedup lookups -- not displayed;
+    equals ``pattern_name`` except for Zombie-subscription candidates, which are
+    keyed per-merchant since one detector run can emit more than one).
+    """
 
     __tablename__ = "insights"
 
@@ -152,8 +167,13 @@ class Insight(rx.Model, table=True):
     observation: str
     evidence: str
     explanation: str
+    effect: str
     action_suggestion: str
     status: str = "active"  # active | dismissed (dismiss lifecycle, FR-8.4)
+    severity: str = Criticality.important.value  # 'critical' | 'important' | 'flexible'
+    metric_value: Decimal | None = sqlmodel.Field(default=None, max_digits=12, decimal_places=2)
+    dedup_key: str
+    dismissed_at: datetime | None = None
     created_at: datetime = sqlmodel.Field(default_factory=_utcnow)
 
 

@@ -42,3 +42,23 @@ NARRATION_TEMPERATURE = 0.0
 #: Environment variable holding the API key. Absent -> narration degrades to a deterministic
 #: fallback rather than crashing the dashboard (NFR-1: degrade visibly, never silently wrong).
 API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
+
+#: An insight narration is exactly 4 short sentences (Story 7.2) — well under
+#: BRIEFING_MAX_TOKENS.
+INSIGHT_NARRATION_MAX_TOKENS = 200
+
+#: Case-insensitive substrings that mark a generated insight as touching a regulated
+#: investment topic (FR-8.3 / Story 7.2 AC #3). "invest" also catches investment/investing;
+#: "mutual fund" also catches mutual funds. A bare "return" was deliberately dropped — it
+#: false-positived on ordinary banking vocabulary ("returned payment") and merchant names
+#: (e.g. a real "Amazon Returns" refund); the multi-word phrases below are unambiguous.
+SEBI_TRIGGER_KEYWORDS: tuple[str, ...] = (
+    "invest",
+    "equity",
+    "mutual fund",
+    "rate of return",
+    "return on investment",
+)
+
+#: Exact disclaimer appended once (never duplicated) when SEBI_TRIGGER_KEYWORDS match.
+SEBI_DISCLAIMER = "This is not investment advice."

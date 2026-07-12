@@ -16,6 +16,7 @@ Epic 7 ``rx.State`` handler / repository), which maps rows → these plain recor
 into O→E→E→A prose is Story 7.2; persistence + dismiss lifecycle is Story 7.3.
 """
 from services.engine.insights.config import (
+    MATERIAL_CHANGE_THRESHOLD_PCT,
     MAX_EVIDENCE_POINTS,
     MIN_DATA_MONTHS_FOOTNOTE,
 )
@@ -26,6 +27,7 @@ from services.engine.insights.detectors import (
     UpcomingCommitmentCollisionDetector,
     WeekendWeekdayPaceDetector,
     ZombieSubscriptionDetector,
+    data_months,
     run_all_detectors,
 )
 from services.engine.insights.protocol import InsightDetector
@@ -54,7 +56,9 @@ __all__ = [
     "UpcomingCommitmentCollisionDetector",
     "ALL_DETECTORS",
     "run_all_detectors",
+    "data_months",
     # config (re-exported for callers/narrator)
     "MAX_EVIDENCE_POINTS",
     "MIN_DATA_MONTHS_FOOTNOTE",
+    "MATERIAL_CHANGE_THRESHOLD_PCT",
 ]

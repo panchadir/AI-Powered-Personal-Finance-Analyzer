@@ -4,7 +4,7 @@ baseline_commit: 9b96699559d9502e6369ddb29af4be968be8c3d7
 
 # Story 7.1: Insight Detector Engine — All 5 Patterns Coded
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -74,6 +74,25 @@ so that the insight feed can be produced deterministically — with exact eviden
 - [x] **Task 5 — `run_all_detectors` orchestrator (AC: 10)** — runs the five in FR-8.1 order, concatenates.
 - [x] **Task 6 — Unit tests (AC: 6, 7, 11)** — `tests/engine/insights/` with a TP + TN per detector, plus the demo-representative fixture asserting ≥3 distinct detectors fire. Verify inheritance of the `_forbid_anthropic` gate.
 - [x] **Task 7 — Green gate** — `pytest tests/engine/` passes (zero LLM, <10s); `pytest tests/test_service_boundary.py` still green for the new package.
+
+### Review Findings
+
+- [x] [Review][Decision] Confirm the two architecture-seam deviations the story's own "Questions for the user" section still lists as awaiting sign-off — **resolved 2026-07-10 (ALPHA, via code review of this story):** (a) `detect(ctx: InsightContext)` plain-input signature confirmed over the epic's literal `detect(user_id, db_session)` (AD-2 compliance); (b) in-test demo fixture confirmed as standing in for the not-yet-built `data/demo-data.json`, with a follow-up test owed against the real file once Epic 2/8 produce it (tracked below as a patch finding — the fixture is also being corrected to actually match its own spec text in this same pass).
+- [x] [Review][Patch] `_evidence()` has no lower bound and can return 0-1 points, violating the documented "2-3 EvidencePoint" contract that Story 7.2's narrator depends on; the collision/weekend/post-payday detectors hit this on the common single-evidence case, and the test at line ~186 was weakened to `>=1` rather than the implementation being fixed [services/engine/insights/detectors.py:73] — **fixed:** `PostPaydaySpikeDetector`/`WeekendWeekdayPaceDetector` now abstain (`[]`) when fewer than 2 evidence points would result; `UpcomingCommitmentCollisionDetector` always leads with a "Current balance" evidence point so a lone colliding commitment still yields 2. Regression tests added.
+- [x] [Review][Patch] `PostPaydaySpikeDetector` anchors on `paydays[0]` (earliest payday only) and its baseline window (`out_window`) pools every other cycle's spend — including their own post-payday spikes — inconsistently normalized (calendar days vs. distinct transaction dates) [services/engine/insights/detectors.py:85] — **fixed:** now evaluates `paydays[-1]` (most recent cycle); `out_window` is scoped to dates strictly after this cycle's window, which structurally excludes earlier cycles' own spend/spikes. Regression test proves a stale earlier-month spike no longer fires once the latest month is even.
+- [x] [Review][Patch] `_infer_paydays()`'s no-`income_dates` fallback can be hijacked by a single one-off large credit (refund/transfer) that happens to exceed the real recurring salary [services/engine/insights/detectors.py:85] — **fixed:** prefers the largest amount that recurs (>=2 occurrences) over a larger one-off; falls back to the lone credit only when nothing recurs yet (cold start).
+- [x] [Review][Patch] `InsightCandidate.metrics` is a mutable `dict` field on a `frozen=True` dataclass with default `eq=True`, so `hash()` raises `TypeError` the first time downstream code (e.g. a Story 7.3 dedup/set) touches it [services/engine/insights/types.py:82] — **fixed:** `metrics` field now `compare=False`, excluding it from the generated `__eq__`/`__hash__`.
+- [x] [Review][Patch] `ZombieSubscriptionDetector`'s "median" for an even-length occurrence list (the common minimum-2 case) picks the upper value via `sorted(amounts)[len(amounts)//2]`, skewing the `monthly_amount` metric the narrator will cite verbatim [services/engine/insights/detectors.py:196] — **fixed:** true median (averages the two middle values for even-length lists).
+- [x] [Review][Patch] `ZombieSubscriptionDetector` groups all blank-merchant transactions into one shared `"Unknown"` bucket, risking unrelated debits being misreported as a single recurring subscription [services/engine/insights/detectors.py:64] — **fixed:** new `_has_merchant_identity()` guard excludes merchant-less/description-less transactions from subscription grouping entirely.
+- [x] [Review][Patch] `WeekendWeekdayPaceDetector` has no minimum-sample-size guard, unlike every sibling detector (`SMALL_PURCHASE_MIN_COUNT`, `SUBSCRIPTION_MIN_OCCURRENCES`) — a single weekend transaction can produce a statistically meaningless but extreme ratio [services/engine/insights/detectors.py:229] — **fixed:** new `WEEKEND_PACE_MIN_WEEKEND_DAYS=2` threshold in `config.py`.
+- [x] [Review][Patch] `UpcomingCommitmentCollisionDetector` slices evidence in due-date order while `projected_shortfall`/`severity` are computed over ALL colliding commitments — with >3 colliding, the evidence shown can omit the commitment actually driving the cited shortfall [services/engine/insights/detectors.py:290] — **fixed:** evidence (after the current-balance point) is now selected worst-balance-first, so the commitment driving `projected_shortfall` is always shown. Regression test with 4 colliding commitments confirms the worst one appears.
+- [x] [Review][Patch] `_data_months` computes distinct calendar months touched, not "the span of `ctx.transactions`" as AC #9 literally specifies (Jan + June transactions would report `2`, not `6`) — feeds Story 7.3's FR-8.5 footnote [services/engine/insights/detectors.py:68] — **fixed:** now computes the inclusive calendar-month span between the earliest and latest transaction date.
+- [x] [Review][Patch] AC #7's demo-representative fixture doesn't match its own spec text: 22 transactions (not 24) and zero `merchant_normalized`/`description_raw` tags on any row, so `ZombieSubscriptionDetector` is never actually exercised against a real recurring-subscription pattern; the Completion Notes misattribute why it abstains ("needs multi-month history" vs. the real cause — no merchant tags at all) [tests/engine/insights/test_detectors.py:237] — **fixed:** added a genuine merchant-tagged Netflix charge in May + June (₹649, ~31-day gap), bringing the fixture to 24 transactions and giving `ZombieSubscriptionDetector` a real recurring pattern to fire on (now 5/5 detectors fire on the demo fixture, still `>=3`). See addendum to Completion Notes below.
+- [x] [Review][Defer] `_latest_balance` has no staleness check relative to `ctx.as_of`, and same-day multiple balance-bearing transactions resolve arbitrarily via `max()` [services/engine/insights/detectors.py:100] — deferred, pre-existing date-only-granularity limitation shared with the Epic 4 engine; not introduced by this diff
+- [x] [Review][Defer] Overdue commitments (`due_date < ctx.as_of`) never trigger `UpcomingCommitmentCollisionDetector` [services/engine/insights/detectors.py:277] — deferred, mirrors the already-logged deferred-work.md item on overdue *predicted* commitments not being reserved by the STS engine; same root question, one place to resolve it
+- [x] [Review][Defer] `ZombieSubscriptionDetector` requires every consecutive gap to fall in `[20, 40]` days with no tolerance for a single outlier cycle [services/engine/insights/detectors.py:206] — deferred, threshold-tuning design call, not MVP-blocking
+- [x] [Review][Defer] `DeathBySmallPurchasesDetector` has no time-spread requirement — a single-day burst of small purchases fires identically to a month-long drip [services/engine/insights/detectors.py:160] — deferred, KISS default acceptable for MVP; revisit if it produces demo noise
+- [x] [Review][Defer] Evidence-point selection is amount-descending in `_evidence()` but due-date-ordered in the collision detector, and isn't guaranteed chronological within a single detector's own evidence set [services/engine/insights/detectors.py:73] — deferred to Story 7.2, which owns narrative coherence of cited evidence order
 
 ## Dev Notes
 
@@ -166,25 +185,37 @@ claude-opus-4-8 (BMAD dev-story workflow)
 - Named thresholds live in `config.py` (AC #8); `run_all_detectors` runs the five in FR-8.1 order (AC #10), asserted by a test.
 - Tests placed in `tests/engine/insights/` so they inherit `tests/engine/conftest.py`'s autouse zero-LLM fixture (AC #6) — resolves the epic's `pytest services/engine/insights/` wording to the repo's `tests/` mirror convention.
 
+### Completion Notes Addendum — Code Review Fixes (2026-07-10)
+
+Code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) found 10 real defects, all patched in this same pass — see the checked-off items under "Review Findings" above for the full list and fix summary. Two corrections to the notes above, since this addendum supersedes them where they conflict:
+
+- **The "Zombie needs multi-month history so it correctly abstains" explanation above was wrong.** Direct execution during review proved the real cause: the original `_demo_context()` fixture had zero `merchant_normalized`/`description_raw` tags on any of its 22 rows, so `ZombieSubscriptionDetector` had no merchant identity to group on at all — it was never actually exercised against a recurring-subscription pattern. The fixture now includes a genuine merchant-tagged Netflix charge (May + June, ~31-day gap) and totals 24 transactions, matching AC #7's spec text exactly. All 5 detectors now fire on the demo fixture (previously 4).
+- `PostPaydaySpikeDetector` now evaluates the **most recent** pay cycle (`paydays[-1]`), not the earliest (`paydays[0]`), with its baseline scoped to that cycle only — the original anchored permanently on month 1 and let later months' own spikes leak into the "baseline." `_infer_paydays()` now prefers a recurring credit amount over a larger one-off. `UpcomingCommitmentCollisionDetector`'s evidence now always includes a "Current balance" point and orders colliding commitments worst-first, so the commitment actually driving `projected_shortfall` is never silently excluded. `InsightCandidate.metrics` no longer breaks `hash()`. Full detail per finding is in the Review Findings checklist above.
+- Verified: `pytest tests/engine/insights/ tests/test_service_boundary.py` → 42 passed (was 19); `pytest tests/engine/ tests/test_service_boundary.py` → **244 passed, 6 skipped** — zero regressions, zero LLM calls, run in the project's Docker container (`ai-powered-personal-finance-analyzer-app-1`) per this repo's runtime-env convention (the local `.venv` lacks `sqlmodel`/`reflex`).
+
 ### File List
 
 - `services/engine/insights/__init__.py` (new) — package public API (`__all__`).
-- `services/engine/insights/types.py` (new) — `TxnRecord`, `CommitmentRecord`, `InsightContext`, `EvidencePoint`, `InsightCandidate`.
+- `services/engine/insights/types.py` (new; **patched** in review) — `TxnRecord`, `CommitmentRecord`, `InsightContext`, `EvidencePoint`, `InsightCandidate`. `metrics` field now `compare=False` (hashability fix).
 - `services/engine/insights/protocol.py` (new) — `InsightDetector` protocol.
-- `services/engine/insights/config.py` (new) — named detector thresholds.
-- `services/engine/insights/detectors.py` (new) — 5 detectors + shared helpers + `ALL_DETECTORS` + `run_all_detectors`.
+- `services/engine/insights/config.py` (new; **patched** in review) — named detector thresholds; added `WEEKEND_PACE_MIN_WEEKEND_DAYS`.
+- `services/engine/insights/detectors.py` (new; **patched** in review) — 5 detectors + shared helpers + `ALL_DETECTORS` + `run_all_detectors`. Payday inference, post-payday cycle scoping, Zombie median/merchant-grouping, weekend min-sample, collision evidence ordering, and `_data_months` span all fixed — see Review Findings.
 - `tests/engine/insights/__init__.py` (new).
-- `tests/engine/insights/test_detectors.py` (new) — TP+TN per detector, protocol/orchestrator checks, ≥3-fire demo fixture (16 tests).
+- `tests/engine/insights/test_detectors.py` (new; **patched** in review) — TP+TN per detector, protocol/orchestrator checks, ≥3-fire demo fixture; +10 regression tests from the code review (26 tests total).
 - `_bmad-output/implementation-artifacts/7-1-insight-detector-engine-all-5-patterns-coded.md` (updated) — story record.
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated) — status transitions.
+- `_bmad-output/implementation-artifacts/deferred-work.md` (updated) — 5 deferred findings logged from this review.
 
 ### Change Log
 
 - 2026-07-10 — Implemented Story 7.1 insight detector engine (5 FR-8.1 detectors, pure/stdlib, zero-LLM). 164 passed / 6 skipped; status → review.
+- 2026-07-10 — Code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor): 1 decision confirmed, 10 patches applied test-first, 5 deferred, 4 dismissed. 244 passed / 6 skipped, zero regressions; status → done.
 
 ---
 
 ## Questions for the user (raised per project-context "raise conflicts before implementing")
 
-1. **`detect(user_id, db_session)` → `detect(ctx)` (plain input).** Story 7.1's AC in epics.md literally specifies a `db_session` signature; this story resolves it to a pure plain-input signature to satisfy AD-2 (services/ cannot import `finance_app` models or hold a Reflex session), exactly as Epic 4 did. DB read + `user_id` scoping move to the caller (Story 7.3). **Confirm this resolution** (recommended), or state you want the detectors to query the DB directly (which would require relaxing AD-2 / relocating the models).
-2. **`demo-data.json` does not exist yet** (only `data/.gitkeep`). AC 7 is satisfied here with a self-contained in-test demo fixture that proves ≥3 detectors fire, decoupled from the file. The real `data/demo-data.json` (24-txn June-2026 Priya dataset) is produced in Epic 2/8; when it lands, a follow-up test should assert ≥3 fire on it too. **Confirm** the in-test fixture approach for now.
+**Both resolved 2026-07-10 (ALPHA, during code review — see "Review Findings" above):**
+
+1. **`detect(user_id, db_session)` → `detect(ctx)` (plain input).** ✅ Confirmed. DB read + `user_id` scoping stay in the caller (Story 7.3), exactly as Epic 4 did.
+2. **`demo-data.json` does not exist yet.** ✅ Confirmed — the in-test fixture stands in for now. A follow-up test against the real `data/demo-data.json` is owed once Epic 2/8 produce it; the fixture is also being corrected in this review pass to actually match AC #7's spec text (24 rows, a genuine recurring-subscription pattern).

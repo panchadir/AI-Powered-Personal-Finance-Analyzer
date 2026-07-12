@@ -14,6 +14,7 @@ from services.engine.insights import (
     ALL_DETECTORS,
     CommitmentRecord,
     DeathBySmallPurchasesDetector,
+    InsightCandidate,
     InsightContext,
     InsightDetector,
     PostPaydaySpikeDetector,
@@ -23,6 +24,7 @@ from services.engine.insights import (
     ZombieSubscriptionDetector,
     run_all_detectors,
 )
+from services.engine.insights.detectors import _infer_paydays, data_months
 from services.utils.enums import Criticality, Direction
 
 # June 2026 calendar anchor: Jun 1 = Mon; Sat/Sun = Jun 6/7, 13/14, 20/21, 27/28.
@@ -82,6 +84,46 @@ def test_post_payday_spike_silent_when_spending_is_even() -> None:
     assert PostPaydaySpikeDetector().detect(ctx) == []
 
 
+def test_post_payday_spike_evaluates_most_recent_cycle_not_a_stale_earlier_one() -> None:
+    """Regression: the detector used to anchor on ``paydays[0]`` (the earliest payday)
+    and pool every other month's own spend into the "baseline" — so a real spike from
+    month 1 kept firing forever even after spending normalized in the latest month.
+    """
+    ctx = InsightContext(
+        transactions=(
+            # May: genuine post-payday spike (would fire if evaluated alone).
+            _txn("2026-05-01", "50000", direction=Direction.credit.value),
+            _txn("2026-05-01", "3000"),
+            _txn("2026-05-02", "2500"),
+            _txn("2026-05-03", "2000"),
+            _txn("2026-05-10", "200"),
+            _txn("2026-05-20", "200"),
+            # June: the latest cycle — even spending, no real spike.
+            _txn("2026-06-01", "50000", direction=Direction.credit.value),
+            _txn("2026-06-01", "500"),
+            _txn("2026-06-02", "500"),
+            _txn("2026-06-03", "500"),
+            _txn("2026-06-10", "500"),
+            _txn("2026-06-20", "500"),
+        )
+    )
+    assert PostPaydaySpikeDetector().detect(ctx) == []
+
+
+def test_post_payday_spike_silent_with_fewer_than_two_evidence_points() -> None:
+    """A single post-payday debit can't honestly satisfy the 2-3 evidence-point
+    contract (AC #3), so the detector abstains rather than firing thin evidence."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-06-01", "50000", direction=Direction.credit.value),
+            _txn("2026-06-01", "5000"),  # lone post-payday debit
+            _txn("2026-06-15", "50"),
+            _txn("2026-06-20", "50"),
+        )
+    )
+    assert PostPaydaySpikeDetector().detect(ctx) == []
+
+
 # --------------------------------------------------------------------------------------
 # Death by small purchases
 # --------------------------------------------------------------------------------------
@@ -131,6 +173,33 @@ def test_zombie_subscription_silent_on_single_charge() -> None:
     assert ZombieSubscriptionDetector().detect(ctx) == []
 
 
+def test_zombie_subscription_median_averages_the_two_middle_amounts() -> None:
+    """Regression: for the minimum 2-occurrence case, ``sorted(amounts)[len//2]`` picked
+    the upper value, not a true median, skewing the ``monthly_amount`` cited verbatim by
+    the narrator."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-05-05", "499", merchant="Netflix"),
+            _txn("2026-06-04", "501", merchant="Netflix"),
+        )
+    )
+    result = ZombieSubscriptionDetector().detect(ctx)
+    assert len(result) == 1
+    assert result[0].metrics["monthly_amount"] == Decimal("500")
+
+
+def test_zombie_subscription_does_not_merge_unrelated_blank_merchant_debits() -> None:
+    """Two unrelated cash-style debits with no merchant identity (no merchant_normalized,
+    no description) must never be reported as one recurring 'Unknown' subscription."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-05-05", "499"),
+            _txn("2026-06-04", "499"),
+        )
+    )
+    assert ZombieSubscriptionDetector().detect(ctx) == []
+
+
 # --------------------------------------------------------------------------------------
 # Weekend vs weekday pace
 # --------------------------------------------------------------------------------------
@@ -148,6 +217,20 @@ def test_weekend_pace_fires_when_weekends_run_hot() -> None:
     assert len(result) == 1
     assert result[0].metrics["ratio"] >= Decimal("1.5")
     assert 2 <= len(result[0].evidence) <= 3
+
+
+def test_weekend_pace_silent_with_only_a_single_weekend_day_of_data() -> None:
+    """A lone weekend transaction is not enough sample size to honestly claim a pace
+    pattern (AC #9's data-honesty principle) — mirrors the min-occurrence gates every
+    sibling detector already has."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-06-01", "200"),  # Mon
+            _txn("2026-06-02", "200"),  # Tue
+            _txn("2026-06-06", "3000"),  # Sat — only one weekend day of data
+        )
+    )
+    assert WeekendWeekdayPaceDetector().detect(ctx) == []
 
 
 def test_weekend_pace_silent_when_pace_is_balanced() -> None:
@@ -183,7 +266,7 @@ def test_collision_fires_when_commitment_would_overdraw() -> None:
     assert len(result) == 1
     assert result[0].severity == Criticality.critical.value
     assert result[0].metrics["projected_shortfall"] == Decimal("3000")
-    assert len(result[0].evidence) >= 1
+    assert 2 <= len(result[0].evidence) <= 3
 
 
 def test_collision_silent_when_balance_covers_commitment() -> None:
@@ -212,6 +295,79 @@ def test_collision_silent_without_balance_or_as_of() -> None:
     assert UpcomingCommitmentCollisionDetector().detect(no_as_of) == []
 
 
+def test_collision_evidence_always_includes_current_balance_and_worst_commitment() -> None:
+    """Regression: evidence used to be sliced in due-date order while the cited
+    ``projected_shortfall`` was computed over ALL colliding commitments — with more than
+    MAX_EVIDENCE_POINTS colliding, the commitment actually driving the shortfall could be
+    silently excluded from the evidence shown alongside it."""
+    ctx = InsightContext(
+        transactions=(_txn("2026-06-20", "500", balance="100"),),
+        commitments=(
+            CommitmentRecord("Bill A", Decimal("500"), date(2026, 6, 21), Criticality.important.value),
+            CommitmentRecord("Bill B", Decimal("500"), date(2026, 6, 22), Criticality.important.value),
+            CommitmentRecord("Bill C", Decimal("500"), date(2026, 6, 23), Criticality.important.value),
+            CommitmentRecord("Bill D", Decimal("500"), date(2026, 6, 24), Criticality.important.value),
+        ),
+        as_of=date(2026, 6, 20),
+    )
+    result = UpcomingCommitmentCollisionDetector().detect(ctx)
+    assert len(result) == 1
+    candidate = result[0]
+    # Running balance depletes monotonically A->B->C->D, so Bill D drives the worst
+    # (most negative) projected balance -- it must appear in the evidence shown.
+    assert candidate.metrics["projected_shortfall"] == Decimal("1900")
+    assert 2 <= len(candidate.evidence) <= 3
+    merchants = {ep.merchant for ep in candidate.evidence}
+    assert "Bill D" in merchants
+    assert "Current balance" in merchants
+
+
+# --------------------------------------------------------------------------------------
+# _infer_paydays, data_months & InsightCandidate hashability (helper-level regressions)
+# --------------------------------------------------------------------------------------
+def test_infer_paydays_prefers_recurring_amount_over_a_one_off_larger_credit() -> None:
+    """A single one-off transfer that happens to exceed the real recurring salary must
+    not be mistaken for payday when a smaller amount actually recurs."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-05-15", "60000", direction=Direction.credit.value),  # one-off
+            _txn("2026-05-01", "50000", direction=Direction.credit.value),  # real salary
+            _txn("2026-06-01", "50000", direction=Direction.credit.value),  # real salary
+        )
+    )
+    assert _infer_paydays(ctx) == [date(2026, 5, 1), date(2026, 6, 1)]
+
+
+def test_infer_paydays_falls_back_to_the_lone_credit_when_nothing_recurs() -> None:
+    """A brand-new user with exactly one month of history has no recurring credit yet --
+    the largest (and only) credit is still the best honest guess at payday."""
+    ctx = InsightContext(
+        transactions=(_txn("2026-06-01", "50000", direction=Direction.credit.value),)
+    )
+    assert _infer_paydays(ctx) == [date(2026, 6, 1)]
+
+
+def test_data_months_computes_the_calendar_span_not_just_distinct_months_touched() -> None:
+    """AC #9: 'computed from the span of ctx.transactions' -- a January + June
+    transaction pair spans 6 months, not the 2 distinct months actually touched."""
+    txns = (_txn("2026-01-15", "100"), _txn("2026-06-10", "100"))
+    assert data_months(txns) == 6
+
+
+def test_insight_candidate_is_hashable_despite_the_metrics_mapping() -> None:
+    """Regression: ``metrics`` is a mutable dict on a frozen dataclass with the default
+    auto-generated __hash__ -- calling hash() used to raise TypeError, a landmine for any
+    future dedup/set usage (e.g. Story 7.3)."""
+    candidate = InsightCandidate(
+        pattern_name="Test pattern",
+        severity=Criticality.important.value,
+        evidence=(),
+        metrics={"foo": Decimal("1")},
+        data_months=1,
+    )
+    hash(candidate)  # must not raise
+
+
 # --------------------------------------------------------------------------------------
 # Protocol, orchestrator & demo fixture
 # --------------------------------------------------------------------------------------
@@ -235,10 +391,16 @@ def test_run_all_detectors_empty_context_returns_empty_list() -> None:
 
 
 def _demo_context() -> InsightContext:
-    """June-2026 Priya-style month: salary, a post-payday cluster, weekend splurges, and a
-    long tail of small purchases — plus a rent commitment due right before month-end."""
+    """June-2026 Priya-style month: salary, a post-payday cluster, weekend splurges, a
+    long tail of small purchases, and a genuine Netflix subscription recurring from the
+    prior month — plus a rent commitment due right before month-end. 24 transactions,
+    matching AC #7's spec text exactly (one salary credit, >=1 recurring subscription,
+    a post-payday cluster)."""
     txns: list[TxnRecord] = [
         _txn("2026-06-01", "50000", direction=Direction.credit.value, balance="50000"),
+        # recurring subscription: same charge ~monthly (May -> June), merchant-tagged
+        _txn("2026-05-05", "649", merchant="Netflix"),
+        _txn("2026-06-05", "649", merchant="Netflix"),
         # post-payday cluster (Mon–Wed)
         _txn("2026-06-01", "3000"),
         _txn("2026-06-02", "2800"),

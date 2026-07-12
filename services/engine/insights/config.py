@@ -24,6 +24,7 @@ SUBSCRIPTION_MAX_GAP_DAYS = 40  # ~monthly cadence upper bound
 
 # --- Weekend vs weekday pace (FR-8.1) --------------------------------------------
 WEEKEND_PACE_MIN_RATIO = Decimal("1.5")  # weekend daily rate ≥ 1.5× weekday rate
+WEEKEND_PACE_MIN_WEEKEND_DAYS = 2  # need >=1 full weekend of data to be statistically honest
 
 # --- Upcoming commitment collision (FR-8.1) --------------------------------------
 COLLISION_LOOKAHEAD_DAYS = 7  # only commitments due within a week of as_of
@@ -32,3 +33,10 @@ COLLISION_MIN_BALANCE = Decimal("0")  # projected running balance below this →
 # --- Shared ----------------------------------------------------------------------
 MAX_EVIDENCE_POINTS = 3  # FR-8.2: cite 2–3 exact data points per insight
 MIN_DATA_MONTHS_FOOTNOTE = 3  # FR-8.5: below this, Story 7.3 shows the footnote
+
+# --- Dismiss / resurface lifecycle (Story 7.3) ------------------------------------
+# A dismissed pattern only resurfaces once its per-pattern headline metric moves by at
+# least this percentage (Story 7.3's caller compares the new candidate's metric against
+# the last dismissed row's stored value; never un-dismisses the old row -- always inserts
+# a new one).
+MATERIAL_CHANGE_THRESHOLD_PCT = Decimal("15")
