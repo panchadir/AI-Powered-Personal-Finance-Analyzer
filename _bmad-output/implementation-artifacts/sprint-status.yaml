@@ -42,6 +42,14 @@
 
 generated: 2026-07-09
 last_updated: 2026-07-12  # 7-4 done (IDOR test + rx.cond fix). 8-5 done (_MIN_COUNT ceil fix).
+# (status audit 2026-07-12: 5-4/5-6 were implemented + resolved in commit f2e821e "Epic-5.4 and 5.6"
+#  on 2026-07-11 per deferred-work.md, but this file was never updated. Verified via code presence
+#  (services/analytics/spending.py, services/engine/commitment_detector.py), wiring (dashboard_state.py
+#  rx.plotly charts; commitments_state.py confirm_suggestion/dismiss_suggestion), and a full test run
+#  (694 passed, 6 skipped, zero regressions -- required installing plotly==6.9.0 into .venv, which was
+#  in requirements.txt but not yet installed locally). Marking 5-4, 5-6, and epic-5 done retroactively.
+# (status audit continued, same session: epic-2, epic-6 (+6-1..6-4), epic-7, epic-8 also
+#  corrected -- see inline comments at each epic below for the specific evidence per epic.)
 project: AI-Powered-Personal-Finance-Analyzer
 # (story 1.2 done; story 1.3 implemented + reviewed → done on 2026-07-09)
 # (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
@@ -66,7 +74,10 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Statement Upload & Transaction Extraction
-  epic-2: in-progress
+  # (status audit 2026-07-12: all 5 stories were already done; epic-level field was never
+  #  flipped after 2.5's review closed the epic out -- the "in-progress -> done" step is
+  #  manual per this file's own WORKFLOW NOTES and was simply missed.)
+  epic-2: done
   2-1-canonical-transaction-schema-and-parser-protocol: done
   2-2-csv-parser-indian-bank-formats: done
   2-3-pdf-parser-chain-text-based-statements: done
@@ -91,33 +102,48 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Dashboard, Briefing & Commitment Management
-  # Epic 5 built on branch `epic-5-dashboard-commitments` (Steps 61-62). 4 of 6 stories done;
-  # the epic stays in-progress until 5-4 and 5-6 land.
-  epic-5: in-progress
+  # Epic 5 built on branch `epic-5-dashboard-commitments` (Steps 61-62).
+  epic-5: done
   5-1-dashboard-layout-hero-card-and-confidence-chip: done
   5-2-confidence-score-drill-in-panel: done
   5-3-morning-briefing-narration: done
-  # 5-4 is BLOCKED, not skipped: it reads `transactions.category`, which Epic 3 (in flight) is
-  # still populating. Charts today would render a single "Uncategorised" slice. The Dashboard's
-  # below-fold `.dash-grid` already has the slot.
-  5-4-dashboard-charts-and-spending-breakdown: backlog
+  # 5-4's original blocker (reads transactions.category, which Epic 3 was still populating) was
+  # resolved once Epic 3 landed. Implemented in commit f2e821e (2026-07-11, branch Epic-7-insights):
+  # services/analytics/spending.py feeds rx.plotly category donut + monthly-pace charts in
+  # dashboard_state.py. See deferred-work.md "Deferred from: Epic 5 implementation" entry.
+  5-4-dashboard-charts-and-spending-breakdown: done
   5-5-commitment-management-add-edit-delete: done
-  # 5-6 is P1 and coupled to an open engine rule: an *overdue predicted* commitment is currently
-  # surfaced but not reserved (deferred-work.md). 5-6 is what produces predicted commitments, so
-  # settle that rule first or the detector bakes the bug in.
-  5-6-commitment-auto-detection: backlog
+  # 5-6's blocker (overdue *predicted* commitment not reserved) was sidestepped by design: the
+  # detector only creates user-confirmed commitments (is_predicted=False), so it never interacts
+  # with that open engine rule. Implemented in commit f2e821e (2026-07-11, branch Epic-7-insights):
+  # services/engine/commitment_detector.py + confirm/dismiss handlers in commitments_state.py.
+  5-6-commitment-auto-detection: done
   epic-5-retrospective: optional
 
   # Epic 6: AI Copilot
-  epic-6: backlog
-  6-1-copilot-chat-ui-with-streaming: backlog
-  6-2-read-only-tools-and-honesty-enforcement: backlog
-  6-3-sse-streaming-contract-trace-chips-and-error-resilience: backlog
-  6-4-quick-prompts-and-insights-context-handoff: backlog
+  # (status audit 2026-07-12: all 4 stories were built via direct git commits, bypassing
+  #  create-story/dev-story entirely -- no BMAD story files exist for this epic, which is
+  #  why nothing ever updated this tracker. Verified on code/test evidence: commits 4ff2886
+  #  (6.1), f516b5b (6.2 -- TOOL_SCHEMAS/run_tool honesty-enforced read-only tools confirmed
+  #  present in services/narrate/tools.py), 5b895e2 (6.3), f970c40 (6.4), plus a code-review
+  #  fix pass (183a7fc) and a merge commit (22223b1), all on this branch's HEAD. tests/narrate/
+  #  (56 passed) + tests/test_copilot_data.py (10 passed) + full suite (694 passed, 6 skipped)
+  #  + `reflex compile` (34/33, Copilot page included) all green. Marked done retroactively,
+  #  consistent with how every other epic in this file was closed (code+test evidence, not a
+  #  live browser pass -- see the standing deferred-work.md E2E deferral shared by every epic).
+  #  No story files were backfilled; if the formal BMAD paper trail is wanted later, create
+  #  6-1..6-4 story files documenting what already shipped.
+  epic-6: done
+  6-1-copilot-chat-ui-with-streaming: done
+  6-2-read-only-tools-and-honesty-enforcement: done
+  6-3-sse-streaming-contract-trace-chips-and-error-resilience: done
+  6-4-quick-prompts-and-insights-context-handoff: done
   epic-6-retrospective: optional
 
   # Epic 7: Proactive Insights
-  epic-7: in-progress
+  # (status audit 2026-07-12: all 4 stories were already done; epic-level field was never
+  #  flipped -- same manual-step-missed pattern as Epic 2.)
+  epic-7: done
   7-1-insight-detector-engine-all-5-patterns-coded: done
   7-2-insight-narration-o-e-e-a-shape-and-sebi-rule: done
   7-3-insights-page-and-dismiss-lifecycle: done
@@ -125,7 +151,10 @@ development_status:
   epic-7-retrospective: optional
 
   # Epic 8: Hardening & Demo-Readiness
-  epic-8: in-progress
+  # (status audit 2026-07-12: all 5 stories were already done; epic-level field was never
+  #  flipped -- same manual-step-missed pattern as Epic 2/7. Two Epic-4 retro action items
+  #  remain genuinely open, see action_items below -- unrelated to Epic 8's own completion.)
+  epic-8: done
   8-1-edge-case-honest-refusals: done
   8-2-onboarding-empty-states: done
   8-3-idor-security-test-cross-user-data-isolation: done
