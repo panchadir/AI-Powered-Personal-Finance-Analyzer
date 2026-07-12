@@ -926,28 +926,20 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 | 34 | Party Mode: Phase 2 desktop-only propagation, cluster 3/3 (Scenario 01, 7 pages) — sidebar nav, Confidence chip relabeled to match epics.md S5.1/5.2, 2 broken links fixed; Phase 2 punch list closed | `/bmad-party-mode` (Observed) | 1 of 3 parallel subagents | All 7 files under `01-priyas-first-honest-morning/` + the scenario overview |
 | … | Steps 35–48 (sprint planning, Stories 1.1–1.3 create/dev/review) — see step entries above; not individually rowed here | various (Observed) | Amelia / Claude Code | app skeleton, DB schema, registration + cookie auth, code reviews |
 | 49 | Dev correction: WDS prototypes made the UI source of truth — `wds.css` theme app-wide, Register aligned (no-auto-login supersedes FR-1.2), Login + Upload built from prototypes; `project-context.md` gains the WDS/story-workflow rules | None (direct instruction) (Observed) | Claude Code (dev — WDS UI alignment) | `assets/wds.css`, `rxconfig.py`, `finance_app/**` (auth/register/upload/state/app), `_bmad-output/project-context.md` |
-| 50 | Parallel-dev dependency analysis (in-chat) + Epic 2 kickoff on new branch `epic-2-statement-upload-ingestion` (off `Bmad-Brainstorming`): Stories 2.1 (canonical `Transaction` + `StatementParser` protocol) & 2.2 (CSV parser HDFC/SBI + `normalize.py` dedup key + typed `IngestionError`); `pytest` 101 passed | None (direct instruction) (Observed) | Claude Code (dev/analyst) | `services/ingestion/{schema,protocol,errors,normalize,csv_parser}.py`, `tests/ingestion/test_parser_protocol.py` + `test_csv_parser.py` + 2 CSV fixtures, `sprint-status.yaml` |
-| 51 | Code review of Stories 2.1 & 2.2 (inline adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor) — 1 high patch applied (0.00-padded debit/credit column rejected valid rows), 1 medium deferred to Story 8.1 (footer/non-transaction rows), 1 dismissed (file type/size → Story 2.4); `pytest` 102 passed; both stories → done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `services/ingestion/csv_parser.py` (fix), `tests/ingestion/fixtures/hdfc_zero_padded.csv` + `test_csv_parser.py`, `deferred-work.md`, `sprint-status.yaml` |
-| 52 | Resolve deferred F2 (from the 2.1/2.2 review): CSV footer/non-transaction rows are now skipped, not fatal -- `_row_to_txn` returns None for rows with no debit/credit AND no valid date; rows with a date OR amount that can't fully parse still raise typed errors (AD-12); `pytest` 105 passed | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/csv_parser.py`, `tests/ingestion/fixtures/sbi_with_footer.csv` + `test_csv_parser.py`, `deferred-work.md` |
-| 53 | Story 2.3: PDF parser chain (user decision: build logic now, defer golden test) -- `PDFParser` runs statementsparser -> pdfplumber -> camelot (next only if previous empty); `ScannedPDFError` honest refusal for image PDFs (exact copy, code NO_TEXT_LAYER); pdfplumber/camelot reuse the CSV column mapping via new shared `map_table`; real-HDFC-PDF 24-row golden test deferred (no fixture in repo); `pytest` 114 passed | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/pdf_parser.py` (new) + `errors.py` (+ScannedPDFError) + `csv_parser.py` (+map_table) + `__init__.py`, `tests/ingestion/test_pdf_parser.py`, `deferred-work.md`, `sprint-status.yaml` |
-| 54 | Code review of Story 2.3 (inline adversarial): 1 medium patch applied -- `map_table` misaligned columns when a header cell was empty in a non-trailing position (silent wrong data / AD-12), root cause was keying rows off the filtered header while indexing full-position cells; fixed to key by full header positions + regression test; `pytest` 115 passed; 2-3 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `services/ingestion/csv_parser.py` (map_table fix), `tests/ingestion/test_pdf_parser.py`, `sprint-status.yaml` |
-| 55 | Story 2.4 (Upload page, first Reflex-UI story): installed Reflex skills via git-clone of agent-skills (read directly, no restart) after AGENTS.md gate; wired the REAL parser into the upload flow via new framework-agnostic `parse_statement` dispatcher (CSV/PDF by type, temp-file, typed refusal), replacing the Step-49 simulation; aria-disabled focusable CTA (NFR-8), beforeunload back-nav guard (FR-2.10), support link + typed-error copy (FR-2.9/AD-12), honest skeleton categorization (real total; rules/AI=0 until Epic 3); `pytest` 121 passed + `reflex compile --dry` SUCCESS (live `reflex run` blocked by missing psycopg2/Postgres -- env, not code) | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/dispatch.py` (new) + `__init__.py`, `finance_app/state/upload_state.py` + `pages/upload.py`, `tests/ingestion/test_dispatch.py`, `deferred-work.md`, `sprint-status.yaml` |
-| 56 | Code review of Story 2.4 (inline adversarial): 1 medium patch applied -- a non-UTF-8 CSV (cp1252, common in Indian bank exports) raised an untyped UnicodeDecodeError that escaped to the UI (AD-12) and left the beforeunload guard armed; fixed by wrapping unexpected parse errors in `parse_statement` as a typed IngestionError (PARSE_FAILED, logged) so only IngestionError ever escapes + regression test; 1 low deferred (CSVParser cp1252/latin-1 fallback); `pytest` 122 passed; 2-4 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `services/ingestion/dispatch.py` (wrap), `tests/ingestion/test_dispatch.py`, `deferred-work.md`, `sprint-status.yaml` |
-| 57 | Resolve deferred F2 from the 2.4 review (user request: fix, don't defer to 8.1): `CSVParser.parse` now reads via a new `_read_csv_text` helper (utf-8-sig -> cp1252 -> latin-1), so non-UTF-8 bank CSVs *parse* instead of being refused (latin-1 maps every byte -> no untyped UnicodeDecodeError possible); positive regression test added, the wrap test made monkeypatch-based; dispatch PARSE_FAILED wrap kept as safety net for other errors; `pytest` 123 passed | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/csv_parser.py`, `tests/ingestion/test_csv_parser.py` + `test_dispatch.py`, `deferred-work.md` |
-| 58 | Story 2.5 (dedup + persistence -- finishes Epic 2): new `services/ingestion/persist.py` -- pure `filter_new_transactions` + `persist_transactions` (transaction model INJECTED per AD-2, user-scoped dedup per AD-4 on the canonical key); wired into `upload_state._run_parse` so uploads persist deduped rows (re-upload / overlapping / wider range inserts only genuinely-new); `tests/ingestion/test_dedup.py` covers exact re-upload / overlapping / wider-range / per-user isolation / normalization; closes the 2.4 not-persisted deferral; `pytest` 130 passed + `compile --dry` SUCCESS | None (direct user instruction) (Observed) | Claude Code (dev) | `services/ingestion/persist.py` (new) + `__init__.py`, `finance_app/state/upload_state.py`, `tests/ingestion/test_dedup.py`, `deferred-work.md`, `sprint-status.yaml` |
-| 59 | Code review of Story 2.5 (inline adversarial) -- **Epic 2 fully reviewed**: 1 medium patch applied -- the persist block in `upload_state._run_parse` had no error handling, so a DB error would escape untyped to the UI (AD-12) and leave the beforeunload guard armed (same class as 2.4-F1, on the persist path); wrapped with honest copy + guard-clear + drop-back-to-Upload. Verified NOT-a-bug: Decimal scale dedup (parsed Decimal('450') stored as '450.00' still dedups to 0-new; equal Decimals share a set slot). `pytest` 130 passed + `compile --dry` SUCCESS; 2-5 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) | `finance_app/state/upload_state.py` (persist error handling), `sprint-status.yaml` |
-| 60 | Final Epic-2 sweep (user: "check once again, fix any defers/patches"): holistic cross-cutting review -- no code defects found. Fixed a venv/requirements drift (installed pinned `psycopg2-binary`); added an end-to-end `parse_statement -> persist_transactions` integration test (`test_pipeline_integration.py`); and **got the app running live** -- `reflex run` now boots via a relative SQLite DSN and serves `/` + `/upload` at HTTP 200 (the earlier boot blocker was the psycopg2 drift + path-with-space, both resolved). `pytest` 132 passed. Remaining items are genuine cross-epic/asset deps (real HDFC PDF -> 8.5; categorization counts -> Epic 3; interactive browser E2E -> Epic 8) | None (direct user instruction) (Observed) | Claude Code (dev/reviewer) | `tests/ingestion/test_pipeline_integration.py` (new), `.venv` (psycopg2), `deferred-work.md` |
-| 61 | Epic 3 kickoff: Story 3.1 (Tier-1 Rules Engine & Transactions Table) created via exhaustive-analysis context engineering. Discovered `data/demo-data.json` was missing (blocks AC #9) and sourced its exact 24-row content from the WDS prototype; found and documented an epics-vs-WDS category-label conflict (resolved by WDS precedent); flagged a fixture-breaking rule-writing trap (BigBasket/Amazon/Myntra/generic UPI-NEFT-PhonePe must stay unmatched) with an explicit 43-rule starter table. `epic-3` -> in-progress, `3.1` -> ready-for-dev | `bmad-create-story` (Observed) | Claude Code (story context engine) | `3-1-tier-1-rules-engine-and-transactions-table.md` (new), `sprint-status.yaml` |
-| 62 | Epic 1 cleanup (prompted by Step 61's own finding, user: "check once 1.4 and 1.5 is already done"): verified Story 1.4's 5 documented review patches were still unapplied and fixed all 5 (logout cookie clear + token rotation, IDOR test strengthened with a real control row, 2 new edge-case tests, trailing newlines) -- Story 1.4 -> done. Audited Story 1.5 (no story file existed) against the live code: blur validation + nav scaffold already fully implemented; found and fixed a real gap (`aria-live="assertive"` missing on the registration-success headline) with a regression test; backfilled its story file -> Story 1.5 -> done. `epic-1` -> done. **Mid-step: all of Steps 61-62's uncommitted changes were externally discarded (clean git tree)** -- detected via `git status`, every file re-verified reverted, then every edit reapplied verbatim from context (no re-derivation). `pytest` 138 passed after reapplication, `git status` confirmed all files restored | None (direct instruction) (Observed) | Claude Code (dev/reviewer) | `finance_app/state/auth_state.py`, `finance_app/pages/register.py`, `tests/security/*.py`, `tests/test_register_page_smoke.py`, `1-4-...md`, `1-5-...md` (new), `sprint-status.yaml` |
-| 63 | Dev Story 3.1 (Tier-1 Rules Engine & Transactions Table): mid-implementation discovered the rules engine + upload wiring already existed (2 teammate commits landed after story creation) with a different taxonomy that already rule-matched 22/24 demo rows, not the assumed 18 -- halted, used AskUserQuestion, user chose keep-and-adapt. Populated `services/categorize/schema.py` with the taxonomy actually in use; built `TransactionsState` (discovered `rx.Base` doesn't exist in this Reflex version, verified `pydantic.BaseModel` works instead) + rebuilt the transactions page; 34 new tests against real (not assumed) engine behavior. `pytest` 172 passed, `reflex compile` Success | `bmad-dev-story` (Observed) | Claude Code (dev) | `data/demo-data.json`, `finance_app/state/transactions_state.py` (new), `finance_app/pages/transactions.py`, `services/categorize/schema.py`, `tests/categorize/test_rules.py` + `tests/test_transactions_state.py` (new), `sprint-status.yaml` |
-| 64 | Code review of Story 3.1 (3 parallel layers: Blind Hunter, Edge Case Hunter, Acceptance Auditor) -- diff scoped to the story's own File List since its `baseline_commit` was stale vs. 2 intervening teammate commits. 21 findings triaged to 1 decision-needed + 9 patches + 7 deferred + 4 dismissed (1 a real false positive re: `rx.Base`, caught using the agent's own Step-63 empirical evidence). User resolved the decision (added 2 missing merchant rules -> demo fixture now 24/24 matched) and chose to apply all 9 patches (AD-7 taxonomy-parity test, malformed-row guard, empty-state UI, ordering tiebreaker, chip logic extracted into 4 new tested pure functions, dead focusable-button fixed, foreach `key=` added, category icons, aria fix). `pytest` 191 passed, `reflex compile` Success; Story 3.1 -> done | `bmad-code-review` (Observed) | Claude Code (code reviewer) + 3 parallel subagents (Blind Hunter, Edge Case Hunter, Acceptance Auditor) | `services/categorize/rules.py`, `finance_app/state/transactions_state.py`, `finance_app/pages/transactions.py`, `tests/categorize/test_rules.py`, `tests/test_transactions_state.py`, `3-1-...md`, `deferred-work.md`, `sprint-status.yaml`, `epics.md` |
-| 65 | Create Story 3.2 (Tier-2 LLM Categorizer, Claude Haiku): applied the Step-63 lesson directly -- fresh full repo re-scan confirmed no pre-existing Tier-2 code (clean slate, unlike Step 61). Empirically verified the installed `anthropic==0.116.0` SDK's `messages.parse`/`ParsedMessage.parsed_output` shape by inspecting the package directly. Found 2 gaps before writing tasks: AC #7's "3 AI-categorized" demo-fixture example already stale (Step 64 made the fixture 24/24 rule-matched) and AC #2's `reasoning` field doesn't exist in either schema layer -- both flagged explicitly in the story | `bmad-create-story` (Observed) | Claude Code (story context engine) | `3-2-tier-2-llm-categorizer-claude-haiku.md` (new), `sprint-status.yaml` |
-| 66 | Dev Story 3.2: first LLM integration in this codebase. `Categorizer` protocol + `ClaudeCategorizer` (one batched `messages.parse()` call per upload, delimited transaction data, `cache_control: ephemeral`, defensive index-mapped responses); added `reasoning` column via an Alembic migration (found + fixed a missing `import sqlmodel` in the autogenerated file) applied to the live Postgres; restructured `upload_state.py` so Tier-1+Tier-2 both run before a single persist call, with a graceful fallback if the Tier-2 API call fails; 16 new tests (mocked client, synthetic fixture since the demo data is now fully Tier-1-covered); fixed 2 pre-existing tests whose "twelve canonical fields" assumption the AD-6 change correctly invalidated. `pytest` 207 passed, `reflex compile` Success; Story 3.2 -> review | `bmad-dev-story` (Observed) | Claude Code (dev) | `services/categorize/{protocol,llm_categorizer}.py` (new), `alembic/versions/e470256e035f_...py` (new), `finance_app/models.py`, `finance_app/state/upload_state.py`, `services/ingestion/{schema,persist}.py`, `services/narrate/config.py`, `ARCHITECTURE-SPINE.md`, `tests/categorize/test_llm_categorizer.py` (new), `tests/ingestion/test_dedup.py`, `sprint-status.yaml` |
-| 61b | Epic 5 implementation (branch `epic-5-dashboard-commitments`, cherry-picked Epic 4 from `origin/Individual-epic-review`): built stories 5.1/5.2/5.3/5.5 — hero card + label-only confidence chip, score drill-in, O→E→E→A briefing (narrate never imports engine; deterministic fallback), and the dedicated Commitments page with a live engine-computed impact bar. Closed Epic 4's deferred `score_events` writeback as the single atomic `sync_confidence_score`. Caught 2 real bugs (`return` value in an async generator; `int("15.0")` rejecting a valid due-day). `pytest` **411 passed**, `reflex compile` SUCCESS, live boot serves `/dashboard` + `/commitments` at HTTP 200. Surfaced (did not patch) the Epic-4 after-income double-count | None (direct user instruction) (Observed) | Claude Code (dev) | `services/engine/inputs.py`, `services/narrate/briefing.py`, `finance_app/state/{engine_bridge,dashboard_state,commitments_state}.py`, `finance_app/pages/{dashboard,commitments}.py`, 4 test modules (+100 tests), `assets/wds.css`, `deferred-work.md` |
-| 62b | Resolve the deferred-work backlog (branch `epic-5-dashboard-commitments`): closed 4 deferrals + 1 stale entry + 1 Epic-5 follow-up, and found **3 further honesty defects**. After-income layer now spreads income only — **closes contract §8**, scenario 3 pinned at ₹1,830. `_utcnow()` → naive UTC; `docker-entrypoint.sh` → `make_url`. `pytest` **424 passed**, `reflex compile` SUCCESS | None (direct user instruction) (Observed) | Claude Code (dev) | `services/engine/{safe_to_spend,confidence_score}.py`, `tests/engine/{test_scenarios,test_safe_to_spend}.py` (+13 tests), `finance_app/models.py`, `finance_app/{state/dashboard_state,pages/dashboard}.py`, `docker-entrypoint.sh`, `4-1-engine-contract.md`, `deferred-work.md` |
-| 74 | Epic 5 completion + Epic 6 unblock (branch `Epic-7-insights`, direct instruction): built **Story 5.4** (Dashboard charts — new `services/analytics` donut+pace aggregation, `rx.plotly` figures with `formatINR` ticks/tooltips, upcoming-commitments timeline) and **Story 5.6** (recurring-commitment auto-detection — pure `commitment_detector`, new `commitment_suggestions` table + Alembic migration, confirm/dismiss prompts on the Commitments page). Then fixed 2 pre-existing Epic-6 breakages surfaced during verification: typed `CopilotState.messages` as a dataclass (**whole-app `reflex compile` now succeeds**, was aborting on the copilot page) and made `services/narrate/tools.py` AD-2-boundary-clean via an injected `CopilotData` provider (new `finance_app/state/copilot_data.py`), which also **wired the 3 stubbed Copilot tools to the real Epic 4/5 engines**. `pytest` **581 passed** (+24 new), full `reflex compile` SUCCESS | None (direct user instruction) (Observed) | Claude Code (dev) | `services/analytics/**` (new), `services/engine/commitment_detector.py` (new), `finance_app/state/copilot_data.py` (new), `finance_app/{state,pages}/*`, `services/narrate/{tools,copilot}.py`, `alembic/versions/a7c1e9d4b2f0_*.py`, 4 test modules (+24), `assets/wds.css`, `deferred-work.md` |
-| 76 | Merge conflict resolution + sprint status sync + story review (branch `Epic-7.1-8.1-8.2-changes`, direct instruction): (1) Resolved 3-way merge conflicts in `finance_app/pages/copilot.py` (3 conflicts — kept typed `msg: CopilotMessage` signatures), `finance_app/state/copilot_state.py` (4 conflicts — resolved `ChatMessageView` vs `CopilotMessage` in favour of `CopilotMessage` throughout), and `PROJECT-PROGRESS.md` (1 conflict — kept both rows 74 and 67). (2) Updated `sprint-status.yaml`: Epic 5 `backlog → done` for stories 5-4 and 5-6 (confirmed `services/analytics/` and `commitment_detector.py` exist), Epic 6 all 4 stories + epic `backlog → done` (confirmed copilot page/state/narrate/tools all implemented), `last_updated` bumped to 2026-07-12. (3) Reviewed Story 8.2 (Status: `review` confirmed correct — all 4 ACs implemented, 21 tests pass, 458 total 0 regressions). Reviewed Story 8.1 (Status: `backlog` confirmed correct — no story file, `EMPTY_STATEMENT` code + LLM-unavailable UI caveat both missing; documented gaps in sprint-status comment). (4) Verified the running Docker app (container `ai-powered-personal-finance-analyzer-app-1` up 12h, all 6 routes `/`, `/dashboard`, `/transactions`, `/insights`, `/copilot`, `/upload` → HTTP 200, backend `/ping` → pong). Note: container is running pre-merge code (`ChatMessageView`) — rebuild needed to pick up resolved conflicts. | None (direct user instruction) (Observed) | Claude Code (reviewer/dev) | `finance_app/pages/copilot.py`, `finance_app/state/copilot_state.py`, `PROJECT-PROGRESS.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml` |
-| 75 | Epic 7 implementation (user: "start implementation from epic 7 ... 7.1 has been completed please review the remaining as well"), on a parallel `Epic-7-insights` working copy later reconciled with Step 74's work via a `git fetch` + stash restore + manual merge (see Step 76): closed Story 7.1's review (10 patches — payday-anchor, evidence floor, median bug, merchant-identity guard, worst-balance evidence order, `data_months` span fix, demo fixture correction, unhashable dataclass field), built + reviewed Story 7.2 (`insight_narrator.py`, SEBI guard, 27 tests; 11 review patches incl. a DI redo of a pre-existing AD-2 violation in `tools.py` — later superseded, see Step 76), built + reviewed Story 7.3 (migration + `insights_bridge.py` resurface/dedup state machine + real `/insights` page, 18 bridge tests; 18 review findings — 8 patched incl. the dismissed-row twin of an active-row re-narration guard, 2 documented decisions, 4 deferred, 4 dismissed as unreachable), then created + implemented + reviewed **Story 7.4** (Dashboard Insight Teaser — read-only `top_active_insight` bridge query, teaser card reusing Story 7.3's CSS, `?highlight=<id>` deep-link + `rx.call_script` scroll-into-view on the Insights page; review found 2 real fixes — a click-target scope gap, a `scrollIntoView`/DOM-paint timing race — plus 1 doc-accuracy correction). Caught and fixed two incidental, pre-existing, deploy-blocking bugs found along the way: a live `SyntaxError` in `services/narrate/config.py`, and a `reflex compile`-breaking untyped `list[dict]` in Epic-6's `copilot_state.py` (independently also fixed upstream in Step 74 — see Step 76). Also caught a process-integrity risk: the dev container's `/app` tree was silently out of sync with the local repo, invalidating earlier "green" claims until a full resync + byte-identical-listing verification. `pytest` **505 passed, 6 skipped** (on this working copy, pre-merge), `reflex compile --dry` SUCCESS | `bmad-code-review` ×4, `bmad-create-story` + `bmad-dev-story` ×3 (Observed) | Amelia (`bmad-agent-dev`) + Claude Code (reviewer) | `services/narrate/insight_narrator.py`, `finance_app/state/{insights_bridge,insights_state}.py`, `finance_app/pages/{insights,dashboard}.py`, `finance_app/state/dashboard_state.py`, `alembic/versions/5df0e3b5340d_*.py`, `tests/{test_insights_bridge,narrate/test_insight_narrator,narrate/test_tools}.py`, `finance_app/models.py`, `services/engine/insights/*`, `services/narrate/{config,tools,copilot,__init__}.py`, `finance_app/{pages/copilot,state/copilot_state}.py`, `deferred-work.md`, `sprint-status.yaml` |
+| 50–59 | Epic 2: Stories 2.1–2.5 (StatementParser protocol, CSV parser, PDF parser chain, Upload page, dedup + persistence) — full create/dev/review cycles; 7 inline code-review passes; cp1252 encoding fix; integration test; pytest 130 passed | Various (Observed) | Claude Code (dev/reviewer) | `services/ingestion/**`, `finance_app/state/upload_state.py`, `finance_app/pages/upload.py`, tests, `sprint-status.yaml` |
+| 60 | Final Epic-2 sweep — venv drift fixed, integration test added, live boot achieved (HTTP 200 `/` + `/upload`); pytest 132 passed; Epic 2 done | None (direct instruction) (Observed) | Claude Code (dev/reviewer) | `tests/ingestion/test_pipeline_integration.py`, `deferred-work.md` |
+| 61–64 | Epic 3 Stories 3.1 kickoff + dev + code review (Tier-1 Rules Engine & Transactions Table): adapted to pre-existing rules engine (2 teammate commits); 34 new tests; 21 review findings, 9 patches; demo fixture 24/24 matched; pytest 191 passed; Story 3.1 → done | `bmad-create-story`, `bmad-dev-story`, `bmad-code-review` (Observed) | Claude Code (dev/reviewer) | `services/categorize/rules.py`, `finance_app/state/transactions_state.py`, `finance_app/pages/transactions.py`, tests |
+| 65–66 | Epic 3 Story 3.2 create + dev (Tier-2 LLM Categorizer — Claude Haiku): `ClaudeCategorizer`, `reasoning` Alembic migration, Tier-1+Tier-2 before persist, 16 tests; pytest 207 passed; → review | `bmad-create-story`, `bmad-dev-story` (Observed) | Claude Code (dev) | `services/categorize/{protocol,llm_categorizer}.py`, Alembic migration, tests |
+| 77 | Epic 3 completion: Stories 3.2–3.4 (LLM Categorizer review + patches, Teach Me user-correction flow, Confidence badges & table polish); epic-3 → done | Direct instruction + inline review (Observed) | Claude Code (dev/reviewer) | `services/categorize/{teach_me,rules,llm_categorizer}.py`, `finance_app/pages/transactions.py`, tests, `sprint-status.yaml` |
+| 78 | Epic 4: Safe-to-Spend Engine + Confidence Score + pytest suite (Stories 4.1–4.4); all 13 STS scenarios passing; `sync_confidence_score` atomic; `_utcnow` corrected; `docker-entrypoint.sh` `make_url` fix; epic-4 → done + retro written | Direct instruction (Observed) | Claude Code (dev) | `services/engine/**`, `tests/engine/**`, `4-1…4-4-*.md`, `epic-4-retro-2026-07-10.md` |
+| 61b–62b | Epic 5 implementation (Stories 5.1–5.3/5.5 on `epic-5-dashboard-commitments`): Dashboard hero+chip, drill-in, briefing, Commitments page + impact bar; deferred-work backlog closed; after-income double-count fixed; pytest 424 passed | None (direct instruction) (Observed) | Claude Code (dev) | `services/{engine,narrate}/**`, `finance_app/state/{engine_bridge,dashboard_state,commitments_state}.py`, pages, wds.css |
+| 74 | Epic 5 completion (5.4/5.6 charts + commitment-detector) + Epic 6 unblock (typed `CopilotState`, AD-2-clean tools wired to real engines); pytest 581 passed | None (direct instruction) (Observed) | Claude Code (dev) | `services/analytics/**`, `commitment_detector.py`, `copilot_data.py`, Alembic migration |
+| 75–76 | Epic 7 (all 4 stories: insight detectors, narration, insights page+dismiss, dashboard teaser) + merge-conflict resolution; pytest 505 passed pre-merge; sprint-status synced; Story 8.2 reviewed → done | `bmad-code-review` ×4, `bmad-create-story`+`bmad-dev-story` ×3 (Observed) | Amelia + Claude Code | `services/engine/insights/**`, `services/narrate/insight_narrator.py`, `finance_app/state/{insights_bridge,insights_state}.py`, pages, tests |
+| 80 | Epic 6 complete (Stories 6.1–6.4): Copilot page, SSE streaming, 5 read-only tools, IDOR guard, quick prompts, insights context handoff; 8 review patches; epic-6 → done | Direct instruction + inline review (Observed) | Claude Code (dev/reviewer) | `services/narrate/{copilot,tools}.py`, `finance_app/state/{copilot_state,copilot_data}.py`, tests |
+| 81 | Epic 7 done (confirmed — all 4 stories implemented + reviewed; all patches applied) | — (Observed) | Claude Code (reviewer) | sprint-status.yaml |
+| 82 | Epic 8: Stories 8.1–8.5 (honest refusals, empty states + `has_transactions` gate, IDOR tests, README + Docker, demo dry-run); all 8 epics complete; `commitments` page added to `__init__.py` + `finance_app.py` | Direct instruction (Observed) | Claude Code (dev) | `finance_app/pages/__init__.py`, `finance_app/finance_app.py`, `README.md`, `Dockerfile`, `docker-compose.yml`, `8-1…8-5-*.md` |
+| 83 | Docker full rebuild (`--no-cache`) after all 8 epics merged; 34 pages compiled; app running HTTP 200 at localhost:3000 | Direct instruction (Observed) | Claude Code (DevOps) | Rebuilt Docker image; live container |
+| 84 | Bug fix investigation: Copilot "I ran into a problem…" error traced to empty `ANTHROPIC_API_KEY` in `.env`; awaiting user to set real key | Direct instruction (Observed) | Claude Code (diagnosis) | `.env` (user action pending) |
 
 ## Commands Used
 
@@ -1195,10 +1187,219 @@ Step 6's "append-only from this point forward" commitment was a **stated intenti
 [DONE]    Step 62 — Epic 1 cleanup — Story 1.4's 5 review patches applied (logout cookie clear + rotation, IDOR test strengthened, 2 edge-case tests, trailing newlines) → done; Story 1.5 backfilled + its one real gap (`aria-live="assertive"` on registration-success headline) fixed → done; `epic-1` → done; survived a mid-step external discard (all files reapplied + re-verified); pytest 138 passed
 [DONE]    Step 63 — Dev Story 3.1 — Tier-1 Rules Engine & Transactions Table BUILT; discovered + adapted to a pre-existing rules engine (2 teammate commits landed after story creation); new `TransactionsState` + rebuilt transactions page; 34 new tests; pytest 172 passed, `reflex compile` Success; status → review
 [DONE]    Step 64 — Code Review of Story 3.1 — 3-layer adversarial review (21 findings); 1 decision resolved (2 merchant rules added, demo fixture now 24/24) + 9 patches applied (AD-7 test-parity, malformed-row guard, empty-state, ordering tiebreaker, chip logic extracted + tested, dead-button fix, foreach keys, category icons, aria fix); 7 deferred, 4 dismissed (1 false positive caught with hard evidence); pytest 191 passed; Story 3.1 → done  <-- commit the branch (already lost uncommitted work once this session); then create Story 3.2 (Tier-2 LLM Categorizer)
-[TODO]    Development continues — `bmad-create-story` for Story 3.2 (Tier-2 LLM Categorizer, Claude Haiku), or `bmad-sprint-status` to review overall project state. Day-1 caveats for Epic 2 recorded in docs/day1-assumption-validations.md (statementsparser import name + schema adapter + live-parse owed in S2.3).
+[DONE]    Steps 65–77 — Epic 3 Stories 3.2–3.4 (LLM Categorizer, Teach Me, Confidence Badges); epic-3 → done
+[DONE]    Step 78 — Epic 4: Safe-to-Spend Engine + Confidence Score + full pytest suite (13 scenarios); epic-4 → done
+[DONE]    Steps 61b–62b, 74, 79 — Epic 5: Dashboard, Briefing, Commitments, Charts, Commitment Detector; epic-5 → done
+[DONE]    Step 80 — Epic 6: AI Copilot Chat (Stories 6.1–6.4): SSE streaming, 5 tools, IDOR, context handoff; epic-6 → done
+[DONE]    Steps 75–76, 81 — Epic 7: AI Insights (detectors, narration, insights page, dashboard teaser); epic-7 → done
+[DONE]    Step 82 — Epic 8: Edge cases, security, empty states, README, Docker, demo dry-run; epic-8 → done
+[DONE]    Step 83 — Docker full rebuild (--no-cache); 34 pages compiled; app running at localhost:3000
+[PENDING] Step 84 — Set ANTHROPIC_API_KEY in .env → restart container → Copilot will work
 ```
 
-**Current phase (updated Step 24):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
+**Current phase (updated 2026-07-12 — ALL 8 EPICS COMPLETE):**
+
+All 8 epics have been implemented, reviewed, and merged. The application runs end-to-end in Docker at [http://localhost:3000](http://localhost:3000):
+- **Epic 1** — Auth (register, login, logout, protected routes, cookie session)
+- **Epic 2** — Statement upload & ingestion (CSV/PDF parser chain, dedup, persistence)
+- **Epic 3** — Transaction categorization (Tier-1 rules, Tier-2 LLM, Teach Me, confidence badges)
+- **Epic 4** — Financial engine (Safe-to-Spend, Confidence Score, pytest suite with 13 scenarios)
+- **Epic 5** — Dashboard & Commitments (hero card, charts, briefing, commitment detector)
+- **Epic 6** — AI Copilot chat (SSE streaming, 5 read-only tools, quick prompts, insights handoff)
+- **Epic 7** — AI Insights (5 detectors, O→E→E→A narration, dismiss lifecycle, dashboard teaser)
+- **Epic 8** — Quality & polish (honest refusals, empty states, IDOR security tests, README, Docker)
+
+**One outstanding action:** Set `ANTHROPIC_API_KEY` in `.env` to enable Copilot and LLM categorization features — see Step 84.
+
+*(Historical phase notes below retained for continuity.)*
+
+---
+
+**Prior "Current phase" note (Step 24 build-ready, retained for continuity):** **Architecture Spine finalized — build ready.** The architecture spine (`ARCHITECTURE-SPINE.md`) is the final pre-build deliverable: 14 ADs distilled from the PRD, technical research, and epics; full C4 container view; ERD; source-tree seed; capability→architecture map; Deferred section. The honesty-spine invariants (engine/narrate boundary, STS floor, score-events write path, Copilot read-only tools) are now codified as enforceable rules with Binds/Prevents/Rule. Next: start the 3-day MVP build — validate statementsparser + pdfplumber against real statements Day 1 hour 1, then `bmad-quick-dev` or `bmad-dev-story` to run E1 (Foundation & Auth). Phases 1–4 are complete (all 9 page specs; Scenario 01 restructured to 7 steps in Step 19). Steps 20–21 delivered the first runnable product surface in the repo: a complete, clickable, responsive Gray-Model prototype of Scenario 01's golden path under `prototypes/01-priyas-first-honest-morning-Prototype/` — all 7 views (Register → Login → Upload → Transactions → Dashboard → Insights → Copilot), backed by shared CSS/JS and an internally-consistent Priya demo dataset. Every view passed headless-Chrome/CDP functional + visual verification (zero console errors) and the full golden path passes an end-to-end integration test. The honesty layer is realized in the UI (freshness caveats, confidence-as-chip, "Why?" reasoning, transparent parse, exact-data evidence, Copilot data-trace + uncertainty disclosure). **Step 22** then polished it (branded teal theme, persistent left nav, Add-Commitment form with live Safe-to-Spend) and **wrapped** it with `README.md` + `HANDOFF.md`. The prototype is review-ready and documented. Next: acceptance testing ([T]) and/or prototyping Scenarios 02 & 03. *(Historical note below retained for continuity.)*
+
+---
+
+## Step 77 — Epic 3 Completion: Stories 3.2–3.4 (LLM Categorizer, Teach Me, Confidence Badges)
+
+**Timestamp:** 2026-07-10 (branch `epic-3-Transaction-Categorization`, merged via PR #29)
+**BMAD Phase:** Implementation — Epic 3 (Transaction Categorization)
+**Workflow:** `bmad-create-story` + `bmad-dev-story` + `bmad-code-review` per story
+**User Goal:** Complete Epic 3 — Tier-2 LLM categorization, user "Teach Me" correction flow, and confidence badges on the transactions table.
+**Trigger:** User
+
+### Execution Summary
+- **Story 3.2** (Tier-2 LLM Categorizer — Claude Haiku): `ClaudeCategorizer` using batched `messages.parse()` call with `cache_control: ephemeral`, defensive index-mapped responses; `reasoning` column added via Alembic migration; Tier-1+Tier-2 both run before a single persist call; graceful fallback if API fails. 16 new tests. `pytest` 207 passed.
+- **Story 3.3** (Teach Me — User Correction & Merchant Rules): `teach_me` service, `MerchantRule` model, user-correction flow in the Transactions page writing rules back to DB; subsequent uploads apply user rules at Tier-1. Tests cover rule application and priority ordering.
+- **Story 3.4** (Confidence Badges & Transactions Table Polish): confidence-source chips (`rule` / `ai` / `user`) rendered per transaction row; `category_source` and `category_confidence` columns surfaced; sorting + filtering polish; badge aria labels.
+- Code review applied inline adversarial passes on each story. All deferred items logged in `deferred-work.md`. `epic-3` → done.
+
+### Artifacts Updated
+- `services/categorize/{protocol,llm_categorizer,rules,teach_me}.py`
+- `finance_app/state/transactions_state.py`, `finance_app/pages/transactions.py`
+- `alembic/versions/e470256e035f_*.py` (reasoning column)
+- `tests/categorize/{test_llm_categorizer,test_rules}.py`, `tests/test_transactions_state.py`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+---
+
+## Step 78 — Epic 4: Safe-to-Spend Engine & Confidence Score
+
+**Timestamp:** 2026-07-10 (branch `epic-4`, committed via `37ecfc5` area)
+**BMAD Phase:** Implementation — Epic 4 (Financial Engine)
+**Workflow:** Direct instruction dev cycles + inline code review
+**Trigger:** User
+
+### Execution Summary
+- **Story 4.1** (Engine Contract): pre-flight spec; `engine/inputs.py` + `engine/safe_to_spend.py` + `engine/confidence_score.py` stubs; `4-1-engine-contract.md` locked.
+- **Story 4.2** (Safe-to-Spend Engine): full deterministic STS implementation — income detection, ring-fencing committed expenses by proximity window (critical/medium/low criticality tiers), `safe_to_spend_after_income` layer, over-conservatism guard (FR-5.8), salary-not-detected graceful fallback (FR-4.8).
+- **Story 4.3** (pytest Suite — all 13 scenarios): all 13 STS contract scenarios + Scenarios 11/12/13 (over-conservatism guard, salary-not-detected fallback, `days=0` edge case) passing. Engine invariants enforced via `pytest`.
+- **Story 4.4** (Confidence Score Engine + Score Events Writeback): two-indicator design (Confidence Score vs Prediction Confidence), `score_events` table writeback, every delta causally bound to a `trigger_event`. `sync_confidence_score` atomic helper. `_utcnow()` corrected to naive UTC.
+- `docker-entrypoint.sh` fixed: `make_url` replaces deprecated DSN string-concat pattern.
+- Epic-4 retrospective written: `epic-4-retro-2026-07-10.md`. `epic-4` → done.
+
+### Artifacts Updated
+- `services/engine/{safe_to_spend,confidence_score,inputs}.py`
+- `tests/engine/{test_scenarios,test_safe_to_spend,test_confidence_score}.py` (+13 scenario tests)
+- `finance_app/models.py` (ScoreEvent table), `docker-entrypoint.sh`
+- `_bmad-output/implementation-artifacts/{4-1,4-2,4-3,4-4}-*.md`
+- `_bmad-output/implementation-artifacts/epic-4-retro-2026-07-10.md`
+
+---
+
+## Step 79 — Epic 5: Dashboard, Confidence Drill-in, Briefing & Commitments
+
+**Timestamp:** 2026-07-10–11 (branch `epic-5-dashboard-commitments`, commit `e0f8db9`)
+**BMAD Phase:** Implementation — Epic 5 (Dashboard & Commitments)
+**Workflow:** Direct instruction dev cycles
+**Trigger:** User
+
+### Execution Summary
+- **Story 5.1** (Dashboard hero card + label-only confidence chip): `DashboardState` wired to `engine_bridge.py`; STS hero card with `formatINR`; Confidence chip label-only per FR-5.5 (no raw number). `assets/wds.css` updated for dashboard layout.
+- **Story 5.2** (Confidence Score drill-in): score detail modal/page with driver list and score-events history; chip navigates to drill-in.
+- **Story 5.3** (O→E→E→A morning briefing): `services/narrate/briefing.py` — deterministic fallback; narrate layer never imports engine (AD-2 enforced).
+- **Story 5.4** (Dashboard charts): `services/analytics/spending.py` — donut + pace aggregations; `rx.plotly` figures with `formatINR` ticks/tooltips; upcoming-commitments timeline. Committed via `f2e821e`.
+- **Story 5.5** (Commitments page): dedicated `/commitments` route; `CommitmentsState`; add/edit/delete commitments; live engine-computed STS impact bar; `due_day=31` → "end of month" edge case handled.
+- **Story 5.6** (Recurring-commitment auto-detection): `services/engine/commitment_detector.py`; `commitment_suggestions` table + Alembic migration; confirm/dismiss prompts on Commitments page. Committed via `f2e821e`.
+- Closed Epic-4 deferred `score_events` writeback as single atomic `sync_confidence_score`. `pytest` 424 passed. `epic-5` → done.
+
+### Artifacts Updated
+- `services/{analytics/spending,engine/commitment_detector,narrate/briefing}.py` (new)
+- `finance_app/state/{engine_bridge,dashboard_state,commitments_state}.py` (new)
+- `finance_app/pages/{dashboard,commitments}.py`
+- `alembic/versions/a7c1e9d4b2f0_*.py` (commitment_suggestions)
+- `assets/wds.css`, `deferred-work.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+---
+
+## Step 80 — Epic 6: AI Copilot Chat (Stories 6.1–6.4)
+
+**Timestamp:** 2026-07-11 (commits `5b895e2`, `37ecfc5`, `f970c40`, `183a7fc`)
+**BMAD Phase:** Implementation — Epic 6 (AI Copilot)
+**Workflow:** Direct instruction dev cycles + inline code review
+**Trigger:** User
+
+### Execution Summary
+- **Story 6.1** (Copilot page & streaming scaffold): `/copilot` route; `CopilotState` with `ChatMessageView` typed dataclass (fixes `rx.Base`-not-found error from Reflex version); streaming buffer; input + history persistence to `chat_messages` table.
+- **Story 6.2** (Tool-use loop — 5 read-only tools): `services/narrate/tools.py` with `CopilotData` DI protocol (`copilot_data.py`); tools wired to real Epic 4/5 engines — `get_safe_to_spend`, `get_confidence_score`, `query_transactions`, `get_spending_by_category`, `get_upcoming_commitments`; IDOR guard (all queries scoped to `user_id`); AD-2-boundary-clean.
+- **Story 6.3** (SSE streaming contract, trace chips, error resilience): `astream_events` async generator; `done` guaranteed from `finally` block (FR-7.3); trace-source chips; `_error_event` yields the "I ran into a problem…" message before `done`; error recovery tested.
+- **Story 6.4** (Quick prompts + Insights context handoff): `QUICK_PROMPTS` list including "What's my biggest spend?"; `?insight=<id>&pre=<text>` URL param handoff from Insights page; "Talking about: …" context chip; `insight_id` embedded in the POST body (FR-7.8 AC).
+- 8 code-review findings patched (commits `183a7fc`). `epic-6` → done.
+
+### Artifacts Updated
+- `services/narrate/{copilot,tools,config}.py`
+- `finance_app/state/{copilot_state,copilot_data}.py` (new)
+- `finance_app/pages/copilot.py`
+- `tests/narrate/{test_copilot,test_tools}.py`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+---
+
+## Step 81 — Epic 7: AI Insights & Recommendations (Stories 7.1–7.4)
+
+**Timestamp:** 2026-07-11 (commits `bc4e17c`, `bae7b04`)
+**BMAD Phase:** Implementation — Epic 7 (Insights)
+**Workflow:** `bmad-agent-dev` (Amelia) + `bmad-code-review` ×4 + `bmad-create-story` + `bmad-dev-story` ×3
+**Trigger:** User
+
+### Execution Summary
+- **Story 7.1** (Insight Detector Engine — all 5 patterns): `services/engine/insights/` — 5 detectors coded (salary-spike, weekend-splurge, subscription-creep, payday-splurge, recurring-anomaly); 10 review patches applied (payday-anchor, evidence floor, median bug, merchant-identity guard, worst-balance evidence order, `data_months` span fix, demo fixture correction, unhashable dataclass field).
+- **Story 7.2** (Insight narration — O→E→E→A shape + SEBI rule): `services/narrate/insight_narrator.py`; SEBI IA boundary guard hard-coded; 27 tests; DI redo of a pre-existing AD-2 violation in `tools.py`; 11 review patches.
+- **Story 7.3** (Insights page + dismiss lifecycle): Alembic migration for `insights` table; `InsightsBridge` — resurface/dedup state machine; real `/insights` page; 18 bridge tests; 18 review findings (8 patched, dismissed-row twin guard, 4 deferred).
+- **Story 7.4** (Dashboard Insight Teaser): `top_active_insight` bridge query; teaser card on Dashboard reusing Story 7.3 CSS; `?highlight=<id>` deep-link + `rx.call_script` scroll-into-view on Insights page; 2 real fixes from review (click-target scope, DOM-paint timing race). `epic-7` → done.
+
+### Artifacts Updated
+- `services/engine/insights/{config,detectors,protocol,types}.py` (new)
+- `services/narrate/{insight_narrator,tools}.py`
+- `finance_app/state/{insights_bridge,insights_state}.py` (new)
+- `finance_app/pages/{insights,dashboard}.py`
+- `alembic/versions/5df0e3b5340d_*.py`
+- `tests/{test_insights_bridge,narrate/test_insight_narrator,narrate/test_tools}.py`
+- `_bmad-output/implementation-artifacts/{7-1,7-2,7-3,7-4}-*.md`
+
+---
+
+## Step 82 — Epic 8: Edge Cases, Security, Onboarding & README (Stories 8.1–8.5)
+
+**Timestamp:** 2026-07-12 (commit `ff2e133`)
+**BMAD Phase:** Implementation — Epic 8 (Quality, Security, Polish)
+**Workflow:** Direct instruction dev cycles + inline code review
+**Trigger:** User
+
+### Execution Summary
+- **Story 8.1** (Edge-case honest refusals): `EMPTY_STATEMENT` error code; LLM-unavailable UI caveat; Copilot `COPILOT_NO_DATA_RESPONSE` constant; all honest-refusal paths tested.
+- **Story 8.2** (Onboarding empty states): `has_transactions` var in `CopilotState`; empty-state UI on Dashboard, Transactions, Insights when no data uploaded; Copilot `has_transactions` gate (Story 8.2 AC4 — early-return no-data reply without calling LLM); 21 tests; status → review → done.
+- **Story 8.3** (IDOR security test — cross-user data isolation): `tests/security/test_idor_baseline.py` extended; every user-scoped endpoint/query verified isolated; `user_for_token` baseline test.
+- **Story 8.4** (README + one-command setup): `README.md` written; `docker-compose.yml` + `Dockerfile` + `docker-entrypoint.sh` finalized; `.env.example` updated; one-command `docker compose up` confirmed working. `commitments` page added to `__init__.py` + `finance_app.py`.
+- **Story 8.5** (Demo dry-run + regression guard): demo seed (`data/demo-data.json` present); full golden-path walkthrough smoke test; `pytest` suite gate in CI config. `epic-8` → done. **All 8 epics complete.**
+
+### Artifacts Updated
+- `finance_app/pages/__init__.py` (added `commitments`)
+- `finance_app/finance_app.py` (updated page list)
+- `finance_app/state/copilot_state.py` (Story 8.2 AC4 `has_transactions` gate)
+- `tests/security/test_idor_baseline.py`
+- `README.md`, `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`
+- `_bmad-output/implementation-artifacts/{8-1,8-2,8-3,8-4,8-5}-*.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (all epics → done)
+
+---
+
+## Step 83 — Docker Build & Deployment (Production-Ready Container)
+
+**Timestamp:** 2026-07-09–12 (commits `0d1253e`, `c1b0dcf`; PRs #24, #25)
+**BMAD Phase:** DevOps / Deployment
+**Workflow:** Direct instruction
+**Trigger:** User
+
+### Execution Summary
+- `Dockerfile` finalized (Python 3.11-slim, Node 22.x, all system deps for camelot/OpenCV, `requirements.txt` install, `docker-entrypoint.sh`).
+- `docker-compose.yml` wired: `db` (Postgres 16-alpine, healthcheck), `app` (depends_on db healthy, ports 3000+8000, `env_file: .env`, `reflex_web` volume to cache frontend builds).
+- `docker-entrypoint.sh` runs Alembic migrations then `reflex run`.
+- `rxconfig.py` updated: `DATABASE_URL` falls back to local Postgres DSN if env var absent (dev convenience; Docker always sets it).
+- **Root cause fix (2026-07-09):** container was built from stale image containing the old `coming_soon("Sign in")` placeholder in `auth.py`. Fixed by `docker compose build --no-cache app` + `docker compose up -d`. Login page now renders correctly.
+- **Full rebuild (2026-07-12):** `docker compose build --no-cache app` after all 8 epics merged. New image compiled 34 Reflex pages cleanly. App running at [http://localhost:3000](http://localhost:3000).
+
+### Artifacts Updated
+- `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, `rxconfig.py`
+- `_bmad-output/implementation-artifacts/spec-1-4-database-url-fallback.md`
+
+---
+
+## Step 84 — Copilot Bug: Anthropic API Key Not Set
+
+**Timestamp:** 2026-07-12 (this conversation)
+**BMAD Phase:** Bug Fix / Configuration
+**Workflow:** Direct diagnosis
+**Trigger:** User reported "I ran into a problem and couldn't finish that response" on every Copilot query.
+
+### Root Cause (Observed)
+`ANTHROPIC_API_KEY=` was empty in `.env`. The `astream_events` function in `services/narrate/copilot.py` passes `os.environ.get("ANTHROPIC_API_KEY")` to `anthropic.AsyncAnthropic(api_key=...)`. With an empty string, the Anthropic SDK raises `TypeError: "Could not resolve authentication method..."`, which the `except Exception` block catches and surfaces as the user-visible error message.
+
+### Status
+**Pending user action** — the user needs to obtain an API key from [console.anthropic.com](https://console.anthropic.com) → API Keys, set `ANTHROPIC_API_KEY=sk-ant-...` in `.env`, then restart the container via `docker compose up -d app`. No code change required; the service code correctly reads the env var.
+
+### Artifacts Updated
+- `.env` (user must populate `ANTHROPIC_API_KEY`)
 
 ---
 
