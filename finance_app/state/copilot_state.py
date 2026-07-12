@@ -21,9 +21,10 @@ import logging
 from datetime import datetime, timezone
 
 import reflex as rx
-from sqlmodel import select
+from pydantic import BaseModel
+from sqlmodel import func, select
 
-from finance_app.models import ChatMessage, Insight
+from finance_app.models import ChatMessage, Insight, Transaction
 from finance_app.state.auth_state import AuthState, user_for_token
 from finance_app.state.copilot_data import open_copilot_data
 from services.narrate.copilot import astream_events
@@ -68,11 +69,16 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class CopilotMessage(BaseModel):
+    role: str = ""
+    content: str = ""
+    trace_sources: list[str] = []
+
+
 class CopilotState(AuthState):
     """State for the Copilot chat page."""
 
-    # Completed chat turns (typed so Reflex can foreach over the thread).
-    messages: list[ChatMessageView] = []
+    messages: list[CopilotMessage] = []
 
     # In-flight streaming buffer.
     streaming_content: str = ""
@@ -88,6 +94,12 @@ class CopilotState(AuthState):
 
     # Prevents double-load on re-renders.
     _history_loaded: bool = False
+
+    # ---- Story 8.2: empty-state guard ---------------------------------------
+    # True once load_history has confirmed at least one transaction exists. When
+    # False, quick prompts are hidden and send_message returns a no-data reply
+    # instead of calling the LLM (Story 8.2 AC-4).
+    has_transactions: bool = False
 
     # ---- Insight context handoff (FR-7.8 / Story 6.4) ----------------------
 
@@ -146,7 +158,7 @@ class CopilotState(AuthState):
                     .order_by(ChatMessage.timestamp)
                 ).all()
                 self.messages = [
-                    ChatMessageView(
+                    CopilotMessage(
                         role=r.role,
                         content=r.content,
                         trace_sources=(
@@ -155,6 +167,16 @@ class CopilotState(AuthState):
                     )
                     for r in rows
                 ]
+
+                # Story 8.2 AC-4: check for transactions to control empty-state
+                # UI (hidden quick prompts, no-data reply). AD-4: user_id filter.
+                txn_count = session.exec(
+                    select(func.count()).select_from(Transaction).where(
+                        Transaction.user_id == user_id
+                    )
+                ).one()
+                self.has_transactions = txn_count > 0
+
             self._history_loaded = True
 
         # Resolve insight context on every page load (not guarded by
@@ -206,6 +228,24 @@ class CopilotState(AuthState):
         if not text or self.streaming:
             return
 
+        # Story 8.2 AC-4: when no transactions have been uploaded yet, return an
+        # honest no-data reply without calling the LLM. The Copilot stays usable
+        # (the user can type and submit) but is honest about its limitations.
+        if not self.has_transactions:
+            self.messages = self.messages + [
+                CopilotMessage(role="user", content=text, trace_sources=[]),
+                CopilotMessage(
+                    role="assistant",
+                    content=(
+                        "I don't have your transactions yet. Upload a statement "
+                        "and I'll be able to give you real answers."
+                    ),
+                    trace_sources=[],
+                ),
+            ]
+            self.input_value = ""
+            return
+
         with rx.session() as session:
             user = user_for_token(session, self.auth_token)
             if user is None:
@@ -220,7 +260,7 @@ class CopilotState(AuthState):
             )
 
         self.messages = self.messages + [
-            ChatMessageView(role="user", content=text, trace_sources=[])
+            CopilotMessage(role="user", content=text, trace_sources=[])
         ]
         self.input_value = ""
         self.streaming = True
@@ -282,7 +322,7 @@ class CopilotState(AuthState):
 
                 elif etype == "done":
                     self.messages = self.messages + [
-                        ChatMessageView(
+                        CopilotMessage(
                             role="assistant",
                             content=assistant_content,
                             trace_sources=trace_sources,

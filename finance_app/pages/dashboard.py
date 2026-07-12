@@ -244,7 +244,11 @@ def _charts_section() -> rx.Component:
 
 
 def _empty_state() -> rx.Component:
-    """First-time user: welcoming and action-directing, never "No data available" (UX-DR12)."""
+    """First-time user: welcoming and action-directing, never "No data available" (UX-DR12).
+
+    The "Step 1 of 3" hint is a functional onboarding contract (FR-2.5 / Story 8.2 AC-1),
+    not decoration — its presence is asserted by the empty-state test.
+    """
     return rx.el.section(
         rx.el.p(
             "Upload a statement and I'll show you what's safe to spend — and why.",
@@ -255,6 +259,10 @@ def _empty_state() -> rx.Component:
             on_click=DashboardState.go_upload,
             class_name="btn btn--primary",
             type="button",
+        ),
+        rx.el.p(
+            "Step 1 of 3: Upload → Review → Dashboard",
+            class_name="step-hint",
         ),
         class_name="hero-card",
     )

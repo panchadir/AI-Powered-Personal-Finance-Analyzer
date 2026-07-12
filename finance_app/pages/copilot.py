@@ -19,7 +19,7 @@ import reflex as rx
 
 from finance_app.components.nav import side_nav
 from finance_app.state.auth_state import AuthState
-from finance_app.state.copilot_state import QUICK_PROMPTS, CopilotState
+from finance_app.state.copilot_state import QUICK_PROMPTS, CopilotMessage, CopilotState
 
 
 # ---------------------------------------------------------------------------
@@ -46,14 +46,14 @@ def _trace_row(sources: list) -> rx.Component:
 # Message bubbles
 # ---------------------------------------------------------------------------
 
-def _user_bubble(msg) -> rx.Component:
+def _user_bubble(msg: CopilotMessage) -> rx.Component:
     return rx.el.div(
         rx.el.span(msg.content, class_name="msg-text"),
         class_name="msg msg--user",
     )
 
 
-def _bot_bubble(msg) -> rx.Component:
+def _bot_bubble(msg: CopilotMessage) -> rx.Component:
     return rx.el.div(
         rx.el.span(msg.content, class_name="msg-text"),
         _trace_row(msg.trace_sources),
@@ -61,7 +61,7 @@ def _bot_bubble(msg) -> rx.Component:
     )
 
 
-def _message_bubble(msg) -> rx.Component:
+def _message_bubble(msg: CopilotMessage) -> rx.Component:
     return rx.cond(
         msg.role == "user",
         _user_bubble(msg),
@@ -137,7 +137,11 @@ def _quick_chip(prompt: str) -> rx.Component:
 
 
 def _welcome_card() -> rx.Component:
-    """Hidden once the user sends their first message."""
+    """Hidden once the user sends their first message.
+
+    Quick-prompt chips are also hidden when no transactions have been uploaded
+    yet (Story 8.2 AC-4) — the prompts assume real data exists.
+    """
     return rx.cond(
         CopilotState.messages.length() == 0,
         rx.el.div(
@@ -150,10 +154,14 @@ def _welcome_card() -> rx.Component:
                 "you generic advice. If I'm not sure, I'll say so.",
                 id="copilot-thread-welcome-body",
             ),
-            rx.el.div(
-                *[_quick_chip(p) for p in QUICK_PROMPTS],
-                class_name="chip-suggest",
-                id="copilot-thread-welcome-chips",
+            rx.cond(
+                CopilotState.has_transactions,
+                rx.el.div(
+                    *[_quick_chip(p) for p in QUICK_PROMPTS],
+                    class_name="chip-suggest",
+                    id="copilot-thread-welcome-chips",
+                ),
+                rx.fragment(),
             ),
             class_name="welcome-card",
             id="copilot-thread-welcome",

@@ -22,6 +22,7 @@ screen had already flagged virtual scroll as likely unnecessary on this desktop-
 User decision (2026-07-10): skip it here, tracked as a real future improvement in
 ``deferred-work.md``, not a dropped requirement.
 """
+from __future__ import annotations
 
 import reflex as rx
 
@@ -67,7 +68,7 @@ def _teach_me_panel(row: TxnRow) -> rx.Component:
             class_name="chip-group chip--wrap",
         ),
         rx.el.div(
-            rx.el.span(f"Apply this to all ‘{row.merchant}’ transactions?"),
+            rx.el.span(f"Apply this to all '{row.merchant}' transactions?"),
             rx.el.label(
                 rx.el.input(
                     type="checkbox",
