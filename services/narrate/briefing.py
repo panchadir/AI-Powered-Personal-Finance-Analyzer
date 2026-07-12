@@ -148,7 +148,7 @@ def build_fallback_briefing(context: BriefingContext) -> str:
             f"{context.safe_to_spend_after_income} a day."
         )
     else:
-        sentences.append("We couldn't detect a salary yet — adding one will sharpen this.")
+        sentences.append("Upload your payday date so I can calculate your daily safe-to-spend.")
     if context.insight_observation:
         sentences.append(context.insight_observation)
     return " ".join(sentences)

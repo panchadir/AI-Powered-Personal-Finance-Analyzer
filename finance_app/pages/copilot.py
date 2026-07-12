@@ -150,10 +150,14 @@ def _welcome_card() -> rx.Component:
                 "you generic advice. If I'm not sure, I'll say so.",
                 id="copilot-thread-welcome-body",
             ),
-            rx.el.div(
-                *[_quick_chip(p) for p in QUICK_PROMPTS],
-                class_name="chip-suggest",
-                id="copilot-thread-welcome-chips",
+            rx.cond(
+                CopilotState.has_transactions,
+                rx.el.div(
+                    *[_quick_chip(p) for p in QUICK_PROMPTS],
+                    class_name="chip-suggest",
+                    id="copilot-thread-welcome-chips",
+                ),
+                rx.fragment(),
             ),
             class_name="welcome-card",
             id="copilot-thread-welcome",

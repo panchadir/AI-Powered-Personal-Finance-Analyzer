@@ -267,6 +267,7 @@ def _charts_section() -> rx.Component:
 def _empty_state() -> rx.Component:
     """First-time user: welcoming and action-directing, never "No data available" (UX-DR12)."""
     return rx.el.section(
+        rx.el.span("Step 1 of 3", class_name="step-indicator"),
         rx.el.p(
             "Upload a statement and I'll show you what's safe to spend — and why.",
             class_name="hero-label",
@@ -300,9 +301,7 @@ def dashboard() -> rx.Component:
                         _commitments_card(),
                         class_name="dash-grid",
                     ),
-                    rx.cond(
-                        DashboardState.has_top_insight, _insight_teaser(), rx.el.div()
-                    ),
+                    rx.cond(DashboardState.has_top_insight, _insight_teaser()),
                     _charts_section(),
                 ),
                 rx.cond(DashboardState.loaded, _empty_state(), rx.el.div()),

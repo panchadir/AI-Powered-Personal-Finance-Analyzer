@@ -19,7 +19,7 @@ import tempfile
 from pathlib import Path
 
 from services.ingestion.csv_parser import CSVParser
-from services.ingestion.errors import IngestionError, UnsupportedFormatError
+from services.ingestion.errors import EmptyStatementError, IngestionError, UnsupportedFormatError
 from services.ingestion.pdf_parser import PDFParser
 from services.ingestion.protocol import StatementParser
 from services.ingestion.schema import Transaction
@@ -64,7 +64,7 @@ def parse_statement(filename: str, data: bytes) -> list[Transaction]:
         with os.fdopen(fd, "wb") as fh:
             fh.write(data)
         try:
-            return parser.parse(tmp_path)
+            result = parser.parse(tmp_path)
         except IngestionError:
             raise  # a typed refusal is already user-safe — pass it straight through
         except Exception as exc:  # noqa: BLE001
@@ -78,6 +78,12 @@ def parse_statement(filename: str, data: bytes) -> list[Transaction]:
                 "character encoding. Try your bank's standard PDF or CSV export.",
                 code="PARSE_FAILED",
             ) from exc
+        if not result:
+            raise EmptyStatementError(
+                "This file didn't contain any transactions I could read. "
+                "Try your bank's CSV export or a different date range."
+            )
+        return result
     finally:
         try:
             tmp_path.unlink()

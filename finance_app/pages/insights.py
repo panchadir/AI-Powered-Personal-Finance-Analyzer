@@ -11,7 +11,7 @@ from __future__ import annotations
 import reflex as rx
 
 from finance_app.components.nav import side_nav
-from finance_app.state.insights_state import EMPTY_COPY, FOOTER_NOTE, InsightsState
+from finance_app.state.insights_state import EMPTY_COPY, DISMISSED_COPY, FOOTER_NOTE, InsightsState
 
 
 def _insight_card(card: rx.Var) -> rx.Component:
@@ -47,8 +47,21 @@ def _insight_card(card: rx.Var) -> rx.Component:
 
 
 def _empty_state() -> rx.Component:
-    """FR-8.4: graceful copy, never a blank page or "No insights" placeholder tone."""
-    return rx.el.p(EMPTY_COPY, class_name="insights-subline")
+    """FR-8.4: graceful copy, never a blank page or "No insights" placeholder tone.
+
+    Two distinct cases:
+    - No data yet (has_data=False): show upload prompt + link.
+    - All cards dismissed (has_data=True): show calm acknowledgment, no upload prompt.
+    """
+    return rx.cond(
+        InsightsState.has_data,
+        rx.el.p(DISMISSED_COPY, class_name="insights-subline"),
+        rx.el.div(
+            rx.el.p(EMPTY_COPY, class_name="insights-subline"),
+            rx.el.a("Upload your statement", href="/upload", class_name="link"),
+            class_name="empty-state",
+        ),
+    )
 
 
 def _footer() -> rx.Component:

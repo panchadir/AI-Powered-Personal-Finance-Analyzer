@@ -17,6 +17,7 @@ Landed so far (Epic 2):
 from services.ingestion.csv_parser import BankCSVProfile, CSVParser, map_table
 from services.ingestion.dispatch import extension_of, parse_statement, parser_for
 from services.ingestion.errors import (
+    EmptyStatementError,
     IngestionError,
     ScannedPDFError,
     UnsupportedFormatError,
@@ -63,6 +64,7 @@ __all__ = [
     "PdfplumberExtractor",
     "CamelotExtractor",
     "SCANNED_MESSAGE",
+    "EmptyStatementError",
     "IngestionError",
     "UnsupportedFormatError",
     "ScannedPDFError",

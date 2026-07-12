@@ -13,7 +13,7 @@ rest of the code vocabulary against this same base — one hierarchy, one catch 
 """
 from __future__ import annotations
 
-__all__ = ["IngestionError", "UnsupportedFormatError", "ScannedPDFError"]
+__all__ = ["IngestionError", "UnsupportedFormatError", "ScannedPDFError", "EmptyStatementError"]
 
 
 class IngestionError(Exception):
@@ -47,3 +47,13 @@ class ScannedPDFError(IngestionError):
     """
 
     code = "NO_TEXT_LAYER"
+
+
+class EmptyStatementError(IngestionError):
+    """A file that parsed successfully but yielded zero transactions (AD-12, Story 8.1).
+
+    Raised by the dispatch layer after a parse returns an empty list — so the UI shows
+    an honest refusal rather than an empty transaction table.
+    """
+
+    code = "EMPTY_STATEMENT"

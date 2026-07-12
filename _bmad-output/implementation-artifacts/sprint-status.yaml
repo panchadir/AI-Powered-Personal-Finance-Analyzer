@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-09
-last_updated: 2026-07-11  # Epic 5 stories 5-1/5-2/5-3/5-5 done; 5-4 blocked on Epic 3, 5-6 P1. Epic 7: 7-1/7-2/7-3 done; 7-4 next. Story 7.3 review (Blind Hunter + Edge Case Hunter + Acceptance Auditor): 8 patched, 2 decisions, 4 deferred, 4 dismissed as unreachable. 501 passed repo-wide, reflex compile clean.
+last_updated: 2026-07-12  # 7-4 done (IDOR test + rx.cond fix). 8-5 done (_MIN_COUNT ceil fix).
 project: AI-Powered-Personal-Finance-Analyzer
 # (story 1.2 done; story 1.3 implemented + reviewed → done on 2026-07-09)
 # (epic-1 marked in-progress; story 1.1 ready-for-dev on 2026-07-09)
@@ -121,16 +121,16 @@ development_status:
   7-1-insight-detector-engine-all-5-patterns-coded: done
   7-2-insight-narration-o-e-e-a-shape-and-sebi-rule: done
   7-3-insights-page-and-dismiss-lifecycle: done
-  7-4-dashboard-insight-teaser: review
+  7-4-dashboard-insight-teaser: done
   epic-7-retrospective: optional
 
   # Epic 8: Hardening & Demo-Readiness
-  epic-8: backlog
-  8-1-edge-case-honest-refusals: backlog
-  8-2-onboarding-empty-states: backlog
-  8-3-idor-security-test-cross-user-data-isolation: backlog
-  8-4-readme-and-one-command-setup: backlog
-  8-5-demo-dry-run-and-regression-guard: backlog
+  epic-8: in-progress
+  8-1-edge-case-honest-refusals: done
+  8-2-onboarding-empty-states: done
+  8-3-idor-security-test-cross-user-data-isolation: done
+  8-4-readme-and-one-command-setup: done
+  8-5-demo-dry-run-and-regression-guard: done
   epic-8-retrospective: optional
 
 # Action items committed during retrospectives (surfaced by sprint-status).

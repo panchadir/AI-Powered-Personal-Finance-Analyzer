@@ -134,12 +134,38 @@ def _progress_card() -> rx.Component:
     )
 
 
+def _ai_caveat_banner() -> rx.Component:
+    """Story 8.1 AC4 — dismissable amber caveat when Tier-2 LLM categorisation failed."""
+    return rx.cond(
+        UploadState.ai_caveat,
+        rx.el.div(
+            rx.el.p(
+                "AI categorisation was unavailable — some categories may need your review.",
+                style={"flex": "1"},
+            ),
+            rx.el.button(
+                "Dismiss",
+                on_click=UploadState.dismiss_ai_caveat,
+                class_name="btn btn--ghost btn--sm",
+                aria_label="Dismiss AI categorisation warning",
+            ),
+            class_name="needs-review-banner",  # amber tone — reuses existing WDS class
+            role="alert",
+            aria_live="assertive",
+            display="flex",
+            align_items="center",
+            gap="var(--space-sm)",
+        ),
+    )
+
+
 @rx.page(route="/upload", title="Upload your statement · AI Financial Copilot",
          on_load=[UploadState.check_auth, UploadState.reset_page])
 def upload() -> rx.Component:
     return rx.el.main(
         _topbar(),
         _instructions(),
+        _ai_caveat_banner(),
         rx.cond(UploadState.parsing, _progress_card(), _upload_zone()),
         rx.el.div(
             rx.el.button(

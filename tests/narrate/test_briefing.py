@@ -210,12 +210,12 @@ class TestFallbackBriefing:
         assert "₹2,840" in briefing and "₹8,200" in briefing
 
     def test_no_salary_prompts_the_user_instead_of_showing_a_zero(self):
-        # FR-4.8: the after-income layer must read "add one manually?", never "₹0" and never
-        # an error. The today figure is still a real number.
+        # FR-4.8 / Story 8.1 AC3: when no income is detected the briefing must prompt the user
+        # to upload their payday date (AC3-approved copy), never show "₹0" or crash.
         briefing = build_fallback_briefing(
             BriefingContext("₹18,000", "30 Jun 2026", "Low", "₹0")
         )
-        assert "couldn't detect a salary" in briefing
+        assert "Upload your payday date" in briefing
         assert "₹18,000" in briefing
         assert "a day" not in briefing  # the after-income per-day layer is absent, not zeroed
 

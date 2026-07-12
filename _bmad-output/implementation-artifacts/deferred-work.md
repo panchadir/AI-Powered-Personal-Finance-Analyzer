@@ -2,6 +2,15 @@
 
 Items surfaced during reviews that are real but intentionally not actioned now.
 
+## Deferred from: code review of story-7.4 (2026-07-12)
+
+- **`scrollIntoView` hydration race on `/insights?highlight={id}`.** `rx.call_script` is returned from `InsightsState.load_insights` (the `on_load` handler) and may fire before Reflex has resolved `rx.foreach` Var bindings — `document.getElementById('insight-5')` returns `null` and `?.scrollIntoView(...)` silently no-ops. Result: user arrives from the Dashboard teaser but the linked insight is not scrolled into view. The `?.` guard already prevents any crash (AC4 satisfied). Fix requires a Reflex lifecycle hook fired post-hydration — outside this story's scope and the current Reflex 0.9.6 API. No user-visible error; scroll simply doesn't happen on that race path.
+
+## Deferred from: code review of story-8.4 (2026-07-12)
+
+- **ScoreEvent rows not seeded by `scripts/seed_demo.py`.** The epic AC mentions "confidence-score events seeded for the canonical demo user." The story spec explicitly notes "No income_sources table — income inferred from transactions" and scopes the seed to transactions + commitments only. ScoreEvent seed omitted by design. Revisit for Story 8.5 demo dry run if the Confidence Score card shows misleading data without seed events.
+- **`scripts/demo_setup.sh` alternative not created.** The epic AC listed `make demo` or `./scripts/demo_setup.sh` as the setup command. The story implementation chose the Makefile path only. A shell-script alternative would be needed for environments without GNU Make (Windows cmd, some CI images). Defer until there is a concrete Windows or CI need.
+
 ## Deferred from: code review of story-7.3 (2026-07-11)
 
 - **Concurrent `refresh_insights` calls for the same user (two browser tabs, rapid reloads) can both read "no active row" for the same `dedup_key` before either commits, producing duplicate active insights for one pattern (TOCTOU race).** [finance_app/state/insights_bridge.py] Not actioned: single-user-per-account MVP, no concurrent-session use case in any current story. Proper fix needs either a unique constraint on `(user_id, dedup_key)` scoped to `status='active'` (partial/conditional — dismissed rows must not be constrained) or a serialized check+insert. Revisit for Epic 8 hardening if it ever becomes reachable.

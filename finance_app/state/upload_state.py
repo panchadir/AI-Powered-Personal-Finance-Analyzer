@@ -133,13 +133,21 @@ class UploadState(AuthState):
     rules: int = 0
     ai: int = 0
     need_review: int = 0
+    # Story 8.1 (AC4): set True when the Tier-2 LLM categorizer fails so the upload
+    # page can show an honest dismissable caveat banner.
+    ai_caveat: bool = False
 
     @rx.event
     def reset_page(self):
         self.error = self.filename = self.active_step = ""
-        self.parsing = self.summary_visible = False
+        self.parsing = self.summary_visible = self.ai_caveat = False
         self.done_steps = []
         self.total = self.rules = self.ai = self.need_review = 0
+
+    @rx.event
+    def dismiss_ai_caveat(self):
+        """Dismiss the Tier-2 failure caveat banner (Story 8.1 AC4)."""
+        self.ai_caveat = False
 
     @rx.event
     def logout(self):
@@ -237,15 +245,28 @@ class UploadState(AuthState):
             categorized = await asyncio.to_thread(_categorizer.categorize, categorized)
         except Exception:  # noqa: BLE001
             log.exception("Tier-2 categorization failed for %r; continuing with Tier-1 only", name)
+            self.ai_caveat = True  # Story 8.1 AC4: surface dismissable caveat banner
         self.active_step = ""
         self.done_steps = self.done_steps + ["ai"]
         yield
 
         # Persist the fully-categorized (Tier-1 + Tier-2) rows in a single write.
+        _session_expired = False
         try:
             with rx.session() as session:
                 user = user_for_token(session, self.auth_token)
-                if user is not None and categorized:
+                if user is None:
+                    # Session expired during the long parse/categorise cycle. Treat as
+                    # auth failure — never show a false-success summary for unsaved data.
+                    log.warning("Session expired before persisting %r — redirecting to login", name)
+                    self.parsing = False
+                    self.active_step = ""
+                    _session_expired = True
+                elif not categorized:
+                    # Parsed to an empty list (e.g. Tier-2 failure returned nothing and
+                    # Tier-1 also found nothing) — nothing to persist, show honest summary.
+                    pass
+                else:
                     uploaded = UploadedFile(  # type: ignore[call-arg]
                         user_id=user.id, filename=name, status="parsed"
                     )
@@ -262,6 +283,12 @@ class UploadState(AuthState):
             yield
             return
 
+        # Redirect happens after the session is closed — no connection held across yields.
+        if _session_expired:
+            yield rx.call_script(_CLEAR_LEAVE_GUARD)
+            yield rx.redirect(LOGIN_ROUTE)
+            return
+
         # Real, honest three-way summary — see summarize_categorization()'s docstring for
         # why a real category (e.g. the rules engine's low-confidence "Transfer In"
         # fallback) can still count toward need_review, not rules.
@@ -269,6 +296,7 @@ class UploadState(AuthState):
         self.rules = summary.rules
         self.ai = summary.ai
         self.need_review = summary.need_review
+        self.parsing = False  # always clear before showing summary (Finding 2 fix)
         self.summary_visible = True
         yield rx.call_script(_CLEAR_LEAVE_GUARD)
         yield

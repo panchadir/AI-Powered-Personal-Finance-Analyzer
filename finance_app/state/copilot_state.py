@@ -21,9 +21,9 @@ import logging
 from datetime import datetime, timezone
 
 import reflex as rx
-from sqlmodel import select
+from sqlmodel import func, select
 
-from finance_app.models import ChatMessage, Insight
+from finance_app.models import ChatMessage, Insight, Transaction as TxnModel
 from finance_app.state.auth_state import AuthState, user_for_token
 from finance_app.state.copilot_data import open_copilot_data
 from services.narrate.copilot import astream_events
@@ -42,6 +42,12 @@ class ChatMessageView:
     role: str = ""  # 'user' | 'assistant'
     content: str = ""
     trace_sources: list[str] = dataclasses.field(default_factory=list)
+
+# Story 8.2 AC4: shown when user asks a question before uploading any data.
+COPILOT_NO_DATA_RESPONSE: str = (
+    "I don't have your transactions yet. "
+    "Upload a statement and I'll be able to give you real answers."
+)
 
 # Quick-prompt suggestions (FR-7.7). "Can I afford" is the STS gut-check prompt.
 QUICK_PROMPTS: list[str] = [
@@ -89,6 +95,10 @@ class CopilotState(AuthState):
     # Prevents double-load on re-renders.
     _history_loaded: bool = False
 
+    # Story 8.2 AC4: True once at least one transaction exists for this user.
+    # Set in load_history; gates quick-prompt chip visibility and no-data early reply.
+    has_transactions: bool = False
+
     # ---- Insight context handoff (FR-7.8 / Story 6.4) ----------------------
 
     # The pattern_name label shown in the "Talking about: …" chip.
@@ -133,17 +143,24 @@ class CopilotState(AuthState):
         raw_insight = params.get("insight", "")
         pre_text = params.get("pre", "")
 
-        if not self._history_loaded:
-            with rx.session() as session:
-                user = user_for_token(session, self.auth_token)
-                if user is None:
-                    return
-                user_id = user.id
+        with rx.session() as session:
+            user = user_for_token(session, self.auth_token)
+            if user is None:
+                return
+            user_id = user.id
 
+            # Story 8.2 AC4: re-checked on every page load (not guarded by _history_loaded)
+            # so that a mid-session upload is reflected immediately when the user returns here.
+            txn_count = session.exec(
+                select(func.count()).select_from(TxnModel).where(TxnModel.user_id == user_id)
+            ).one()
+            self.has_transactions = txn_count > 0
+
+            if not self._history_loaded:
                 rows = session.exec(
                     select(ChatMessage)
                     .where(ChatMessage.user_id == user_id)
-                    .order_by(ChatMessage.timestamp)
+                    .order_by(ChatMessage.timestamp, ChatMessage.id)
                 ).all()
                 self.messages = [
                     ChatMessageView(
@@ -155,7 +172,7 @@ class CopilotState(AuthState):
                     )
                     for r in rows
                 ]
-            self._history_loaded = True
+                self._history_loaded = True
 
         # Resolve insight context on every page load (not guarded by
         # _history_loaded) so re-navigation to a different ?insight= param
@@ -185,7 +202,7 @@ class CopilotState(AuthState):
                         self.context_insight_id = 0
                         self.context_pattern_name = ""
                 except (ValueError, TypeError):
-                    pass  # malformed ?insight= param — ignore silently
+                    log.debug("Malformed ?insight= param %r for user_id=%s — ignored", raw_insight, getattr(user, "id", "?"))
         else:
             # No insight param — clear any stale context from a prior navigation.
             self.context_insight_id = 0
@@ -218,6 +235,34 @@ class CopilotState(AuthState):
             if user is None:
                 return
             user_id = user.id
+
+        # Story 8.2 AC4: when no transactions exist, return an honest synthetic reply
+        # without calling the LLM. Persist both turns so history is consistent on reload.
+        if not self.has_transactions:
+            self.messages = self.messages + [
+                ChatMessageView(role="user", content=text, trace_sources=[])
+            ]
+            self.input_value = ""
+            yield
+            self.messages = self.messages + [
+                ChatMessageView(role="assistant", content=COPILOT_NO_DATA_RESPONSE, trace_sources=[])
+            ]
+            yield
+            try:
+                with rx.session() as session:
+                    # Both rows in one transaction: either both persist or neither does,
+                    # preventing a dangling user message with no bot reply on reload.
+                    # load_history orders by (timestamp, id) so the auto-increment id
+                    # tiebreaker still guarantees deterministic ordering within the same
+                    # committed transaction.
+                    user_msg = ChatMessage(user_id=user_id, role="user", content=text)  # type: ignore[call-arg]
+                    bot_msg = ChatMessage(user_id=user_id, role="assistant", content=COPILOT_NO_DATA_RESPONSE)  # type: ignore[call-arg]
+                    session.add(user_msg)
+                    session.add(bot_msg)
+                    session.commit()
+            except Exception:
+                log.exception("Failed to persist no-data response for user_id=%d", user_id)
+            return
 
         # Build the user message, embedding insight context when present (FR-7.8).
         user_content = text
@@ -303,10 +348,15 @@ class CopilotState(AuthState):
                 # Unknown event types silently ignored (forward-compat AC).
 
         finally:
-            # Guarantee streaming is always reset even if the generator is
-            # cancelled or raises before emitting a done event.
-            self.streaming = False
-            yield
+            # Guarantee streaming state is always reset if the generator is cancelled or
+            # raises before the 'done' event clears it. Only yield here on the abnormal path
+            # so we don't double-push state on a normal successful completion (done already
+            # set streaming=False and yielded).
+            if self.streaming:
+                self.streaming = False
+                self.streaming_content = ""
+                self.current_trace_sources = []
+                yield
 
         # Only persist genuine assistant replies — not error sentinel strings.
         if assistant_content and not is_error_response:

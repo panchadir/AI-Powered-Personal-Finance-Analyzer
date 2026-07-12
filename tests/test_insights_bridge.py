@@ -461,3 +461,12 @@ class TestTopActiveInsight:
         assert top is not None
         assert top.pattern_name == "Post-payday spike"
         assert top.severity == "critical"
+
+    def test_cannot_see_another_users_insight(self, session):
+        """IDOR guard: user_b must never receive user_a's insights."""
+        user_a = make_user(session, "r@example.com")
+        user_b = make_user(session, "s@example.com")
+        _add_small_purchases(session, user_a.id, count=8, amount="300")
+        refresh_insights(session, user_a.id)
+
+        assert top_active_insight(session, user_b.id) is None

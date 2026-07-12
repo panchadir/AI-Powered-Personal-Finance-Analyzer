@@ -4,7 +4,7 @@ baseline_commit: bc4e17c9528a0c1e2cbdd03a155071a856f35b33
 
 # Story 7.4: Dashboard Insight Teaser
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -143,3 +143,4 @@ claude-sonnet-5 (BMAD create-story + dev-story workflows, Amelia persona)
 
 - 2026-07-11 — Story file created (`bmad-create-story`), scoped as a small, purely-additive UI story off Story 7.3's completed bridge/page. Status → `ready-for-dev`.
 - 2026-07-11 — Implemented Tasks 1–6 test-first (`top_active_insight` red via `ImportError` before the function existed, green after). Full-repo suite: 505 passed, 6 skipped, 0 failed; `reflex compile --dry` succeeds; live container routes `/dashboard` and `/insights` both return HTTP 200 with no server-side error (browser-level visual/JS verification not performed — no CDP tool available in this environment). Status → `review`.
+- 2026-07-12 — Code review patches applied: (F1) added `test_cannot_see_another_users_insight` IDOR isolation test to `TestTopActiveInsight` — 5 tests now; (F2) replaced `rx.cond(..., _insight_teaser(), rx.el.div())` with 2-arg `rx.cond(..., _insight_teaser())` to avoid phantom empty DOM node when no insights exist. Deferred: hydration-race on `scrollIntoView` (no-crash, silent no-op — not patchable without Reflex lifecycle hooks outside story scope). Status → `done`.

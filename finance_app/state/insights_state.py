@@ -25,6 +25,9 @@ FOOTER_NOTE = "More data sharpens these patterns."
 #: Empty-state copy (FR-8.4) — never a blank page or "No insights available".
 EMPTY_COPY = "Insights will appear once I've analysed your statement."
 
+#: Shown when all cards are dismissed — distinct from EMPTY_COPY which implies no data yet.
+DISMISSED_COPY = "All insights dismissed — check back after your next upload."
+
 
 @dataclasses.dataclass
 class InsightCardView:
@@ -46,6 +49,9 @@ class InsightsState(AuthState):
     """Loads the active insight feed and exposes it as display-ready cards."""
 
     loaded: bool = False
+    # True when the user has uploaded at least one statement (set at load time, not cleared
+    # on dismiss). Distinguishes "no data yet" from "data exists but all insights dismissed".
+    has_data: bool = False
     cards: list[InsightCardView] = []
     show_footer_note: bool = False
     highlight_id: int = 0  # Story 7.4: ?highlight=<id> deep-link from the Dashboard teaser
@@ -65,9 +71,20 @@ class InsightsState(AuthState):
             if user is None:
                 return rx.redirect(LOGIN_ROUTE)
 
-            data = await asyncio.to_thread(refresh_insights, session, user.id)
+            try:
+                data = await asyncio.to_thread(refresh_insights, session, user.id)
+            except Exception:
+                log.exception("refresh_insights failed for user_id=%d", user.id)
+                # has_data must still reflect reality so the UI picks the right empty state.
+                # data_months is unavailable on error, so fall back to True only if we already
+                # know from a prior load; if never loaded, leave has_data=False (safe default).
+                self.loaded = True
+                return
             self.cards = [self._to_card(row) for row in data.active]
             self.show_footer_note = data.data_months < MIN_DATA_MONTHS_FOOTNOTE
+            # data.data_months > 0 iff transactions is non-empty — reuses the count
+            # refresh_insights already computed internally, no second DB round-trip needed.
+            self.has_data = data.data_months > 0
             self.loaded = True
 
         # Story 7.4: scroll to the Dashboard teaser's linked insight, if any (mirrors

@@ -331,7 +331,10 @@ class DashboardState(AuthState):
                     "know how much — add the amount?"
                 )
             else:
-                self.after_income_label = "We couldn't detect a salary — add one manually?"
+                # Story 8.1 AC3: approved copy for the no-income-detected state.
+                self.after_income_label = (
+                    "Upload your payday date so I can calculate your daily safe-to-spend."
+                )
 
         # Label only. The `score` int stays on the server (FR-5.5 / UX-DR2).
         self.confidence_label = confidence_label(score)

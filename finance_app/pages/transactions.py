@@ -128,8 +128,12 @@ def _row(row: TxnRow) -> rx.Component:
 
 def _empty_state() -> rx.Component:
     return rx.el.div(
-        "Upload a statement and your transactions will show up here.",
-        class_name="text-muted",
+        rx.el.p(
+            "Your transactions will appear here after you upload a statement.",
+            class_name="text-muted",
+        ),
+        rx.el.a("Upload your statement", href="/upload", class_name="link"),
+        class_name="empty-state",
     )
 
 
