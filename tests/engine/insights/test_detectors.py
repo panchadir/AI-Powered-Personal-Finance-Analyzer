@@ -12,12 +12,17 @@ from decimal import Decimal
 
 from services.engine.insights import (
     ALL_DETECTORS,
+    MIN_DATA_MONTHS_FOR_TREND,
+    PACE_IMPROVED_MIN_PCT,
     CommitmentRecord,
+    CommitmentsCoveredDetector,
     DeathBySmallPurchasesDetector,
     InsightCandidate,
     InsightContext,
     InsightDetector,
     PostPaydaySpikeDetector,
+    SpendingPaceImprovedDetector,
+    SubscriptionEndedDetector,
     TxnRecord,
     UpcomingCommitmentCollisionDetector,
     WeekendWeekdayPaceDetector,
@@ -25,7 +30,7 @@ from services.engine.insights import (
     run_all_detectors,
 )
 from services.engine.insights.detectors import _infer_paydays, data_months
-from services.utils.enums import Criticality, Direction
+from services.utils.enums import Criticality, Direction, Tone
 
 # June 2026 calendar anchor: Jun 1 = Mon; Sat/Sun = Jun 6/7, 13/14, 20/21, 27/28.
 
@@ -372,17 +377,22 @@ def test_insight_candidate_is_hashable_despite_the_metrics_mapping() -> None:
 # Protocol, orchestrator & demo fixture
 # --------------------------------------------------------------------------------------
 def test_all_detectors_conform_to_protocol_and_map_1to1_to_patterns() -> None:
-    assert len(ALL_DETECTORS) == 5
+    assert len(ALL_DETECTORS) == 8
     for detector in ALL_DETECTORS:
         assert isinstance(detector, InsightDetector)
         assert isinstance(detector.pattern_name, str) and detector.pattern_name
     names = {d.pattern_name for d in ALL_DETECTORS}
     assert names == {
+        # the five FR-8.1 warnings ...
         "Post-payday spike",
         "Death by small purchases",
         "Zombie subscriptions",
         "Weekend vs weekday pace",
         "Upcoming commitment collision",
+        # ... and the wins, so the feed is not structurally incapable of good news
+        "Subscription ended",
+        "Commitments covered",
+        "Spending pace improved",
     }
 
 
@@ -456,3 +466,193 @@ def test_detectors_emit_structured_facts_not_prose() -> None:
     for point in candidate.evidence:
         assert isinstance(point.amount, Decimal)
         assert point.date.count("-") == 2  # ISO YYYY-MM-DD, not a formatted string
+
+
+# ======================================================================================
+# The win detectors (2026-07-12).
+#
+# All five FR-8.1 detectors above are negative-valence: not one of them can ever tell a user
+# they did something right. These three can. Same one-true-positive / one-true-negative
+# convention as the warnings (AC #6).
+# ======================================================================================
+
+
+# --------------------------------------------------------------------------------------
+# Subscription ended -- and the zombie-staleness bug it exposed
+# --------------------------------------------------------------------------------------
+def test_subscription_ended_fires_when_the_next_charge_never_came() -> None:
+    """Netflix charged monthly, then stopped. Four months later it is plainly cancelled."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-01-05", "499", merchant="Netflix"),
+            _txn("2026-02-05", "499", merchant="Netflix"),
+            _txn("2026-03-05", "499", merchant="Netflix"),
+        ),
+        as_of=date(2026, 7, 1),  # ~4 months past the last charge
+    )
+    out = SubscriptionEndedDetector().detect(ctx)
+
+    assert len(out) == 1
+    assert out[0].pattern_name == "Subscription ended"
+    assert out[0].tone == Tone.win.value
+    assert out[0].metrics["merchant"] == "Netflix"
+    assert out[0].metrics["monthly_amount"] == Decimal("499")
+    assert out[0].metrics["last_charged"] == "2026-03-05"
+
+
+def test_subscription_ended_silent_while_the_subscription_is_still_live() -> None:
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-05-05", "499", merchant="Netflix"),
+            _txn("2026-06-05", "499", merchant="Netflix"),
+        ),
+        as_of=date(2026, 6, 20),  # last charge only 15 days ago -- still running
+    )
+    assert SubscriptionEndedDetector().detect(ctx) == []
+
+
+def test_a_cancelled_subscription_is_never_also_reported_as_a_live_zombie() -> None:
+    """The regression this refactor exists to fix.
+
+    Before the staleness check, ZombieSubscriptionDetector had no notion of "when" -- a
+    subscription cancelled a year ago still satisfied "2+ near-equal charges at monthly
+    cadence" forever, and was reported as an active drain on the user's money. Once
+    SubscriptionEndedDetector existed, the same merchant fired *both*: the feed would have
+    claimed a subscription was simultaneously live and cancelled.
+
+    The two detectors must partition the same recurring series, never overlap.
+    """
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-01-05", "499", merchant="Netflix"),
+            _txn("2026-02-05", "499", merchant="Netflix"),
+            _txn("2026-03-05", "499", merchant="Netflix"),
+        ),
+        as_of=date(2026, 7, 1),
+    )
+    zombies = ZombieSubscriptionDetector().detect(ctx)
+    ended = SubscriptionEndedDetector().detect(ctx)
+
+    assert zombies == []  # cancelled -- NOT a live drain (this failed before the fix)
+    assert len(ended) == 1  # ... it is a win
+    # And the partition holds through the orchestrator, which is what the page actually sees.
+    names = [c.pattern_name for c in run_all_detectors(ctx)]
+    assert "Zombie subscriptions" not in names
+    assert "Subscription ended" in names
+
+
+def test_a_live_subscription_is_still_a_zombie_and_never_reported_as_ended() -> None:
+    """The other half of the partition -- the staleness fix must not silence the real thing."""
+    ctx = InsightContext(
+        transactions=(
+            _txn("2026-05-05", "499", merchant="Netflix"),
+            _txn("2026-06-05", "499", merchant="Netflix"),
+        ),
+        as_of=date(2026, 6, 20),
+    )
+    assert len(ZombieSubscriptionDetector().detect(ctx)) == 1
+    assert SubscriptionEndedDetector().detect(ctx) == []
+
+
+# --------------------------------------------------------------------------------------
+# Commitments covered
+# --------------------------------------------------------------------------------------
+def test_commitments_covered_fires_when_the_balance_absorbs_every_upcoming_bill() -> None:
+    ctx = InsightContext(
+        transactions=(_txn("2026-06-10", "500", balance="20000"),),
+        commitments=(
+            CommitmentRecord(name="Rent", amount=Decimal("12000"), due_date=date(2026, 6, 14)),
+            CommitmentRecord(name="Phone", amount=Decimal("800"), due_date=date(2026, 6, 15)),
+        ),
+        as_of=date(2026, 6, 12),
+    )
+    out = CommitmentsCoveredDetector().detect(ctx)
+
+    assert len(out) == 1
+    assert out[0].tone == Tone.win.value
+    assert out[0].metrics["covered_count"] == 2
+    assert out[0].metrics["due_total"] == Decimal("12800")
+    assert out[0].metrics["headroom"] == Decimal("7200")  # 20000 - 12800
+    # Leads with the balance doing the covering, same evidence shape as the collision twin.
+    assert out[0].evidence[0].merchant == "Current balance"
+
+
+def test_commitments_covered_silent_when_a_bill_would_collide() -> None:
+    """Fires precisely when UpcomingCommitmentCollisionDetector does not -- never both."""
+    ctx = InsightContext(
+        transactions=(_txn("2026-06-10", "500", balance="5000"),),
+        commitments=(
+            CommitmentRecord(name="Rent", amount=Decimal("12000"), due_date=date(2026, 6, 14)),
+        ),
+        as_of=date(2026, 6, 12),
+    )
+    assert CommitmentsCoveredDetector().detect(ctx) == []
+    assert len(UpcomingCommitmentCollisionDetector().detect(ctx)) == 1
+
+
+def test_commitments_covered_silent_when_nothing_is_due() -> None:
+    """"All zero of your bills are covered" is not a win, it is noise."""
+    ctx = InsightContext(
+        transactions=(_txn("2026-06-10", "500", balance="20000"),),
+        commitments=(
+            CommitmentRecord(name="Rent", amount=Decimal("12000"), due_date=date(2026, 9, 1)),
+        ),
+        as_of=date(2026, 6, 12),  # Sept rent is far outside the 7-day lookahead
+    )
+    assert CommitmentsCoveredDetector().detect(ctx) == []
+
+
+# --------------------------------------------------------------------------------------
+# Spending pace improved
+# --------------------------------------------------------------------------------------
+def test_spending_pace_improved_fires_when_the_recent_rate_drops_below_baseline() -> None:
+    """Baseline (Apr): ~₹1,000/day. Recent 30d (June): ~₹100/day. A real, honest win."""
+    baseline = tuple(_txn(f"2026-04-{d:02d}", "1000") for d in range(1, 29))
+    recent = tuple(_txn(f"2026-06-{d:02d}", "100") for d in range(1, 29))
+    ctx = InsightContext(transactions=baseline + recent, as_of=date(2026, 6, 28))
+
+    out = SpendingPaceImprovedDetector().detect(ctx)
+
+    assert len(out) == 1
+    assert out[0].tone == Tone.win.value
+    assert out[0].metrics["drop_pct"] > PACE_IMPROVED_MIN_PCT
+    # A rate has no transaction to cite -- the card renders without an evidence block.
+    assert out[0].evidence == ()
+
+
+def test_spending_pace_improved_silent_when_spending_held_steady() -> None:
+    steady = tuple(_txn(f"2026-04-{d:02d}", "1000") for d in range(1, 29)) + tuple(
+        _txn(f"2026-06-{d:02d}", "1000") for d in range(1, 29)
+    )
+    ctx = InsightContext(transactions=steady, as_of=date(2026, 6, 28))
+    assert SpendingPaceImprovedDetector().detect(ctx) == []
+
+
+def test_spending_pace_improved_refuses_to_claim_a_trend_on_thin_history() -> None:
+    """One quiet week is not a trend. A congratulation the data can't support is exactly the
+    dishonesty this product exists not to commit -- so it stays silent below the threshold."""
+    ctx = InsightContext(
+        transactions=tuple(_txn(f"2026-06-{d:02d}", "100") for d in range(1, 8)),
+        as_of=date(2026, 6, 8),
+    )
+    assert data_months(ctx.transactions) < MIN_DATA_MONTHS_FOR_TREND
+    assert SpendingPaceImprovedDetector().detect(ctx) == []
+
+
+# --------------------------------------------------------------------------------------
+# The tone axis itself
+# --------------------------------------------------------------------------------------
+def test_every_fr81_warning_detector_still_emits_the_watch_tone() -> None:
+    """The `tone` field defaults to `watch`, which is what let the five original detectors
+    stay untouched. If a refactor ever flips that default, the whole feed silently becomes
+    good news -- so pin it."""
+    ctx = _demo_context()
+    for candidate in run_all_detectors(ctx):
+        if candidate.pattern_name in {
+            "Subscription ended",
+            "Commitments covered",
+            "Spending pace improved",
+        }:
+            assert candidate.tone == Tone.win.value
+        else:
+            assert candidate.tone == Tone.watch.value

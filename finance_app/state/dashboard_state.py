@@ -38,7 +38,10 @@ from finance_app.state.engine_bridge import (
     recent_score_events,
     sync_confidence_score,
 )
-from finance_app.state.insights_bridge import top_active_insight
+# NOTE: the dashboard deliberately reads no insight data. The Story 7.4 teaser card was
+# removed on 2026-07-12 (product decision) — the briefing card's "See my insights" button is
+# the dashboard's only route into Insights. `insights_bridge.top_active_insight` remains for
+# FR-8.6's briefing sentence, which does not go through this state.
 from services.analytics import CategorySlice, MonthPoint, monthly_spend, spending_by_category
 from services.engine import resolve_due_date
 from services.narrate import BriefingContext, generate_briefing
@@ -200,10 +203,6 @@ class DashboardState(AuthState):
     briefing_loading: bool = False
 
     # --- Insight teaser (Story 7.4) ---
-    has_top_insight: bool = False
-    top_insight_pattern_name: str = ""
-    top_insight_observation: str = ""
-    top_insight_href: str = ""
 
     # --- Charts & timeline (Story 5.4) — below the fold, supporting evidence (UX-DR1) ---
     has_charts: bool = False
@@ -263,7 +262,6 @@ class DashboardState(AuthState):
             )
             self._apply_evidence(data, event.score)
             self._apply_score_events(recent_score_events(session, user.id))
-            self._apply_top_insight(top_active_insight(session, user.id))
             # Below-the-fold supporting evidence (Story 5.4). Built from the same rows the
             # engine ran on, so the charts can never disagree with the hero figure.
             self._apply_charts(load_transactions(session, user.id))
@@ -292,7 +290,6 @@ class DashboardState(AuthState):
         self.buffer_dented = False
         self.score_events = []
         self.briefing = ""
-        self._apply_top_insight(None)
         self.has_charts = False
         self.category_fig = _empty_figure()
         self.pace_fig = _empty_figure()
@@ -346,20 +343,6 @@ class DashboardState(AuthState):
 
         # "Why?" traces to real engine drivers; the fallback is honest about not knowing.
         self.why_text = " ".join(evidence.drivers) if evidence.drivers else WHY_FALLBACK
-
-    def _apply_top_insight(self, row) -> None:
-        """Story 7.4's teaser: pattern name + Observation only, verbatim from the row --
-        no arithmetic (AD-1). `row` is `None` when no active insight exists yet."""
-        if row is None:
-            self.has_top_insight = False
-            self.top_insight_pattern_name = ""
-            self.top_insight_observation = ""
-            self.top_insight_href = ""
-            return
-        self.has_top_insight = True
-        self.top_insight_pattern_name = row.pattern_name
-        self.top_insight_observation = row.observation
-        self.top_insight_href = f"/insights?highlight={row.id}"
 
     def _apply_charts(self, transactions) -> None:
         """Build the donut and pace figures from real debits (Story 5.4).

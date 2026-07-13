@@ -43,3 +43,21 @@ class Criticality(str, Enum):
 
 #: Default criticality for a newly created commitment (FR-4.3 / AC #3).
 CRITICALITY_DEFAULT = Criticality.important
+
+
+class Tone(str, Enum):
+    """Whether an insight is a warning or a win.
+
+    A second, *orthogonal* axis to :class:`Criticality`. ``severity`` answers "how urgent is
+    this?"; it cannot express "this is good news" — a win has no criticality, so overloading
+    ``severity`` with a fourth value would conflate two unrelated axes and corrupt the
+    severity-tier ordering. ``watch`` is the default, which is what lets the five original
+    FR-8.1 detectors stay untouched.
+    """
+
+    watch = "watch"  # a pattern worth attention — the five FR-8.1 detectors
+    win = "win"  # something going right
+
+
+#: Default tone. Every pre-``Tone`` insight row and detector is a ``watch``.
+TONE_DEFAULT = Tone.watch

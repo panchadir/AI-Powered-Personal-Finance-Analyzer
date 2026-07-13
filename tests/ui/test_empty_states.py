@@ -151,11 +151,20 @@ def test_transactions_empty_state_has_upload_link():
 
 
 def test_insights_empty_state_copy():
-    """Insights empty state must show the approved copy (regression guard)."""
-    from finance_app.state.insights_state import EMPTY_COPY
+    """Insights empty state must show the approved copy (regression guard).
 
-    assert "Insights will appear" in EMPTY_COPY
-    assert "statement" in EMPTY_COPY.lower()
+    The "not enough data yet" arm is INSUFFICIENT_DATA_COPY, not EMPTY_COPY: Epic 7 split the
+    single empty string into two, because an empty feed means opposite things depending on why
+    it is empty. EMPTY_COPY now owns the *other* arm ("you've read them all"), so the guard for
+    the data-poor user follows the meaning, not the old constant name.
+    """
+    from finance_app.state.insights_state import EMPTY_COPY, INSUFFICIENT_DATA_COPY
+
+    # The data-poor user is told the app isn't ready yet, and pointed at uploading.
+    assert "statement" in INSUFFICIENT_DATA_COPY.lower()
+    assert "upload" in INSUFFICIENT_DATA_COPY.lower()
+    # ...and is never told their empty feed is an achievement.
+    assert INSUFFICIENT_DATA_COPY != EMPTY_COPY
 
 
 def test_insights_empty_state_has_upload_link():

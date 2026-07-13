@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from services.utils.enums import TONE_DEFAULT
+
 
 @dataclass(frozen=True)
 class TxnRecord:
@@ -83,3 +85,7 @@ class InsightCandidate:
     # generated __eq__/__hash__ keeps InsightCandidate usable in sets/dict keys (Story 7.3).
     metrics: Mapping[str, object] = field(default_factory=dict, compare=False)
     data_months: int = 0
+    #: ``watch`` (a pattern worth attention) or ``win`` (something going right). Orthogonal
+    #: to ``severity`` -- see ``services.utils.enums.Tone``. Defaults to ``watch`` so the five
+    #: original FR-8.1 detectors need no change.
+    tone: str = TONE_DEFAULT.value

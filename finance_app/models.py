@@ -34,7 +34,7 @@ import reflex as rx
 import reflex_local_auth  # noqa: F401  — registers LocalUser (`localuser`) + auth session tables
 import sqlmodel
 
-from services.utils.enums import CategorySource, Criticality
+from services.utils.enums import TONE_DEFAULT, CategorySource, Criticality
 
 # reflex-local-auth's user table name — the FK target for every user-scoped table.
 USER_FK = "localuser.id"
@@ -171,6 +171,9 @@ class Insight(rx.Model, table=True):
     action_suggestion: str
     status: str = "active"  # active | dismissed (dismiss lifecycle, FR-8.4)
     severity: str = Criticality.important.value  # 'critical' | 'important' | 'flexible'
+    # 'watch' | 'win' -- orthogonal to severity (which answers "how urgent", and so cannot
+    # express "this is good news"). Drives the Insights page's two bands.
+    tone: str = TONE_DEFAULT.value
     metric_value: Decimal | None = sqlmodel.Field(default=None, max_digits=12, decimal_places=2)
     dedup_key: str
     dismissed_at: datetime | None = None
