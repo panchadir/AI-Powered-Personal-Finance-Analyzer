@@ -14,7 +14,7 @@ config = rx.Config(
     # Docker/other deployments always set DATABASE_URL, so this fallback is dev-only.
     # Keep in sync with the identical fallback in alembic/env.py.
     db_url=os.environ.get("DATABASE_URL")
-    or "postgresql+psycopg2://finance_user:finance_pass@localhost:5432/finance_db",
+    or "postgresql+pg8000://finance_user:finance_pass@localhost:5432/finance_db",
     # Bind backend to all interfaces so it's reachable inside Docker.
     backend_host="0.0.0.0",
     plugins=[

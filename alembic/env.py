@@ -27,7 +27,7 @@ target_metadata = SQLModel.metadata
 config.set_main_option(
     "sqlalchemy.url",
     os.environ.get("DATABASE_URL")
-    or "postgresql+psycopg2://finance_user:finance_pass@localhost:5432/finance_db",
+    or "postgresql+pg8000://finance_user:finance_pass@localhost:5432/finance_db",
 )
 
 # other values from the config, defined by the needs of env.py,
