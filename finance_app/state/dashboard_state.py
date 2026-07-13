@@ -55,6 +55,11 @@ EMPTY_HERO_COPY = "Upload a statement and I'll show you what's safe to spend —
 #: Shown when the engine can't explain the figure from real data (Story 5.1 fallback).
 WHY_FALLBACK = "We don't have enough data yet to fully explain this."
 
+#: Minimum time the skeleton loader stays on screen. A hair under a second: long enough that
+#: the loading state registers as intentional rather than a flicker, short enough that it never
+#: feels like a stall on a fast load. Shared by the dashboard, transactions and insights loads.
+_LOADER_MIN_SECONDS = 0.8
+
 
 @dataclasses.dataclass
 class ScoreEventView:
@@ -81,6 +86,15 @@ _CHART_COLORS = (
     "#ec4899", "#8b5cf6", "#10b981", "#64748b",
 )
 _INK = "#334155"
+
+#: WDS warm accent — the ``--accent`` gold in ``assets/wds.css``. The monthly-pace bars use it
+#: (not the ``--primary`` teal) so they stay on-brand while reading as distinct from the teal
+#: buttons/chips/nav — a chart in the same colour as every button loses its visual separation.
+_PACE_BAR_COLOR = "#e0a63c"
+
+#: Fraction of each x-slot left empty between bars — a high gap renders slim, calm bars rather
+#: than chunky blocks (UX-DR1: the chart supports the hero figure, it doesn't shout).
+_PACE_BAR_GAP = 0.6
 
 
 def _nice_ceiling(value: float) -> float:
@@ -149,7 +163,7 @@ def _pace_figure(points: list[MonthPoint]) -> go.Figure:
             x=[_month_label(p.month) for p in points],
             y=[float(p.total) for p in points],
             customdata=[formatINR(p.total) for p in points],
-            marker_color=_CHART_COLORS[0],
+            marker_color=_PACE_BAR_COLOR,
             hovertemplate="%{x}<br>%{customdata}<extra></extra>",
         )
     )
@@ -162,6 +176,7 @@ def _pace_figure(points: list[MonthPoint]) -> go.Figure:
         font=dict(color=_INK, size=12),
         showlegend=False,
         height=320,
+        bargap=_PACE_BAR_GAP,  # slimmer bars — the chart supports, never shouts (UX-DR1)
         yaxis=dict(
             tickvals=tickvals,
             ticktext=[formatINR(v) for v in tickvals],
@@ -237,6 +252,15 @@ class DashboardState(AuthState):
         on an LLM round-trip. The briefing fills in after; its panel shows a loading state
         meanwhile and degrades to deterministic prose if narration fails.
         """
+        # Show the skeleton only on the *first* load of the session. On a revisit the state
+        # still holds the previous data, so forcing the skeleton here would flash the page
+        # data → loader → data. When nothing is loaded yet the skeleton is already on screen
+        # (loaded defaults False); hold it a beat so it reads as a deliberate loading moment
+        # rather than a flicker on a fast local DB. A revisit just refreshes the data in place.
+        if not self.loaded:
+            yield
+            await asyncio.sleep(_LOADER_MIN_SECONDS)
+
         # This handler is an async *generator* (it yields to paint the hero card before the LLM
         # call), so an early exit is `yield ...; return` — a bare `return <value>` is a syntax
         # error here, not a redirect.

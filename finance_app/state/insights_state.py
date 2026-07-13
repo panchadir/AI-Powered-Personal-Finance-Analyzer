@@ -17,6 +17,7 @@ from urllib.parse import quote
 import reflex as rx
 
 from finance_app.state.auth_state import LOGIN_ROUTE, AuthState, user_for_token
+from finance_app.state.dashboard_state import _LOADER_MIN_SECONDS
 from finance_app.state.engine_bridge import format_money
 from finance_app.state.insights_bridge import dismiss_insight, refresh_insights
 from services.engine.insights import (
@@ -156,10 +157,20 @@ class InsightsState(AuthState):
         reason for doing the same around its own narration call: a blocking network call
         must never stall the whole Reflex server for every other connected user.
         """
+        # Skeleton only on the first load of the session — on a revisit the feed is already on
+        # screen, so forcing the skeleton would flash content → loader → content. On a first
+        # load the skeleton is already showing (loaded defaults False); hold it a beat so it's a
+        # visible moment. A revisit just refreshes the feed in place. Mirrors load_dashboard.
+        # This makes the handler an async *generator*, so early exits below are `yield …; return`.
+        if not self.loaded:
+            yield
+            await asyncio.sleep(_LOADER_MIN_SECONDS)
+
         with rx.session() as session:
             user = user_for_token(session, self.auth_token)
             if user is None:
-                return rx.redirect(LOGIN_ROUTE)
+                yield rx.redirect(LOGIN_ROUTE)
+                return
 
             try:
                 data = await asyncio.to_thread(refresh_insights, session, user.id)
@@ -195,7 +206,7 @@ class InsightsState(AuthState):
             self.highlight_id = 0
 
         if self.highlight_id:
-            return rx.call_script(
+            yield rx.call_script(
                 f"document.getElementById('insight-{self.highlight_id}')"
                 "?.scrollIntoView({behavior: 'smooth', block: 'center'})"
             )

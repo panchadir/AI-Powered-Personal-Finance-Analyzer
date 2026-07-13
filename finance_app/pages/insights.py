@@ -332,6 +332,9 @@ def insights() -> rx.Component:
             ),
             _dismissed_section(),
             _footer(),
-            class_name="has-sidenav",
+            # `dash` gives the same 1680px content column + 40px horizontal gutter as the
+            # Dashboard/Transactions screens; before, this <main> had only `has-sidenav`
+            # (margin-left:208px, zero padding), so the content sat flush against the sidebar.
+            class_name="dash has-sidenav",
         ),
     )

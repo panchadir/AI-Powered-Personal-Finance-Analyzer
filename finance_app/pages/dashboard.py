@@ -13,6 +13,7 @@ from __future__ import annotations
 import reflex as rx
 
 from finance_app.components.nav import side_nav
+from finance_app.components.skeleton import dashboard_skeleton
 from finance_app.state.dashboard_state import DashboardState
 
 
@@ -288,7 +289,8 @@ def dashboard() -> rx.Component:
                     ),
                     _charts_section(),
                 ),
-                rx.cond(DashboardState.loaded, _empty_state(), rx.el.div()),
+                # Not-yet-loaded → skeleton, so the screen never flashes blank on first load.
+                rx.cond(DashboardState.loaded, _empty_state(), dashboard_skeleton()),
             ),
             class_name="dash dash--sidenav has-sidenav",
         ),
