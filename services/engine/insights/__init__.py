@@ -19,11 +19,19 @@ from services.engine.insights.config import (
     MATERIAL_CHANGE_THRESHOLD_PCT,
     MAX_EVIDENCE_POINTS,
     MIN_DATA_MONTHS_FOOTNOTE,
+    MIN_DATA_MONTHS_FOR_TREND,
+    MIN_TRANSACTIONS_FOR_INSIGHTS,
+    PACE_IMPROVED_MIN_PCT,
+    PACE_RECENT_WINDOW_DAYS,
+    SUBSCRIPTION_ENDED_GRACE_DAYS,
 )
 from services.engine.insights.detectors import (
     ALL_DETECTORS,
+    CommitmentsCoveredDetector,
     DeathBySmallPurchasesDetector,
     PostPaydaySpikeDetector,
+    SpendingPaceImprovedDetector,
+    SubscriptionEndedDetector,
     UpcomingCommitmentCollisionDetector,
     WeekendWeekdayPaceDetector,
     ZombieSubscriptionDetector,
@@ -48,17 +56,26 @@ __all__ = [
     "InsightCandidate",
     # contract
     "InsightDetector",
-    # detectors
+    # detectors -- the five FR-8.1 warnings ...
     "PostPaydaySpikeDetector",
     "DeathBySmallPurchasesDetector",
     "ZombieSubscriptionDetector",
     "WeekendWeekdayPaceDetector",
     "UpcomingCommitmentCollisionDetector",
+    # ... and the wins, so the feed can also carry good news
+    "SubscriptionEndedDetector",
+    "CommitmentsCoveredDetector",
+    "SpendingPaceImprovedDetector",
     "ALL_DETECTORS",
     "run_all_detectors",
     "data_months",
     # config (re-exported for callers/narrator)
     "MAX_EVIDENCE_POINTS",
     "MIN_DATA_MONTHS_FOOTNOTE",
+    "MIN_DATA_MONTHS_FOR_TREND",
+    "MIN_TRANSACTIONS_FOR_INSIGHTS",
     "MATERIAL_CHANGE_THRESHOLD_PCT",
+    "SUBSCRIPTION_ENDED_GRACE_DAYS",
+    "PACE_RECENT_WINDOW_DAYS",
+    "PACE_IMPROVED_MIN_PCT",
 ]

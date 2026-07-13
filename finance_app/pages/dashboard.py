@@ -161,7 +161,13 @@ def _hero_card() -> rx.Component:
 
 
 def _briefing_card() -> rx.Component:
-    """The narrated briefing (Story 5.3). A snapshot; the hero above it is live (FR-4.11)."""
+    """The narrated briefing (Story 5.3). A snapshot; the hero above it is live (FR-4.11).
+
+    Its "See my insights" button is the dashboard's *only* route into the Insights page, and
+    the only insight-related surface on the dashboard at all (product decision, 2026-07-12):
+    the Story 7.4 teaser card was removed because two cards pointing at Insights read as two
+    destinations. Do not reintroduce an insight card here.
+    """
     return rx.el.section(
         rx.cond(
             DashboardState.briefing_loading,
@@ -216,27 +222,6 @@ def _commitments_card() -> rx.Component:
             type="button",
         ),
         class_name="dash-section dash-card",
-    )
-
-
-def _insight_teaser() -> rx.Component:
-    """Top active insight preview (Story 7.4): pattern name + Observation only, plus a
-    link to the specific insight on the Insights page. Reuses `.insight-card` and its
-    child classes verbatim from Story 7.3 -- no new CSS.
-    """
-    return rx.el.article(
-        rx.el.div(
-            rx.el.span("💡", class_name="insight-icon", aria_hidden="true"),
-            rx.el.h2(DashboardState.top_insight_pattern_name, class_name="insight-name"),
-            class_name="insight-card-head",
-        ),
-        rx.el.p(DashboardState.top_insight_observation, class_name="insight-observation"),
-        rx.el.a(
-            "See all insights →",
-            href=DashboardState.top_insight_href,
-            class_name="btn btn--secondary",
-        ),
-        class_name="insight-card",
     )
 
 
@@ -299,9 +284,6 @@ def dashboard() -> rx.Component:
                         _briefing_card(),
                         _commitments_card(),
                         class_name="dash-grid",
-                    ),
-                    rx.cond(
-                        DashboardState.has_top_insight, _insight_teaser(), rx.el.div()
                     ),
                     _charts_section(),
                 ),

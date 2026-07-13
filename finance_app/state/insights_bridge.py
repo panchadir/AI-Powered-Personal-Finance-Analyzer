@@ -15,7 +15,7 @@ from __future__ import annotations
 import datetime
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 from sqlmodel import Session, select
@@ -38,6 +38,7 @@ from services.narrate.insight_narrator import (
     NarrationEvidencePoint,
     generate_insight_narration,
 )
+from services.utils.enums import Tone
 
 __all__ = [
     "InsightsData",
@@ -51,12 +52,21 @@ __all__ = [
 #: Dev Notes "Headline metric per pattern"). A pattern name with no entry here (a future,
 #: not-yet-known detector) is always treated as materially new -- see `_headline_metric`.
 _HEADLINE_METRIC_KEY: dict[str, str] = {
+    # warnings (FR-8.1)
     "Post-payday spike": "spike_pct",
     "Death by small purchases": "total",
     "Zombie subscriptions": "monthly_amount",
     "Weekend vs weekday pace": "ratio",
     "Upcoming commitment collision": "projected_shortfall",
+    # wins
+    "Subscription ended": "monthly_amount",
+    "Commitments covered": "headroom",
+    "Spending pace improved": "drop_pct",
 }
+# ``tests/test_insights_bridge.py`` asserts every detector in ALL_DETECTORS appears above.
+# That guard is load-bearing: an unmapped pattern's `_headline_metric` returns None, which
+# `_materially_changed` reads as "changed" -- so a forgotten entry means the insight is
+# re-narrated (an LLM call) on every single page load, forever, for every user.
 
 _SEVERITY_ORDER: dict[str, int] = {"critical": 0, "important": 1, "flexible": 2}
 
@@ -70,8 +80,17 @@ def _utcnow() -> datetime.datetime:
 class InsightsData:
     """Everything the Insights page needs, computed once per page load."""
 
-    active: list[Insight]
+    active: list[Insight]  # the "watch" band -- severity-tiered
     data_months: int
+    # FR-8.4: dismissed insights move to a collapsed section rather than vanishing, and the
+    # empty feed distinguishes "nothing to look at yet" (< MIN_TRANSACTIONS_FOR_INSIGHTS)
+    # from "you've read them all". Defaulted so existing callers/tests keep working.
+    dismissed: list[Insight] = field(default_factory=list)
+    txn_count: int = 0
+    #: The "win" band -- things going right, newest-first. Kept separate from ``active``
+    #: rather than interleaved: a win buried under three criticals does not register as
+    #: good news, which is the entire reason these detectors exist.
+    wins: list[Insight] = field(default_factory=list)
 
 
 def load_insight_context(
@@ -114,14 +133,19 @@ def load_insight_context(
     )
 
 
+#: Patterns whose detector can emit more than one candidate per run -- one per merchant --
+#: all sharing an identical ``pattern_name``. A bare-name key would conflate two unrelated
+#: subscriptions into one insight row, so these are keyed per-merchant.
+_PER_MERCHANT_PATTERNS = frozenset({"Zombie subscriptions", "Subscription ended"})
+
+
 def _dedup_key(candidate: InsightCandidate) -> str:
     """Identity key for resurface/dedup lookups (not displayed).
 
-    Equals ``pattern_name`` except for Zombie-subscription candidates: that detector can emit
-    more than one candidate per run (one per recurring merchant), all sharing the identical
-    ``pattern_name`` -- a bare-name key would conflate two unrelated subscriptions.
+    Equals ``pattern_name`` except for the per-merchant patterns (see
+    :data:`_PER_MERCHANT_PATTERNS`), which are suffixed with the merchant.
     """
-    if candidate.pattern_name == "Zombie subscriptions":
+    if candidate.pattern_name in _PER_MERCHANT_PATTERNS:
         merchant = candidate.metrics.get("merchant", "")
         return f"{candidate.pattern_name}::{merchant}"
     return candidate.pattern_name
@@ -145,8 +169,12 @@ def _materially_changed(new: Decimal | None, old: Decimal | None) -> bool:
 
 
 def _serialize_evidence(evidence: tuple) -> str:
-    """JSON blob for audit/future use -- this story's page only renders the narrated prose,
-    not a re-read evidence list (see Dev Notes "evidence column serialization")."""
+    """The FR-8.2 evidence pack, as a JSON list of ``{date, merchant, amount}`` objects.
+
+    Read back and rendered as the card's evidence block by ``InsightsState._parse_evidence``.
+    ``amount`` is stringified, not floated: it is re-parsed as ``Decimal`` on the way out, so
+    the exact figure the detector cited is the exact figure the user is shown (AD-8).
+    """
     return json.dumps(
         [{"date": e.date, "merchant": e.merchant, "amount": str(e.amount)} for e in evidence]
     )
@@ -163,6 +191,9 @@ def _to_narration_input(candidate: InsightCandidate) -> InsightNarrationInput:
         ),
         metrics=candidate.metrics,
         data_months=candidate.data_months,
+        # Without this the narrator cannot tell a cancelled subscription from a live one --
+        # the same facts, in opposite emotional registers.
+        tone=candidate.tone,
     )
 
 
@@ -178,26 +209,61 @@ def _apply_narration(
     row.effect = narration.effect
     row.action_suggestion = narration.advice
     row.severity = candidate.severity
+    row.tone = candidate.tone
     row.metric_value = metric_value
     row.created_at = _utcnow()  # bumped so an in-place update still sorts newest-first
 
 
-def _load_active(session: Session, user_id: int) -> list[Insight]:
-    """Newest-first within severity tier (AC #3): fetch newest-first by ``created_at``
-    (``id`` as the tiebreak for same-timestamp rows, mirroring
-    ``engine_bridge.recent_score_events``'s identical convention), then a *stable* sort by
-    severity preserves that recency order within each tier. ``created_at`` — not ``id`` —
-    is the sort key because ``_apply_narration`` bumps ``created_at`` (not ``id``, which
-    never changes) when an active row is updated in place, so a materially-changed insight
-    correctly moves back to the top of its tier."""
-    rows = list(
+def _load_active_rows(session: Session, user_id: int) -> list[Insight]:
+    """Every active insight, newest-first (``id`` breaks same-timestamp ties, mirroring
+    ``engine_bridge.recent_score_events``'s identical convention).
+
+    ``created_at`` — not ``id`` — is the sort key because ``_apply_narration`` bumps
+    ``created_at`` (``id`` never changes) when an active row is updated in place, so a
+    materially-changed insight correctly moves back to the top.
+    """
+    return list(
         session.exec(
             select(Insight)
             .where(Insight.user_id == user_id, Insight.status == "active")
             .order_by(Insight.created_at.desc(), Insight.id.desc())
         ).all()
     )
+
+
+def _load_active(session: Session, user_id: int) -> list[Insight]:
+    """The **watch** feed: newest-first within severity tier (Story 7.3 AC #3).
+
+    A *stable* sort by severity preserves the recency order inside each tier. Wins are
+    excluded — they are not urgencies and have no meaningful place in a critical→flexible
+    ordering; they get their own band via :func:`_load_wins`.
+    """
+    rows = [r for r in _load_active_rows(session, user_id) if r.tone != Tone.win.value]
     return sorted(rows, key=lambda r: _SEVERITY_ORDER.get(r.severity, 1))
+
+
+def _load_wins(session: Session, user_id: int) -> list[Insight]:
+    """The **win** feed: newest-first, no severity ordering.
+
+    Sorting wins by severity tier would be meaningless — "how urgent is your good news?" —
+    so they are purely chronological, freshest first.
+    """
+    return [r for r in _load_active_rows(session, user_id) if r.tone == Tone.win.value]
+
+
+def _load_dismissed(session: Session, user_id: int) -> list[Insight]:
+    """FR-8.4's collapsed section: most-recently-dismissed first.
+
+    Ordered by ``dismissed_at`` (not severity) — once dismissed, an insight is history, and
+    history reads chronologically. ``id`` breaks ties, mirroring ``_load_active``.
+    """
+    return list(
+        session.exec(
+            select(Insight)
+            .where(Insight.user_id == user_id, Insight.status == "dismissed")
+            .order_by(Insight.dismissed_at.desc(), Insight.id.desc())
+        ).all()
+    )
 
 
 def refresh_insights(
@@ -271,6 +337,7 @@ def refresh_insights(
             action_suggestion=narration.advice,
             status="active",
             severity=candidate.severity,
+            tone=candidate.tone,
             metric_value=metric_value,
             dedup_key=key,
         )
@@ -278,18 +345,29 @@ def refresh_insights(
         session.commit()
 
     return InsightsData(
-        active=_load_active(session, user_id), data_months=data_months(ctx.transactions)
+        active=_load_active(session, user_id),
+        data_months=data_months(ctx.transactions),
+        dismissed=_load_dismissed(session, user_id),
+        txn_count=len(ctx.transactions),
+        wins=_load_wins(session, user_id),
     )
 
 
 def top_active_insight(session: Session, user_id: int) -> Insight | None:
-    """The single highest-priority active insight (Story 7.4's Dashboard teaser).
+    """The single highest-priority active insight (Story 7.4's Dashboard teaser, FR-8.6's
+    briefing).
 
     Read-only: delegates entirely to `_load_active`'s existing severity-tier/newest-first
     ordering, and deliberately never runs the detectors or calls the narrator (that only
     happens once, on the Insights page's own load via `refresh_insights` -- see Story 7.4's
     Dev Notes "Why this is read-only"). A user who has never opened the Insights page simply
     has no rows yet, so this correctly returns `None`, same as "ran and found nothing."
+
+    **Wins are excluded**, because `_load_active` excludes them. That is deliberate: this
+    feeds the Dashboard teaser and the briefing's single insight sentence, both of which
+    exist to surface the thing most worth *acting on*. A win is worth seeing, but it is
+    never the most urgent thing on the page, and letting one outrank a commitment collision
+    in the teaser would bury the one insight that actually needed attention today.
     """
     rows = _load_active(session, user_id)
     return rows[0] if rows else None

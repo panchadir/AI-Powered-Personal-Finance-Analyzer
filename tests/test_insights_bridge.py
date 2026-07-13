@@ -21,12 +21,14 @@ import sqlmodel
 import finance_app.models  # noqa: F401 — registers all app tables
 from finance_app.models import Insight, Transaction
 from finance_app.state.insights_bridge import (
+    _HEADLINE_METRIC_KEY,
     _headline_metric,
     _materially_changed,
     dismiss_insight,
     refresh_insights,
     top_active_insight,
 )
+from services.engine.insights import ALL_DETECTORS
 from reflex_local_auth.user import LocalUser
 from services.narrate.config import API_KEY_ENV_VAR
 
@@ -461,3 +463,160 @@ class TestTopActiveInsight:
         assert top is not None
         assert top.pattern_name == "Post-payday spike"
         assert top.severity == "critical"
+
+
+class TestDismissedFeedAndTxnCount:
+    """FR-8.4: a dismissed insight moves to a collapsed section — it is not destroyed — and an
+    empty feed must be able to tell "nothing to look at yet" apart from "you've read them all".
+    Both need `refresh_insights` to report more than just the active rows."""
+
+    def test_dismissed_rows_come_back_in_the_dismissed_feed_not_the_active_one(self, session):
+        user = make_user(session, "dismissed-feed@example.com")
+        _add_small_purchases(session, user.id, count=8, amount="300")
+
+        first = refresh_insights(session, user.id)
+        row = _active_by_key(first.active, "Death by small purchases")
+        assert row is not None
+        dismiss_insight(session, user.id, row.id)
+
+        after = refresh_insights(session, user.id)
+        assert _active_by_key(after.active, "Death by small purchases") is None
+        assert [r.id for r in after.dismissed] == [row.id]  # moved, not deleted
+
+    def test_dismissed_feed_is_most_recently_dismissed_first(self, session):
+        user = make_user(session, "dismissed-order@example.com")
+        _add_small_purchases(session, user.id, count=8, amount="300")
+        session.add(
+            Insight(  # type: ignore[call-arg]
+                user_id=user.id,
+                pattern_name="Zombie subscriptions",
+                observation="o", evidence="[]", explanation="e", effect="f",
+                action_suggestion="a", status="active", severity="flexible",
+                dedup_key="Zombie subscriptions::Netflix",
+            )
+        )
+        session.commit()
+
+        active = refresh_insights(session, user.id).active
+        first_id = _active_by_key(active, "Death by small purchases").id
+        second_id = _active_by_key(active, "Zombie subscriptions::Netflix").id
+
+        dismiss_insight(session, user.id, first_id)
+        dismiss_insight(session, user.id, second_id)  # dismissed last -> listed first
+
+        assert [r.id for r in refresh_insights(session, user.id).dismissed] == [
+            second_id,
+            first_id,
+        ]
+
+    def test_another_users_dismissed_insights_are_never_in_my_feed(self, session):
+        """AD-4 scoping — the dismissed feed is a new query, so it gets its own IDOR guard."""
+        mine = make_user(session, "mine@example.com")
+        theirs = make_user(session, "theirs@example.com")
+        _add_small_purchases(session, theirs.id, count=8, amount="300")
+
+        their_row = _active_by_key(
+            refresh_insights(session, theirs.id).active, "Death by small purchases"
+        )
+        dismiss_insight(session, theirs.id, their_row.id)
+
+        assert refresh_insights(session, mine.id).dismissed == []
+
+    def test_txn_count_reports_the_users_live_transaction_total(self, session):
+        user = make_user(session, "txn-count@example.com")
+        _add_small_purchases(session, user.id, count=8, amount="300")
+
+        assert refresh_insights(session, user.id).txn_count == 8
+
+    def test_txn_count_is_zero_for_a_user_with_no_transactions(self, session):
+        user = make_user(session, "no-txns@example.com")
+
+        assert refresh_insights(session, user.id).txn_count == 0
+
+
+class TestToneAndTheWinBand:
+    """The `tone` axis (2026-07-12): the feed must be able to carry good news, and a win
+    must never be ranked, teased, or briefed as if it were an urgency."""
+
+    def test_every_detector_has_a_headline_metric_key(self):
+        """The structural guard. `_headline_metric` returns None for an unmapped pattern, and
+        `_materially_changed` reads None as "changed" -- so a detector missing from
+        `_HEADLINE_METRIC_KEY` is re-narrated (a live LLM call) on *every page load, forever,
+        for every user*. It fails silently and expensively, which is the worst combination,
+        so it is pinned here rather than left to review."""
+        for detector in ALL_DETECTORS:
+            assert detector.pattern_name in _HEADLINE_METRIC_KEY, (
+                f"{detector.pattern_name!r} has no _HEADLINE_METRIC_KEY entry -- it would be "
+                "re-narrated by the LLM on every single page load."
+            )
+
+    def test_a_win_is_persisted_with_tone_win_and_lands_in_the_wins_feed(self, session):
+        user = make_user(session, "win-feed@example.com")
+        # A cancelled subscription: charged monthly, then stopped well past the grace window.
+        for month in (1, 2, 3):
+            add_txn(session, user.id, f"2026-0{month}-05", "Netflix", "499", merchant="Netflix")
+
+        data = refresh_insights(session, user.id, as_of=datetime.date(2026, 7, 1))
+
+        wins = [r for r in data.wins if r.pattern_name == "Subscription ended"]
+        assert len(wins) == 1
+        assert wins[0].tone == "win"
+        # ... and it is NOT in the watch band.
+        assert all(r.pattern_name != "Subscription ended" for r in data.active)
+
+    def test_the_watch_band_never_contains_a_win(self, session):
+        user = make_user(session, "bands@example.com")
+        _add_small_purchases(session, user.id, count=8, amount="300")  # a warning
+        for month in (1, 2, 3):
+            add_txn(session, user.id, f"2026-0{month}-05", "Netflix", "499", merchant="Netflix")
+
+        data = refresh_insights(session, user.id, as_of=datetime.date(2026, 7, 1))
+
+        assert data.active, "expected at least one warning"
+        assert data.wins, "expected at least one win"
+        assert all(r.tone == "watch" for r in data.active)
+        assert all(r.tone == "win" for r in data.wins)
+
+    def test_top_active_insight_never_returns_a_win(self, session):
+        """Feeds the Dashboard teaser and FR-8.6's briefing sentence -- both exist to surface
+        the thing most worth *acting on*. A win outranking a real warning there would bury the
+        one insight that actually needed attention today."""
+        user = make_user(session, "teaser@example.com")
+        _add_small_purchases(session, user.id, count=8, amount="300")
+        for month in (1, 2, 3):
+            add_txn(session, user.id, f"2026-0{month}-05", "Netflix", "499", merchant="Netflix")
+
+        refresh_insights(session, user.id, as_of=datetime.date(2026, 7, 1))
+
+        top = top_active_insight(session, user.id)
+        assert top is not None
+        assert top.tone == "watch"
+
+    def test_two_ended_subscriptions_get_independent_dedup_keys(self, session):
+        """Same per-merchant keying as Zombie subscriptions -- one detector run can emit
+        several, and a bare pattern-name key would conflate two unrelated cancellations."""
+        user = make_user(session, "two-ended@example.com")
+        for month in (1, 2, 3):
+            add_txn(session, user.id, f"2026-0{month}-05", "Netflix", "499", merchant="Netflix")
+            add_txn(session, user.id, f"2026-0{month}-09", "Spotify", "119", merchant="Spotify")
+
+        data = refresh_insights(session, user.id, as_of=datetime.date(2026, 7, 1))
+
+        keys = {r.dedup_key for r in data.wins if r.pattern_name == "Subscription ended"}
+        assert keys == {"Subscription ended::Netflix", "Subscription ended::Spotify"}
+
+    def test_a_win_can_be_dismissed_like_any_other_insight(self, session):
+        user = make_user(session, "dismiss-win@example.com")
+        for month in (1, 2, 3):
+            add_txn(session, user.id, f"2026-0{month}-05", "Netflix", "499", merchant="Netflix")
+
+        first = refresh_insights(session, user.id, as_of=datetime.date(2026, 7, 1))
+        # Selected by name, not `wins[0]`: this fixture legitimately fires a second win --
+        # with no June spending at all, "Spending pace improved" is also true.
+        win = _active_by_key(first.wins, "Subscription ended::Netflix")
+        assert win is not None
+        dismiss_insight(session, user.id, win.id)
+
+        after = refresh_insights(session, user.id, as_of=datetime.date(2026, 7, 1))
+        assert _active_by_key(after.wins, "Subscription ended::Netflix") is None
+        assert win.id in [r.id for r in after.dismissed]
