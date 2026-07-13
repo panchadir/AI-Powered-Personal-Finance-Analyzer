@@ -171,12 +171,12 @@ def upload() -> rx.Component:
             rx.el.button(
                 "Go to my Dashboard →",
                 # aria-disabled (not `disabled`) so it stays keyboard-focusable and in tab
-                # order until parsing completes (FR-2.8 / NFR-8); `go_review` guards the action.
-                aria_disabled=rx.cond(UploadState.summary_visible, "false", "true"),
+                # order until data is available (FR-2.8 / NFR-8); `go_review` guards the action.
+                aria_disabled=rx.cond(UploadState.dashboard_enabled, "false", "true"),
                 on_click=UploadState.go_review,
                 class_name="btn btn--primary",
-                opacity=rx.cond(UploadState.summary_visible, "1", "0.55"),
-                cursor=rx.cond(UploadState.summary_visible, "pointer", "not-allowed"),
+                opacity=rx.cond(UploadState.dashboard_enabled, "1", "0.55"),
+                cursor=rx.cond(UploadState.dashboard_enabled, "pointer", "not-allowed"),
             ),
             margin_top="var(--space-lg)",
         ),

@@ -24,6 +24,7 @@ import logging
 
 import reflex as rx
 from anthropic import Anthropic
+from sqlmodel import select
 
 from finance_app.models import MerchantRule, Transaction as TxnModel, UploadedFile
 from finance_app.state.auth_state import (  # noqa: F401
@@ -127,6 +128,7 @@ class UploadState(AuthState):
     active_step: str = ""  # the step currently spinning
     done_steps: list[str] = []  # completed steps (checked)
     summary_visible: bool = False  # parse summary + enabled CTA
+    has_prior_uploads: bool = False  # True when the user already has statements in the DB
 
     # Parse results — all real as of Story 3.2 (Tier-1 + Tier-2 both run before persist).
     total: int = 0
@@ -137,12 +139,23 @@ class UploadState(AuthState):
     # page can show an honest dismissable caveat banner.
     ai_caveat: bool = False
 
+    @rx.var
+    def dashboard_enabled(self) -> bool:
+        """Dashboard button is active if a fresh parse just finished OR prior uploads exist."""
+        return self.summary_visible or self.has_prior_uploads
+
     @rx.event
     def reset_page(self):
         self.error = self.filename = self.active_step = ""
         self.parsing = self.summary_visible = self.ai_caveat = False
         self.done_steps = []
         self.total = self.rules = self.ai = self.need_review = 0
+        with rx.session() as session:
+            user = user_for_token(session, self.auth_token)
+            if user is not None:
+                self.has_prior_uploads = session.exec(
+                    select(UploadedFile).where(UploadedFile.user_id == user.id).limit(1)
+                ).first() is not None
 
     @rx.event
     def dismiss_ai_caveat(self):
@@ -156,8 +169,8 @@ class UploadState(AuthState):
 
     @rx.event
     def go_review(self):
-        """The Dashboard CTA. Guarded so an aria-disabled (focusable) button can't act early."""
-        if self.summary_visible:
+        """The Dashboard CTA. Enabled once the user has data — either a fresh parse or prior uploads."""
+        if self.summary_visible or self.has_prior_uploads:
             return rx.redirect("/dashboard")
 
     @rx.event
@@ -299,4 +312,4 @@ class UploadState(AuthState):
         self.parsing = False  # always clear before showing summary (Finding 2 fix)
         self.summary_visible = True
         yield rx.call_script(_CLEAR_LEAVE_GUARD)
-        yield
+        yield rx.redirect("/dashboard")

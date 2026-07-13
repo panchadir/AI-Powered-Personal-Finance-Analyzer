@@ -30,6 +30,8 @@ _TABS = [
     ("copilot",      "Copilot Chat", "💬", "/copilot"),
 ]
 
+_UPLOAD_HREF = "/upload"
+
 
 def _tab(key: str, label: str, icon: str, href: str, active: str) -> rx.Component:
     is_active = key == active
@@ -48,6 +50,12 @@ def side_nav(active: str) -> rx.Component:
     ``active``: the tab key for the current page (sets ``.is-active`` + ``aria-current``).
     """
     tabs = [_tab(key, label, icon, href, active) for key, label, icon, href in _TABS]
+    upload_btn = rx.el.a(
+        rx.el.span("⬆", class_name="ico", aria_hidden="true"),
+        rx.el.span("Upload Statement", class_name="label"),
+        href=_UPLOAD_HREF,
+        class_name="side-nav__tab side-nav__upload",
+    )
     logout_btn = rx.el.button(
         rx.el.span("⏻", class_name="ico", aria_hidden="true"),
         rx.el.span("Log out", class_name="label"),
@@ -57,6 +65,7 @@ def side_nav(active: str) -> rx.Component:
     )
     return rx.el.nav(
         *tabs,
+        upload_btn,
         logout_btn,
         class_name="side-nav",
         aria_label="Primary",

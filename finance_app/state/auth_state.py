@@ -31,13 +31,16 @@ from reflex_local_auth.auth_session import LocalAuthSession
 from reflex_local_auth.user import LocalUser
 from sqlmodel import Session, select
 
+from finance_app.models import UploadedFile
+
 #: How long an auth session lives (matches reflex-local-auth's default).
 AUTH_SESSION_EXPIRATION_DELTA = datetime.timedelta(days=7)
 #: Auth computed-var refresh cadence (matches reflex-local-auth's default).
 AUTH_REFRESH_DELTA = datetime.timedelta(minutes=10)
-#: Post-authentication landing page (Statement Upload). The WDS prototype routes both a
-#: fresh login and the existing-user path here (README: Login → Upload).
+#: Fallback post-login route used when the user has no uploaded statements yet.
 HOME_ROUTE = "/upload"
+#: Post-login route when the user already has at least one uploaded statement.
+DASHBOARD_ROUTE = "/dashboard"
 #: Back-compat alias. Registration itself no longer auto-logs-in (the WDS prototype shows a
 #: "Registration successful → Return to Login" screen instead — product decision 2026-07-09),
 #: so this is now only the post-*login* destination.
@@ -520,4 +523,8 @@ class LoginState(AuthState):
             self.form_error = "Invalid email or password. Please try again."
             return
         self._login(user.id)
-        return rx.redirect(HOME_ROUTE)
+        with rx.session() as session:
+            has_uploads = session.exec(
+                select(UploadedFile).where(UploadedFile.user_id == user.id).limit(1)
+            ).first() is not None
+        return rx.redirect(DASHBOARD_ROUTE if has_uploads else HOME_ROUTE)
