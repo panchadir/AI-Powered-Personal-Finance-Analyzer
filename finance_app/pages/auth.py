@@ -181,14 +181,6 @@ def _login_body() -> rx.Component:
                         class_name="link"),
                 class_name="register-existing-user",
             ),
-            rx.el.p(
-                rx.el.span(
-                    "Demo account — email ", rx.el.strong("priya@example.com"),
-                    ", password ", rx.el.strong("priya123"),
-                    class_name="text-muted",
-                ),
-                class_name="register-legal",
-            ),
             class_name="auth-card",
         ),
         class_name="page page--auth",
