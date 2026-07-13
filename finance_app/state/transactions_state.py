@@ -27,6 +27,7 @@ from sqlmodel import select
 
 from finance_app.models import MerchantRule, Transaction as TxnModel
 from finance_app.state.auth_state import AuthState
+from finance_app.state.dashboard_state import _LOADER_MIN_SECONDS
 from services.categorize.schema import CATEGORIES, UNCATEGORIZED
 from services.categorize.teach_me import reapply_correction, write_merchant_rule
 from services.utils.enums import CategorySource, Direction
@@ -221,6 +222,10 @@ class TransactionsState(AuthState):
     rows: list[TxnRow] = []
     active_filter: str = ALL_KEY
 
+    #: False until the first ``load_transactions`` completes — the page shows a skeleton while
+    #: this is False so a slow load never renders the empty-state ("upload a statement") copy.
+    loaded: bool = False
+
     # Teach Me correction panel (Story 3.3).
     open_row_id: int | None = None
     selected_category: str = ""
@@ -228,13 +233,24 @@ class TransactionsState(AuthState):
     confirmation: str = ""
 
     @rx.event
-    def load_transactions(self):
+    async def load_transactions(self):
+        # Skeleton only on the first load of the session — the rows are already on screen on a
+        # revisit, so resetting to the skeleton would flash data → loader → data. On a first
+        # load the skeleton is already showing (loaded defaults False); hold it a beat so it's a
+        # visible moment, not a flicker. A revisit just refreshes the rows in place. Mirrors
+        # load_dashboard.
+        if not self.loaded:
+            yield
+            await asyncio.sleep(_LOADER_MIN_SECONDS)
+
         user = self.authenticated_user
         if user.id is None or user.id < 0:
             self.rows = []
+            self.loaded = True
             return
         with rx.session() as session:
             self.rows = load_user_transaction_rows(session, TxnModel, user.id)
+        self.loaded = True
 
     @rx.event
     def set_filter(self, key: str):

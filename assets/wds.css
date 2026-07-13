@@ -407,6 +407,9 @@ a { color: inherit; }
   border: 1px solid #d6ebe6;
   border-radius: var(--radius); padding: calc(var(--space-lg) + var(--space-md)) var(--space-lg);
   box-shadow: var(--shadow);
+  /* Breathing room above the Safe-to-Spend card — it's the first thing on the dashboard, so it
+     shouldn't sit flush against the top edge. Also applies to the skeleton + empty-state cards. */
+  margin-top: var(--space-lg);
 }
 .hero-primary, .hero-secondary { min-width: 0; }
 
@@ -528,7 +531,9 @@ a { color: inherit; }
 .topnav {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
+  /* --space-lg (not --space-md) horizontally so the back-link/title clear the sidebar
+     with the same breathing room the other authenticated screens have. */
+  padding: var(--space-sm) var(--space-lg);
   background: var(--surface); border-bottom: 1px solid var(--line);
 }
 .topnav-title { font-size: var(--text-md); font-weight: 600; }
@@ -649,9 +654,13 @@ a { color: inherit; }
 .insights-dismissed .insights-list { margin-top: var(--space-md); }
 
 /* ---- Copilot Chat ---- */
-.copilot-page { display: flex; flex-direction: column; height: 100vh; }
+/* The thread scrolls with the page (like every other screen) rather than inside its own
+   overflow box — the inner scrollbar read as an odd gray bar mid-page. The page still fills at
+   least the viewport so a short chat keeps the input bar at the bottom; a long chat grows the
+   page and the sticky input bar (below) stays pinned to the bottom edge. */
+.copilot-page { display: flex; flex-direction: column; min-height: 100vh; }
 .copilot-thread {
-  flex: 1 1 auto; overflow-y: auto; min-height: 0;
+  flex: 1 1 auto;
   max-width: 960px; width: 100%; margin: 0 auto;
   padding: var(--space-md) var(--space-md) var(--space-lg);
   display: flex; flex-direction: column; gap: var(--space-md);
@@ -690,6 +699,7 @@ a { color: inherit; }
 
 .copilot-input-bar {
   flex: 0 0 auto; z-index: 25;
+  position: sticky; bottom: 0;   /* stays pinned to the viewport bottom as the page scrolls */
   display: flex; gap: var(--space-sm); align-items: flex-end;
   max-width: 960px; width: 100%; margin: 0 auto;
   padding: var(--space-sm) var(--space-md);
@@ -999,3 +1009,42 @@ a { color: inherit; }
 
 /* ---- Dashboard charts (Story 5.4) — supporting evidence, below the fold ---- */
 .dash-chart { width: 100%; }
+
+/* ============================================================================
+   Skeleton loaders — financial-dashboard "shimmer" loading state (all screens)
+   One shared shimmer (reuses @keyframes insight-shimmer, defined with the
+   Insights skeleton above) so every placeholder reads as one system; built from
+   :root tokens only, so it rethemes with the rest of the app. No spinners.
+   ============================================================================ */
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 37%, var(--gray-100) 63%);
+  background-size: 400% 100%;
+  animation: insight-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--gray-100); }
+}
+.skeleton-line { height: 12px; margin-bottom: var(--space-sm); }
+.skeleton-line:last-child { margin-bottom: 0; }
+.skeleton-line--sm { height: 10px; }
+.skeleton-title { height: 20px; width: 40%; margin-bottom: var(--space-md); }
+.skeleton-amount { height: 46px; width: 55%; border-radius: var(--radius); margin: var(--space-sm) 0 var(--space-md); }
+.skeleton-chip { height: 26px; width: 104px; border-radius: 999px; margin-bottom: var(--space-sm); }
+.skeleton-btn { height: 44px; width: 168px; margin-top: var(--space-md); }
+.skeleton-circle { border-radius: 50%; flex: 0 0 auto; }
+.skeleton-chart { width: 100%; height: 220px; border-radius: var(--radius); }
+
+/* Card-shell placeholders reuse .dash-card, so they match the real cards' box. */
+.skeleton-card { box-shadow: var(--shadow); }
+.dash-skeleton { display: flex; flex-direction: column; }
+/* Keep the second card grid (charts) tight under the first, matching the live layout. */
+.dash-skeleton .dash-grid + .dash-grid { margin-top: var(--space-lg); }
+
+/* Hero (Safe-to-Spend) placeholder keeps the two-column rhythm on wide screens. */
+.skeleton-hero .hero-primary,
+.skeleton-hero .hero-secondary { width: 100%; }
+
+/* Transactions list placeholder rows. */
+.txn-row--skeleton { cursor: default; align-items: center; }
+.txn-skeleton-meta { flex: 1 1 auto; min-width: 0; }
