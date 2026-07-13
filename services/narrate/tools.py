@@ -14,6 +14,13 @@ Tools provided (FR-7.2 AC), all read-only, no write path exists:
   * ``query_transactions``        — the user's transactions, optionally filtered
   * ``get_spending_by_category``  — debit spend grouped by category
   * ``get_upcoming_commitments``  — declared recurring obligations (Epic 5)
+  * ``get_spending_trend``        — debit spend per month, optionally one category (time trend)
+  * ``get_insights``              — active behavioral insights the app already surfaced (Epic 7)
+  * ``get_score_history``         — recent Confidence-Score changes (labels only, FR-5.5)
+  * ``get_detected_subscriptions``— recurring charges the detector proposed but the user hasn't
+                                    yet confirmed/dismissed (the "forgotten subscription" win)
+  * ``get_income_summary``        — the next detected salary credit (date, amount, confidence)
+  * ``get_data_coverage``         — how much statement data exists and whether it is stale
 
 A provider method returns a JSON-serialisable dict. When a figure is genuinely unavailable
 (e.g. no statement uploaded yet) the provider returns ``{"available": False, "reason": …}`` so
@@ -104,6 +111,101 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "required": [],
         },
     },
+    {
+        "name": "get_spending_trend",
+        "description": (
+            "Returns total debit spend for each calendar month, oldest month first. "
+            "Use for questions comparing periods or asking whether spending is going up or "
+            "down over time (e.g. 'am I spending more than last month?', 'is my dining "
+            "increasing?'). Optionally scope the trend to a single category."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "Limit the trend to one category (e.g. 'Dining'). Omit for all spend.",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "get_insights",
+        "description": (
+            "Returns the active behavioral insights the app has already detected for the user "
+            "(each as observation, evidence, explanation, effect, and a suggested action). "
+            "Use when the user asks what they should watch out for, what's noteworthy, or for "
+            "warnings and things to improve. These are pre-computed — never invent new ones."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "get_score_history",
+        "description": (
+            "Returns the user's recent Confidence-Score changes, newest first — each with the "
+            "score label, the direction of change (improved/dropped/unchanged), when it "
+            "happened, and the explanation. Use when asked whether their score is improving, "
+            "why it changed, or about their progress over time. Never exposes the raw number."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of recent changes to return (default 5, max 20).",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "get_detected_subscriptions",
+        "description": (
+            "Returns recurring charges the app detected in the user's transactions that they "
+            "have NOT yet confirmed or dismissed — likely subscriptions or EMIs they may have "
+            "forgotten. Each has the merchant, typical amount, due day, and how many times it "
+            "was seen. Use when asked about subscriptions, recurring payments, or 'what am I "
+            "paying for regularly'. These are suggestions to review, not confirmed commitments."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "get_income_summary",
+        "description": (
+            "Returns the user's next detected salary/income: expected date, amount, and a "
+            "detection confidence (Low/Medium/High). Use when asked when they next get paid, "
+            "their expected salary, or about their income. If no salary-shaped credit is found, "
+            "reports that income is not detected — never guesses an amount."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "get_data_coverage",
+        "description": (
+            "Returns how much data the app has for the user: number of statements uploaded, "
+            "transaction count, the date range covered, the statement's end date, and whether "
+            "that data is stale (older than 30 days). Use when asked how much data you have, "
+            "how current it is, or to honestly qualify an answer's reliability."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
 ]
 
 
@@ -126,6 +228,18 @@ class CopilotData(Protocol):
     def get_spending_by_category(self) -> dict[str, Any]: ...
 
     def get_upcoming_commitments(self) -> dict[str, Any]: ...
+
+    def get_spending_trend(self, *, category: str | None) -> dict[str, Any]: ...
+
+    def get_insights(self) -> dict[str, Any]: ...
+
+    def get_score_history(self, *, limit: int | None) -> dict[str, Any]: ...
+
+    def get_detected_subscriptions(self) -> dict[str, Any]: ...
+
+    def get_income_summary(self) -> dict[str, Any]: ...
+
+    def get_data_coverage(self) -> dict[str, Any]: ...
 
 
 def run_tool(name: str, tool_input: dict[str, Any], *, data: CopilotData) -> dict[str, Any]:
@@ -153,4 +267,16 @@ def run_tool(name: str, tool_input: dict[str, Any], *, data: CopilotData) -> dic
         return data.get_spending_by_category()
     if name == "get_upcoming_commitments":
         return data.get_upcoming_commitments()
+    if name == "get_spending_trend":
+        return data.get_spending_trend(category=tool_input.get("category"))
+    if name == "get_insights":
+        return data.get_insights()
+    if name == "get_score_history":
+        return data.get_score_history(limit=tool_input.get("limit"))
+    if name == "get_detected_subscriptions":
+        return data.get_detected_subscriptions()
+    if name == "get_income_summary":
+        return data.get_income_summary()
+    if name == "get_data_coverage":
+        return data.get_data_coverage()
     return {"error": f"Unknown tool: {name}"}

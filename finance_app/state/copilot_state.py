@@ -63,6 +63,12 @@ _TOOL_LABELS: dict[str, str] = {
     "query_transactions":       "Your transactions",
     "get_spending_by_category": "Spending by category",
     "get_upcoming_commitments": "Upcoming commitments",
+    "get_spending_trend":       "Spending trend",
+    "get_insights":             "Your insights",
+    "get_score_history":        "Score history",
+    "get_detected_subscriptions": "Detected subscriptions",
+    "get_income_summary":       "Income",
+    "get_data_coverage":        "Data coverage",
 }
 
 

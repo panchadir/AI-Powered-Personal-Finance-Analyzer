@@ -38,6 +38,30 @@ class FakeData:
         self.calls.append(("get_upcoming_commitments", {}))
         return {"commitments": []}
 
+    def get_spending_trend(self, *, category) -> dict[str, Any]:
+        self.calls.append(("get_spending_trend", {"category": category}))
+        return {"by_month": []}
+
+    def get_insights(self) -> dict[str, Any]:
+        self.calls.append(("get_insights", {}))
+        return {"insights": []}
+
+    def get_score_history(self, *, limit) -> dict[str, Any]:
+        self.calls.append(("get_score_history", {"limit": limit}))
+        return {"history": []}
+
+    def get_detected_subscriptions(self) -> dict[str, Any]:
+        self.calls.append(("get_detected_subscriptions", {}))
+        return {"detected_subscriptions": []}
+
+    def get_income_summary(self) -> dict[str, Any]:
+        self.calls.append(("get_income_summary", {}))
+        return {"available": False}
+
+    def get_data_coverage(self) -> dict[str, Any]:
+        self.calls.append(("get_data_coverage", {}))
+        return {"available": False}
+
 
 def test_each_tool_routes_to_its_provider_method() -> None:
     data = FakeData()
@@ -53,6 +77,46 @@ def test_each_tool_routes_to_its_provider_method() -> None:
         "get_spending_by_category",
         "get_upcoming_commitments",
     ]
+
+
+def test_new_analytics_tools_route_to_their_provider_methods() -> None:
+    data = FakeData()
+    assert run_tool("get_spending_trend", {}, data=data) == {"by_month": []}
+    assert run_tool("get_insights", {}, data=data) == {"insights": []}
+    assert run_tool("get_score_history", {}, data=data) == {"history": []}
+    assert [name for name, _ in data.calls] == [
+        "get_spending_trend",
+        "get_insights",
+        "get_score_history",
+    ]
+
+
+def test_tier1_tools_route_to_their_provider_methods() -> None:
+    data = FakeData()
+    assert run_tool("get_detected_subscriptions", {}, data=data) == {"detected_subscriptions": []}
+    assert run_tool("get_income_summary", {}, data=data) == {"available": False}
+    assert run_tool("get_data_coverage", {}, data=data) == {"available": False}
+    assert [name for name, _ in data.calls] == [
+        "get_detected_subscriptions",
+        "get_income_summary",
+        "get_data_coverage",
+    ]
+
+
+def test_spending_trend_threads_category_and_defaults_to_none() -> None:
+    data = FakeData()
+    run_tool("get_spending_trend", {"category": "Dining"}, data=data)
+    assert data.calls[-1] == ("get_spending_trend", {"category": "Dining"})
+    run_tool("get_spending_trend", {}, data=data)
+    assert data.calls[-1] == ("get_spending_trend", {"category": None})
+
+
+def test_score_history_threads_limit_and_defaults_to_none() -> None:
+    data = FakeData()
+    run_tool("get_score_history", {"limit": 3}, data=data)
+    assert data.calls[-1] == ("get_score_history", {"limit": 3})
+    run_tool("get_score_history", {}, data=data)
+    assert data.calls[-1] == ("get_score_history", {"limit": None})
 
 
 def test_query_transactions_threads_filters() -> None:
@@ -88,4 +152,10 @@ def test_tool_schemas_match_provider_methods() -> None:
         "query_transactions",
         "get_spending_by_category",
         "get_upcoming_commitments",
+        "get_spending_trend",
+        "get_insights",
+        "get_score_history",
+        "get_detected_subscriptions",
+        "get_income_summary",
+        "get_data_coverage",
     }

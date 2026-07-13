@@ -30,21 +30,53 @@ from typing import Any, Iterator
 import reflex as rx
 from sqlmodel import Session, select
 
-from finance_app.models import Transaction
+from finance_app.models import Insight, Transaction, UploadedFile
 from finance_app.state.engine_bridge import (
     compute_dashboard,
     confidence_label,
+    detect_commitment_candidates,
     format_day,
     format_money,
+    humanize_since,
     latest_score_event,
     load_commitments,
     load_transactions,
+    recent_score_events,
 )
-from services.analytics import spending_by_category
-from services.engine import resolve_due_date
+from services.analytics import monthly_spend, spending_by_category
+from services.engine import detect_next_income, due_day_label, resolve_due_date
+from services.utils.enums import Criticality
 
 _DEFAULT_TXN_LIMIT = 20
 _MAX_TXN_LIMIT = 50
+
+_DEFAULT_HISTORY_LIMIT = 5
+_MAX_HISTORY_LIMIT = 20
+
+#: Insight severity → sort weight, most urgent first. Mirrors the Insights page ordering so the
+#: Copilot surfaces the same thing the user would see there.
+_SEVERITY_ORDER: dict[str, int] = {
+    Criticality.critical.value: 0,
+    Criticality.important.value: 1,
+    Criticality.flexible.value: 2,
+}
+
+
+def _format_month(iso_month: str) -> str:
+    """``'2026-06'`` → ``'Jun 2026'``. Falls back to the raw key if it isn't ``YYYY-MM``."""
+    try:
+        return datetime.datetime.strptime(iso_month, "%Y-%m").strftime("%b %Y")
+    except ValueError:
+        return iso_month
+
+
+def _change_direction(delta: int) -> str:
+    """Human word for a score delta's sign — the raw number never leaves the server (FR-5.5)."""
+    if delta > 0:
+        return "improved"
+    if delta < 0:
+        return "dropped"
+    return "unchanged"
 
 
 class DbCopilotData:
@@ -176,6 +208,189 @@ class DbCopilotData:
                 for due_date, r in ordered
             ]
         }
+
+    # -- Spending trend over time ------------------------------------------------------
+    def get_spending_trend(self, *, category: str | None) -> dict[str, Any]:
+        """Total debit spend per calendar month, oldest first (reuses the Dashboard's
+        ``monthly_spend`` so the Copilot's trend and the pace chart can never disagree).
+
+        Optionally scoped to a single category. Money is pre-formatted so the model copies a
+        correct figure rather than doing arithmetic (FR-7.3 rule 1).
+        """
+        txns = load_transactions(self._session, self._user_id)
+        if category:
+            txns = [t for t in txns if t.category == category]
+        points = monthly_spend(txns)
+        if not points:
+            reason = (
+                f"No spending recorded for category '{category}' yet."
+                if category
+                else "No spending recorded yet — upload a statement first."
+            )
+            return {"available": False, "reason": reason}
+        result: dict[str, Any] = {
+            "by_month": [
+                {"month": _format_month(p.month), "total": format_money(p.total)}
+                for p in points
+            ]
+        }
+        if category:
+            result["category"] = category
+        return result
+
+    # -- Behavioral insights (Epic 7) --------------------------------------------------
+    def get_insights(self) -> dict[str, Any]:
+        """The active insights already surfaced on the Insights page (Epic 7), most urgent
+        first. Read-only — the Copilot never invents insights, it only relays detected ones."""
+        rows = self._session.exec(
+            select(Insight).where(
+                Insight.user_id == self._user_id, Insight.status == "active"
+            )
+        ).all()
+        if not rows:
+            return {
+                "insights": [],
+                "note": "No active insights right now — nothing notable was detected.",
+            }
+        ordered = sorted(
+            rows, key=lambda i: (_SEVERITY_ORDER.get(i.severity, 99), -(i.id or 0))
+        )
+        return {
+            "insights": [
+                {
+                    "observation": i.observation,
+                    "evidence": i.evidence,
+                    "explanation": i.explanation,
+                    "effect": i.effect,
+                    "suggested_action": i.action_suggestion,
+                    "severity": i.severity,
+                }
+                for i in ordered
+            ]
+        }
+
+    # -- Confidence-Score history (labels only, FR-5.5) --------------------------------
+    def get_score_history(self, *, limit: int | None) -> dict[str, Any]:
+        """Recent Confidence-Score changes, newest first — label + direction + explanation.
+
+        The raw 0–100 score and the numeric delta never leave the server (FR-5.5); only the
+        band *label* and a human word for the change direction are exposed.
+        """
+        capped = min(
+            int(limit) if limit is not None else _DEFAULT_HISTORY_LIMIT, _MAX_HISTORY_LIMIT
+        )
+        events = recent_score_events(self._session, self._user_id, limit=capped)
+        if not events:
+            return {
+                "available": False,
+                "reason": (
+                    "No Confidence-Score history yet — it appears after the first statement "
+                    "is uploaded."
+                ),
+            }
+        return {
+            "history": [
+                {
+                    "when": humanize_since(e.timestamp),
+                    "label": confidence_label(e.score),
+                    "change": _change_direction(e.delta),
+                    "explanation": e.explanation,
+                    "suggested_action": e.suggested_action,
+                }
+                for e in events
+            ]
+        }
+
+    # -- Detected (unconfirmed) recurring charges (Story 5.6) --------------------------
+    def get_detected_subscriptions(self) -> dict[str, Any]:
+        """Recurring charges the detector proposed that the user hasn't confirmed or dismissed
+        yet — the "forgotten subscription" surface. Reuses the same deterministic detector the
+        Commitments page uses, so the two can never disagree, and it already excludes anything
+        the user has already decided on (FR-9.1)."""
+        candidates = detect_commitment_candidates(self._session, self._user_id)
+        if not candidates:
+            return {
+                "detected_subscriptions": [],
+                "note": (
+                    "No new recurring charges detected — either there aren't enough repeats "
+                    "yet, or the user has already reviewed the ones found."
+                ),
+            }
+        return {
+            "detected_subscriptions": [
+                {
+                    "merchant": c.merchant,
+                    "amount": format_money(c.amount),
+                    "due": due_day_label(c.due_day),
+                    "times_seen": c.occurrences,
+                }
+                for c in candidates
+            ],
+            "note": "These are suggestions to review, not confirmed commitments.",
+        }
+
+    # -- Income detection (Epic 4) -----------------------------------------------------
+    def get_income_summary(self) -> dict[str, Any]:
+        """The next detected salary/income — date, amount, and detection confidence.
+
+        Delegates to the engine's ``detect_next_income`` (the same signal Safe-to-Spend uses),
+        so the Copilot never invents an income figure. When no salary-shaped credit exists it
+        says so plainly rather than guessing (FR-4.8 honest-refusal path)."""
+        txns = load_transactions(self._session, self._user_id)
+        if not txns:
+            return {
+                "available": False,
+                "reason": "No statement uploaded yet, so no income has been detected.",
+            }
+        signal = detect_next_income(txns, as_of=datetime.date.today())
+        if signal.next_income_date is None:
+            return {
+                "available": False,
+                "reason": (
+                    "No salary-shaped income was detected in the transactions. The user may "
+                    "need to add their income manually."
+                ),
+            }
+        return {
+            "available": True,
+            "next_income_date": format_day(signal.next_income_date),
+            "expected_amount": format_money(signal.next_income_amount),
+            "detection_confidence": signal.confidence,
+        }
+
+    # -- Data coverage / freshness (FR-5.7) --------------------------------------------
+    def get_data_coverage(self) -> dict[str, Any]:
+        """How much data exists for the user and whether it is stale — lets the Copilot qualify
+        its answers honestly ("I only have one month of data…") with specifics rather than a
+        vague hedge."""
+        data = compute_dashboard(self._session, self._user_id)
+        if not data.has_data:
+            return {
+                "available": False,
+                "reason": "No statement has been uploaded yet, so there is no data to analyse.",
+            }
+        txns = load_transactions(self._session, self._user_id)
+        statement_count = len(
+            self._session.exec(
+                select(UploadedFile).where(UploadedFile.user_id == self._user_id)
+            ).all()
+        )
+        dates = [t.date for t in txns]
+        result: dict[str, Any] = {
+            "available": True,
+            "statements_uploaded": statement_count,
+            "transaction_count": data.transaction_count,
+            "earliest_transaction": format_day(datetime.date.fromisoformat(min(dates))),
+            "latest_transaction": format_day(datetime.date.fromisoformat(max(dates))),
+            "statement_up_to": format_day(data.statement_end_date),
+            "is_stale": data.is_stale,
+        }
+        if data.is_stale:
+            result["note"] = (
+                "This data is more than 30 days old — figures may no longer reflect reality. "
+                "Encourage the user to upload a fresh statement."
+            )
+        return result
 
 
 @contextmanager
