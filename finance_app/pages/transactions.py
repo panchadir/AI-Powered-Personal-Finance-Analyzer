@@ -26,6 +26,7 @@ User decision (2026-07-10): skip it here, tracked as a real future improvement i
 import reflex as rx
 
 from finance_app.components.nav import side_nav
+from finance_app.components.skeleton import txn_skeleton
 from finance_app.state.transactions_state import (
     CategoryOption,
     ChipItem,
@@ -173,21 +174,26 @@ def transactions() -> rx.Component:
                 rx.el.div(TransactionsState.confirmation, class_name="toast", role="status"),
             ),
             rx.cond(
-                TransactionsState.has_transactions,
-                rx.fragment(
-                    rx.el.div(
-                        rx.foreach(TransactionsState.chip_items, _chip),
-                        class_name="chip-group chip--wrap",
-                        role="tablist",
-                        aria_label="Filter transactions",
+                TransactionsState.loaded,
+                rx.cond(
+                    TransactionsState.has_transactions,
+                    rx.fragment(
+                        rx.el.div(
+                            rx.foreach(TransactionsState.chip_items, _chip),
+                            class_name="chip-group chip--wrap",
+                            role="tablist",
+                            aria_label="Filter transactions",
+                        ),
+                        rx.el.ul(
+                            rx.foreach(TransactionsState.visible_rows, _row),
+                            class_name="txn-list",
+                            role="list",
+                        ),
                     ),
-                    rx.el.ul(
-                        rx.foreach(TransactionsState.visible_rows, _row),
-                        class_name="txn-list",
-                        role="list",
-                    ),
+                    _empty_state(),
                 ),
-                _empty_state(),
+                # Still loading → skeleton, never the "upload a statement" empty state.
+                txn_skeleton(),
             ),
             class_name="page--flow has-sidenav",
         ),
