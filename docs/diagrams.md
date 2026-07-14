@@ -1,6 +1,8 @@
 # AI-Powered Personal Finance Analyzer — Mermaid Diagrams
 
-Eight diagrams covering every major system dimension: architecture, user journey, data pipelines, the financial engine, the AI copilot, the database schema, the API surface, and the 3-day build plan.
+Ten diagrams covering every major system dimension: architecture, user journey, data pipelines, the financial engine, the AI copilot, the database schema, the API surface, the 3-day build plan, the proactive insights pipeline, and the architecture decision map.
+
+> Last updated: Epic 8 complete (edge cases, empty states, IDOR security, demo dry-run, one-command setup).
 
 ---
 
@@ -12,10 +14,10 @@ Layered monolith with ports-and-adapters at both external edges (statement parse
 graph TB
     subgraph UI["UI Layer — Reflex Pages + rx.State"]
         P1[auth.py<br/>Register / Login]
-        P2[upload.py<br/>Statement Upload]
+        P2[upload.py<br/>Statement Upload<br/>+ empty-state onboarding]
         P3[transactions.py<br/>Transaction Table]
         P4[dashboard.py<br/>Dashboard & Briefing]
-        P5[insights.py<br/>AI Insights]
+        P5[insights.py<br/>AI Insights<br/>watch + win bands]
         P6[copilot.py<br/>AI Copilot Chat]
     end
 
@@ -38,6 +40,10 @@ graph TB
             ENG1[safe_to_spend.py]
             ENG2[confidence_score.py]
             ENG3[commitments.py]
+            subgraph INS_ENG["insights/"]
+                ENG4[detectors.py\n8 detectors · watch + win]
+                ENG5[config.py · types.py]
+            end
         end
 
         subgraph NAR["Narrate — services/narrate/ ⚠ no math"]
@@ -49,11 +55,12 @@ graph TB
 
     subgraph DATA["Data Layer — SQLite via rx.Model / sqlmodel"]
         DB[(SQLite DB)]
-        DB --> T1[users]
+        DB --> T1[localuser<br/>reflex-local-auth]
         DB --> T2[uploaded_files]
         DB --> T3[transactions]
         DB --> T4[merchant_rules]
         DB --> T5[commitments]
+        DB --> T5B[commitment_suggestions]
         DB --> T6[score_events]
         DB --> T7[insights]
         DB --> T8[chat_messages]
@@ -108,8 +115,15 @@ flowchart LR
         S10([Copilot Chat\nQ&A · streaming · trace chips])
     end
 
-    subgraph E7_E8["Epics 7 & 8 — Insights"]
-        S11([AI Insights\n≥3 pattern detectors fire on demo data])
+    subgraph E7["Epic 7 — Proactive Insights"]
+        S11([AI Insights\n8 detectors · watch + win bands\nseverity tiers · seen/dismissed])
+    end
+
+    subgraph E8["Epic 8 — Hardening & Demo"]
+        S12([Edge-case honest refusals])
+        S13([Empty states onboarding])
+        S14([IDOR security tests])
+        S15([One-command setup\ndemo dry-run])
     end
 
     S1 --> S2 --> S3 --> S4 --> S5
@@ -117,13 +131,15 @@ flowchart LR
     S5 --> S8 --> S9
     S8 --> S10
     S8 --> S11
+    S11 --> S12
 
     style E1 fill:#e8f4f8,stroke:#2980b9
     style E2 fill:#eafaea,stroke:#27ae60
     style E3 fill:#fef9e7,stroke:#f39c12
     style E4_E5 fill:#fdf2f8,stroke:#8e44ad
     style E6 fill:#fdedec,stroke:#e74c3c
-    style E7_E8 fill:#f0f3f4,stroke:#566573
+    style E7 fill:#f0f3f4,stroke:#566573
+    style E8 fill:#f5f0ff,stroke:#7d3c98
 ```
 
 ---
@@ -275,11 +291,11 @@ sequenceDiagram
 
 ## 6. Database Entity Relationship Diagram
 
-All 8 tables. Every table except `users` carries a `user_id` foreign key — no cross-user data leakage (AD-4).
+9 tables (9th added in Story 5.6). Every table except `localuser` carries a `user_id` foreign key — no cross-user data leakage (AD-4). `localuser` is owned by reflex-local-auth.
 
 ```mermaid
 erDiagram
-    users {
+    localuser {
         int id PK
         string email
         string password_hash
@@ -290,15 +306,15 @@ erDiagram
         int id PK
         int user_id FK
         string filename
-        datetime upload_at
-        string parse_status
+        string status
+        datetime uploaded_at
     }
 
     transactions {
         int id PK
         int user_id FK
         int source_file_id FK
-        date date
+        string date
         string description_raw
         string merchant_normalized
         decimal amount
@@ -307,6 +323,8 @@ erDiagram
         string category
         string category_source
         float category_confidence
+        string reasoning
+        datetime created_at
     }
 
     merchant_rules {
@@ -315,6 +333,7 @@ erDiagram
         string pattern
         string category
         string source
+        datetime created_at
     }
 
     commitments {
@@ -324,6 +343,15 @@ erDiagram
         decimal amount
         int due_day
         string criticality
+        datetime created_at
+    }
+
+    commitment_suggestions {
+        int id PK
+        int user_id FK
+        string signature
+        string status
+        datetime created_at
     }
 
     score_events {
@@ -342,31 +370,36 @@ erDiagram
         int user_id FK
         string pattern_name
         string observation
-        json evidence
+        string evidence
         string explanation
-        json action_suggestions
-        float confidence
-        int data_months
-        bool seen
-        bool dismissed
+        string effect
+        string action_suggestion
+        string status
+        string severity
+        string tone
+        decimal metric_value
+        string dedup_key
+        datetime dismissed_at
+        datetime created_at
     }
 
     chat_messages {
         int id PK
         int user_id FK
         string role
-        text content
-        json trace_sources
+        string content
+        string trace_sources
         datetime timestamp
     }
 
-    users ||--o{ uploaded_files : "uploads"
-    users ||--o{ transactions : "owns"
-    users ||--o{ merchant_rules : "teaches"
-    users ||--o{ commitments : "tracks"
-    users ||--o{ score_events : "accrues"
-    users ||--o{ insights : "receives"
-    users ||--o{ chat_messages : "chats"
+    localuser ||--o{ uploaded_files : "uploads"
+    localuser ||--o{ transactions : "owns"
+    localuser ||--o{ merchant_rules : "teaches"
+    localuser ||--o{ commitments : "tracks"
+    localuser ||--o{ commitment_suggestions : "decides"
+    localuser ||--o{ score_events : "accrues"
+    localuser ||--o{ insights : "receives"
+    localuser ||--o{ chat_messages : "chats"
     uploaded_files ||--o{ transactions : "produces"
 ```
 
@@ -455,34 +488,46 @@ gantt
 
 ## 9. Proactive Insights — Detection Pipeline
 
-Five deterministic pandas detectors. Each emits an evidence pack; the narrate layer adds language. SEBI IA boundary enforced at every output.
+Eight deterministic detectors (no LLM). Each emits a structured InsightCandidate; the narrate layer adds O→E→E→A language. Insights are tagged with **tone** (watch vs win) and **severity** (critical / important / flexible). SEBI IA boundary enforced at every output.
 
 ```mermaid
 flowchart TD
-    TXN[(transactions table\nuser_id scoped)] --> PANDAS[pandas DataFrame\nloaded in service layer]
+    TXN[(transactions table\nuser_id scoped)] --> CTX[InsightContext\nassembled in service layer]
+    COMM[(commitments table)] --> CTX
 
-    PANDAS --> D1[PostPaydaySpike\ndetector]
-    PANDAS --> D2[DeathBySmallPurchases\ndetector]
-    PANDAS --> D3[ZombieSubscriptions\ndetector]
-    PANDAS --> D4[WeekendVsWeekdayPace\ndetector]
-    PANDAS --> D5[UpcomingCommitmentCollision\ndetector]
+    subgraph WATCH["watch detectors — patterns worth attention"]
+        D1[PostPaydaySpikeDetector]
+        D2[DeathBySmallPurchasesDetector]
+        D3[ZombieSubscriptionDetector]
+        D4[SubscriptionEndedDetector]
+        D5[WeekendWeekdayPaceDetector]
+        D6[UpcomingCommitmentCollisionDetector]
+    end
 
-    D1 & D2 & D3 & D4 & D5 --> EP["Evidence Pack per insight\npattern_name · observation\nevidence [{date, merchant, amount}]\nexplanation · action_suggestions\nconfidence · data_months"]
+    subgraph WIN["win detectors — positive momentum"]
+        D7[CommitmentsCoveredDetector]
+        D8[SpendingPaceImprovedDetector]
+    end
 
-    EP --> NAR["services/narrate/\nclaude-opus-4-8\nO → E → E → A shape"]
+    CTX --> D1 & D2 & D3 & D4 & D5 & D6
+    CTX --> D7 & D8
 
-    NAR --> INS[(insights table\nuser_id scoped)]
+    D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 --> CAND["InsightCandidate (structured)\npattern_name · observation · evidence\nexplanation · effect · action_suggestion\nseverity · tone · dedup_key · metric_value"]
 
-    INS --> UI["Insight cards\n(seen / dismissed lifecycle)"]
+    CAND --> DEDUP{dedup_key\nalready active?}
+    DEDUP -->|yes| DROP[Skip — resurface only\nif metric_value changed ≥15%]
+    DEDUP -->|no / resurface| NAR["services/narrate/\nclaude-opus-4-8 (insight_narrator)\nO → E → E → A prose"]
+
+    NAR --> INS[(insights table\nstatus=active\ntone · severity stored)]
+
+    INS --> UI["Insight cards\nwatch band · win band\nseen / dismissed lifecycle"]
 
     UI --> SEBI["⚠ SEBI IA boundary\n'you might consider' — never 'you should'\n'information, never advice'"]
 
     style SEBI fill:#fdedec,stroke:#e74c3c,stroke-width:2px
-    style D1 fill:#eafaea,stroke:#27ae60
-    style D2 fill:#eafaea,stroke:#27ae60
-    style D3 fill:#eafaea,stroke:#27ae60
-    style D4 fill:#eafaea,stroke:#27ae60
-    style D5 fill:#eafaea,stroke:#27ae60
+    style WATCH fill:#fff8e1,stroke:#f39c12
+    style WIN fill:#eafaea,stroke:#27ae60
+    style DROP fill:#f9f9f9,stroke:#aaa
 ```
 
 ---

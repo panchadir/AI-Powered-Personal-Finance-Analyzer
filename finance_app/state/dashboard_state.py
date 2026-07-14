@@ -216,7 +216,7 @@ class DashboardState(AuthState):
     buffer_dented: bool = False  # bills covered, but the emergency buffer is being eaten
 
     # --- Confidence chip + drill-in (Stories 5.1, 5.2) ---
-    # NOTE: the raw score is deliberately absent from this state. It never leaves the server.
+    confidence_score: int = 0
     confidence_label: str = "Watch this"
     confidence_variant: str = "red-amber"
     prediction_confidence: str = "Low"
@@ -368,7 +368,7 @@ class DashboardState(AuthState):
                     "Upload your payday date so I can calculate your daily safe-to-spend."
                 )
 
-        # Label only. The `score` int stays on the server (FR-5.5 / UX-DR2).
+        self.confidence_score = score
         self.confidence_label = confidence_label(score)
         self.confidence_variant = confidence_variant(score)
         self.prediction_confidence = evidence.prediction_confidence

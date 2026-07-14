@@ -44,12 +44,16 @@ def _confidence_chip() -> rx.Component:
     return rx.el.div(
         rx.el.span("Confidence", class_name="hero-conf-label"),
         rx.el.button(
-            DashboardState.confidence_label,
+            DashboardState.confidence_label
+            + " · "
+            + DashboardState.confidence_score.to_string(),
             on_click=DashboardState.toggle_drillin,
             class_name="conf-chip conf-chip--" + DashboardState.confidence_variant,
             aria_label="Confidence: "
             + DashboardState.confidence_label
-            + " — tap to see what changed it",
+            + " ("
+            + DashboardState.confidence_score.to_string()
+            + ") — tap to see what changed it",
             aria_expanded=DashboardState.drillin_open.to_string(),
             type="button",
         ),
