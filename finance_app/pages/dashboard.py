@@ -264,7 +264,11 @@ def _empty_state() -> rx.Component:
             class_name="btn btn--primary",
             type="button",
         ),
-        class_name="hero-card",
+        # hero-card--empty: this section's 3 children (step indicator, label, button) don't
+        # match .hero-card's 3-column primary/sep/secondary grid (see wds.css) — without this
+        # modifier, >=860px viewports force these into that grid and the label collapses into
+        # the 1px separator column, wrapping one character per line.
+        class_name="hero-card hero-card--empty",
     )
 
 

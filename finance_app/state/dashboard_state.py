@@ -186,7 +186,7 @@ def _pace_figure(points: list[MonthPoint]) -> go.Figure:
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=_INK, size=12),
         showlegend=False,
-        height=320,
+        height=380,  # matches _category_figure's height so the two chart cards align
         bargap=_PACE_BAR_GAP,  # slimmer bars — the chart supports, never shouts (UX-DR1)
         yaxis=dict(
             tickvals=tickvals,
