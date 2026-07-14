@@ -1,0 +1,1131 @@
+{
+  "phase": "baseline",
+  "user_id": 2,
+  "rows": 24,
+  "sentinel_overhead_ms": {
+    "n": 20,
+    "min": 1.12,
+    "p50": 1.34,
+    "max": 2.53,
+    "mean": 1.46
+  },
+  "results": [
+    {
+      "handler": "LoginState.handle_login",
+      "method": "socket.io /_event (real E2E)",
+      "note": "fresh unauthenticated socket per sample; bcrypt verify",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 248.9,
+        "p50": 392.7,
+        "p95": 650.4,
+        "max": 758.0,
+        "mean": 399.8,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "user_id=2 demo@example.com",
+        "cold_first_call_ms": 758.0,
+        "warm_p50": 386.3,
+        "warm_max": 450.6,
+        "first_delta_p50": 385.8
+      },
+      "samples": [
+        {
+          "ms": 757.9818670055829,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 751.4226110070013
+        },
+        {
+          "ms": 386.25583400425967,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 380.6572190078441
+        },
+        {
+          "ms": 450.63160501013044,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 447.4821290059481
+        },
+        {
+          "ms": 276.4797429990722,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 275.5704790033633
+        },
+        {
+          "ms": 276.09244600171223,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 274.5234220055863
+        },
+        {
+          "ms": 248.87841200688854,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 247.64048799988814
+        },
+        {
+          "ms": 399.0840210026363,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 390.92441799584776
+        },
+        {
+          "ms": 402.87766099208966,
+          "ok": true,
+          "evidence": "user_id=2 demo@example.com",
+          "deltas": 3,
+          "first_delta_ms": 400.42427799198776
+        }
+      ]
+    },
+    {
+      "handler": "AuthState.check_auth",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "returns None when authed; verified by ABSENCE of a _redirect event",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 4.1,
+        "p50": 4.3,
+        "p95": 6.4,
+        "max": 7.2,
+        "mean": 4.7,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+        "cold_first_call_ms": 7.2,
+        "warm_p50": 4.2,
+        "warm_max": 4.8,
+        "first_delta_p50": 4.2
+      },
+      "samples": [
+        {
+          "ms": 7.203436005511321,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 2,
+          "first_delta_ms": 5.84891700418666
+        },
+        {
+          "ms": 4.558917993563227,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.514488988206722
+        },
+        {
+          "ms": 4.139204989769496,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.070818002219312
+        },
+        {
+          "ms": 4.109151006559841,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.023550005513243
+        },
+        {
+          "ms": 4.285681003239006,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.249819001415744
+        },
+        {
+          "ms": 4.793201995198615,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.7286029875976965
+        },
+        {
+          "ms": 4.070107999723405,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.029206000268459
+        },
+        {
+          "ms": 4.214938002405688,
+          "ok": true,
+          "evidence": "no _redirect => session valid (user_for_token DB lookup succeeded)",
+          "deltas": 1,
+          "first_delta_ms": 4.155447997618467
+        }
+      ]
+    },
+    {
+      "handler": "RegisterState.handle_registration",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "throwaway perf-* user per sample; bcrypt HASH (cost factor)",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 268.9,
+        "p50": 329.0,
+        "p95": 351.3,
+        "max": 354.2,
+        "mean": 313.1,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "registered=true",
+        "cold_first_call_ms": 346.0,
+        "warm_p50": 328.9,
+        "warm_max": 354.2,
+        "first_delta_p50": 327.2
+      },
+      "samples": [
+        {
+          "ms": 345.96613100438844,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 344.04360300686676
+        },
+        {
+          "ms": 328.93488500849344,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 326.7081270023482
+        },
+        {
+          "ms": 354.17928399692755,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 351.8817229924025
+        },
+        {
+          "ms": 332.01642701169476,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 331.07368600030895
+        },
+        {
+          "ms": 329.06605799507815,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 327.7740249905037
+        },
+        {
+          "ms": 268.8555479981005,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 267.33815199986566
+        },
+        {
+          "ms": 273.62179999181535,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 272.44562399573624
+        },
+        {
+          "ms": 272.11760300269816,
+          "ok": true,
+          "evidence": "registered=true",
+          "deltas": 2,
+          "first_delta_ms": 271.34358599141706
+        }
+      ]
+    },
+    {
+      "handler": "LoginState.handle_forgot",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "targets a THROWAWAY user, never demo@example.com; bcrypt HASH",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 237.3,
+        "p50": 268.3,
+        "p95": 275.2,
+        "max": 276.7,
+        "mean": 262.2,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+        "cold_first_call_ms": 239.0,
+        "warm_p50": 268.3,
+        "warm_max": 276.7,
+        "first_delta_p50": 267.2
+      },
+      "samples": [
+        {
+          "ms": 238.98718098644167,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 237.32781498983968
+        },
+        {
+          "ms": 237.2650579927722,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 235.73036800371483
+        },
+        {
+          "ms": 276.68312499008607,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 272.890259991982
+        },
+        {
+          "ms": 266.3302649889374,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 265.4815529967891
+        },
+        {
+          "ms": 269.0184000093723,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 268.3928150072461
+        },
+        {
+          "ms": 272.40871501271613,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 271.68628900835756
+        },
+        {
+          "ms": 268.18870900024194,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 267.1574790001614
+        },
+        {
+          "ms": 268.34242200129665,
+          "ok": true,
+          "evidence": "notice=\"Password updated \\u2014 please log in with your new password.\"",
+          "deltas": 2,
+          "first_delta_ms": 267.19887100625783
+        }
+      ]
+    },
+    {
+      "handler": "DashboardState.load_dashboard",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "calls generate_briefing (LLM) on every invocation",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 3894.5,
+        "p50": 4576.5,
+        "p95": 4745.4,
+        "max": 4764.2,
+        "mean": 4411.7,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "safe_to_spend='\u20b90' briefing=yes(422ch)",
+        "cold_first_call_ms": 4576.5,
+        "warm_p50": 4329.3,
+        "warm_max": 4764.2,
+        "first_delta_p50": 37.6
+      },
+      "samples": [
+        {
+          "ms": 4576.536988999578,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b90' briefing=yes(422ch)",
+          "deltas": 4,
+          "first_delta_ms": 2.16200300201308
+        },
+        {
+          "ms": 4764.1965840011835,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b90' briefing=yes(419ch)",
+          "deltas": 3,
+          "first_delta_ms": 39.03066700149793
+        },
+        {
+          "ms": 3894.461695002974,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b90' briefing=yes(460ch)",
+          "deltas": 3,
+          "first_delta_ms": 37.593981993268244
+        }
+      ]
+    },
+    {
+      "handler": "TransactionsState.load_transactions",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 8.4,
+        "p50": 9.1,
+        "p95": 535.3,
+        "max": 818.0,
+        "mean": 110.3,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "24 rows",
+        "cold_first_call_ms": 818.0,
+        "warm_p50": 9.0,
+        "warm_max": 10.4,
+        "first_delta_p50": 7.5
+      },
+      "samples": [
+        {
+          "ms": 817.9554680100409,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 3,
+          "first_delta_ms": 2.8224130073795095
+        },
+        {
+          "ms": 10.442194994539022,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 9.390603998326696
+        },
+        {
+          "ms": 9.10671400197316,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 7.86644101026468
+        },
+        {
+          "ms": 10.374327990575694,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 9.077465991140343
+        },
+        {
+          "ms": 8.393649986828677,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 7.383827993180603
+        },
+        {
+          "ms": 8.46592299058102,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 7.583106998936273
+        },
+        {
+          "ms": 9.000846999697387,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 7.2063200059346855
+        },
+        {
+          "ms": 8.658278995426372,
+          "ok": true,
+          "evidence": "24 rows",
+          "deltas": 2,
+          "first_delta_ms": 7.469960008165799
+        }
+      ]
+    },
+    {
+      "handler": "InsightsState.load_insights",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "refresh_insights: LLM only for new/changed patterns",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 16.4,
+        "p50": 16.6,
+        "p95": 742.1,
+        "max": 822.7,
+        "mean": 285.2,
+        "verified": 3,
+        "pass": true,
+        "breach": "",
+        "evidence": "cards=0 wins=0 has_data=True",
+        "cold_first_call_ms": 822.7,
+        "warm_p50": 16.5,
+        "warm_max": 16.6,
+        "first_delta_p50": 14.9
+      },
+      "samples": [
+        {
+          "ms": 822.7027840039227,
+          "ok": true,
+          "evidence": "cards=0 wins=0 has_data=True",
+          "deltas": 3,
+          "first_delta_ms": 2.097228993079625
+        },
+        {
+          "ms": 16.422200002125464,
+          "ok": true,
+          "evidence": "cards=0 wins=0 has_data=True",
+          "deltas": 2,
+          "first_delta_ms": 14.91783199890051
+        },
+        {
+          "ms": 16.57907900516875,
+          "ok": true,
+          "evidence": "cards=0 wins=0 has_data=True",
+          "deltas": 2,
+          "first_delta_ms": 15.225041992380284
+        }
+      ]
+    },
+    {
+      "handler": "CommitmentsState.load_commitments_page",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 13.4,
+        "p50": 14.3,
+        "p95": 16.2,
+        "max": 16.4,
+        "mean": 14.7,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "2 commitments protecting='\u20b90'",
+        "cold_first_call_ms": 14.9,
+        "warm_p50": 14.3,
+        "warm_max": 16.4,
+        "first_delta_p50": 13.0
+      },
+      "samples": [
+        {
+          "ms": 14.93551500607282,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 13.277578007546254
+        },
+        {
+          "ms": 14.307206001831219,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 12.925372997415252
+        },
+        {
+          "ms": 16.395704995375127,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 14.809492000495084
+        },
+        {
+          "ms": 15.90523699996993,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 13.910773996030912
+        },
+        {
+          "ms": 14.3419499945594,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 12.772930989740416
+        },
+        {
+          "ms": 13.951191998785362,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 11.844948996440507
+        },
+        {
+          "ms": 13.388275998295285,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 12.037409003823996
+        },
+        {
+          "ms": 14.338395994855091,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 13.116483998601325
+        }
+      ]
+    },
+    {
+      "handler": "TransactionsState.set_filter",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 3.1,
+        "p50": 4.3,
+        "p95": 4.6,
+        "max": 4.7,
+        "mean": 4.2,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "filter=\"all\"",
+        "cold_first_call_ms": 4.6,
+        "warm_p50": 4.3,
+        "warm_max": 4.7,
+        "first_delta_p50": 2.5
+      },
+      "samples": [
+        {
+          "ms": 4.551022997475229,
+          "ok": true,
+          "evidence": "filter=\"all\"",
+          "deltas": 2,
+          "first_delta_ms": 3.415664003114216
+        },
+        {
+          "ms": 4.069014990818687,
+          "ok": true,
+          "evidence": "filter=\"essentials\"",
+          "deltas": 2,
+          "first_delta_ms": 2.491328996256925
+        },
+        {
+          "ms": 4.2977080011041835,
+          "ok": true,
+          "evidence": "filter=\"discretionary\"",
+          "deltas": 2,
+          "first_delta_ms": 2.5357520062243566
+        },
+        {
+          "ms": 4.694108996773139,
+          "ok": true,
+          "evidence": "filter=\"income\"",
+          "deltas": 2,
+          "first_delta_ms": 2.5980929931392893
+        },
+        {
+          "ms": 4.06556400412228,
+          "ok": true,
+          "evidence": "filter=\"all\"",
+          "deltas": 2,
+          "first_delta_ms": 2.4664450029376894
+        },
+        {
+          "ms": 4.328269002144225,
+          "ok": true,
+          "evidence": "filter=\"essentials\"",
+          "deltas": 2,
+          "first_delta_ms": 2.2039860050426796
+        },
+        {
+          "ms": 3.0890990019543096,
+          "ok": true,
+          "evidence": "filter=\"discretionary\"",
+          "deltas": 2,
+          "first_delta_ms": 2.010094001889229
+        },
+        {
+          "ms": 4.460540003492497,
+          "ok": true,
+          "evidence": "filter=\"income\"",
+          "deltas": 2,
+          "first_delta_ms": 2.38737600739114
+        }
+      ]
+    },
+    {
+      "handler": "TransactionsState.toggle_row",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 4.2,
+        "p50": 4.8,
+        "p95": 5.3,
+        "max": 5.3,
+        "mean": 4.8,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "open_row=72864",
+        "cold_first_call_ms": 4.4,
+        "warm_p50": 4.9,
+        "warm_max": 5.3,
+        "first_delta_p50": 3.1
+      },
+      "samples": [
+        {
+          "ms": 4.379878999316134,
+          "ok": true,
+          "evidence": "open_row=72864",
+          "deltas": 2,
+          "first_delta_ms": 3.0274989985628054
+        },
+        {
+          "ms": 5.0395379948895425,
+          "ok": true,
+          "evidence": "open_row=72865",
+          "deltas": 2,
+          "first_delta_ms": 3.1259079987648875
+        },
+        {
+          "ms": 4.943481006193906,
+          "ok": true,
+          "evidence": "open_row=72866",
+          "deltas": 2,
+          "first_delta_ms": 3.1670560128986835
+        },
+        {
+          "ms": 4.7343799960799515,
+          "ok": true,
+          "evidence": "open_row=72867",
+          "deltas": 2,
+          "first_delta_ms": 2.951812988612801
+        },
+        {
+          "ms": 4.4790379906771705,
+          "ok": true,
+          "evidence": "open_row=72868",
+          "deltas": 2,
+          "first_delta_ms": 2.689966990146786
+        },
+        {
+          "ms": 5.3347440116340294,
+          "ok": true,
+          "evidence": "open_row=72869",
+          "deltas": 2,
+          "first_delta_ms": 3.5309450031490996
+        },
+        {
+          "ms": 5.330025989678688,
+          "ok": true,
+          "evidence": "open_row=72870",
+          "deltas": 2,
+          "first_delta_ms": 3.2901419908739626
+        },
+        {
+          "ms": 4.20594000024721,
+          "ok": true,
+          "evidence": "open_row=72871",
+          "deltas": 2,
+          "first_delta_ms": 2.569060990936123
+        }
+      ]
+    },
+    {
+      "handler": "TransactionsState.save_correction",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "INSERT merchant_rule + optional re-apply UPDATE across all matching txns",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 17.8,
+        "p50": 21.7,
+        "p95": 47.5,
+        "max": 54.4,
+        "mean": 26.7,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "confirm=\"Got it \\u2014 I'll call ACME Corp Salary 'Groceries' from now on.\"",
+        "cold_first_call_ms": 54.4,
+        "warm_p50": 20.3,
+        "warm_max": 34.6,
+        "first_delta_p50": 19.5
+      },
+      "samples": [
+        {
+          "ms": 54.41509300726466,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call ACME Corp Salary 'Groceries' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 52.18845100898761
+        },
+        {
+          "ms": 23.48699199501425,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call Zomato 'Travel & Transport' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 21.436638999148272
+        },
+        {
+          "ms": 19.863570007146336,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call BEST Bus Pass 'Food & Dining' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 17.82395801274106
+        },
+        {
+          "ms": 20.330758998170495,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call UPI-8847213 'Shopping' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 17.958034994080663
+        },
+        {
+          "ms": 19.72207699145656,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call Car Loan EMI 'Groceries' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 17.90498199989088
+        },
+        {
+          "ms": 17.789416000596248,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call Netflix 'Travel & Transport' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 16.534818001673557
+        },
+        {
+          "ms": 34.63405100046657,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call Swiggy 'Food & Dining' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 33.10030099237338
+        },
+        {
+          "ms": 22.978082997724414,
+          "ok": true,
+          "evidence": "confirm=\"Got it \\u2014 I'll call BigBasket 'Shopping' from now on.\"",
+          "deltas": 2,
+          "first_delta_ms": 21.037037993664853
+        }
+      ]
+    },
+    {
+      "handler": "InsightsState.dismiss",
+      "method": "socket.io /_event (real E2E)",
+      "note": "",
+      "error": "user_id=2 has 0 active insights -> NOT DRIVEABLE without fabricating data",
+      "stats": {
+        "n": 0,
+        "verified": 0
+      },
+      "samples": []
+    },
+    {
+      "handler": "CommitmentsState.save_commitment",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "INSERT + _refresh (compute_dashboard + detect_commitment_candidates)",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 21.6,
+        "p50": 22.9,
+        "p95": 42.1,
+        "max": 50.9,
+        "mean": 26.8,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "3 commitments protecting='\u20b90'",
+        "cold_first_call_ms": 50.9,
+        "warm_p50": 22.9,
+        "warm_max": 25.7,
+        "first_delta_p50": 21.6
+      },
+      "samples": [
+        {
+          "ms": 50.93923199456185,
+          "ok": true,
+          "evidence": "3 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 50.053749000653625
+        },
+        {
+          "ms": 25.67324400297366,
+          "ok": true,
+          "evidence": "4 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 23.84574100142345
+        },
+        {
+          "ms": 21.608201001072302,
+          "ok": true,
+          "evidence": "5 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 20.380385001772083
+        },
+        {
+          "ms": 24.917942006140947,
+          "ok": true,
+          "evidence": "6 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 23.668135007028468
+        },
+        {
+          "ms": 22.77906599920243,
+          "ok": true,
+          "evidence": "7 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 21.6814820014406
+        },
+        {
+          "ms": 22.484579007141292,
+          "ok": true,
+          "evidence": "8 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 21.36003899795469
+        },
+        {
+          "ms": 22.907979000592604,
+          "ok": true,
+          "evidence": "9 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 21.526630996959284
+        },
+        {
+          "ms": 22.850038003525697,
+          "ok": true,
+          "evidence": "10 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 21.454722009366378
+        }
+      ]
+    },
+    {
+      "handler": "CommitmentsState.confirm_suggestion",
+      "method": "socket.io /_event (real E2E)",
+      "note": "",
+      "error": "detect_commitment_candidates() returns 0 candidates for user_id=2 -> NOT DRIVEABLE without fabricating data",
+      "stats": {
+        "n": 0,
+        "verified": 0
+      },
+      "samples": []
+    },
+    {
+      "handler": "CommitmentsState.confirm_delete",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "DELETE + _refresh; also cleans up the PERF-* rows save_commitment created",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 23.5,
+        "p50": 28.6,
+        "p95": 55.6,
+        "max": 55.9,
+        "mean": 34.4,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "9 commitments protecting='\u20b90'",
+        "cold_first_call_ms": 55.0,
+        "warm_p50": 28.2,
+        "warm_max": 55.9,
+        "first_delta_p50": 27.2
+      },
+      "samples": [
+        {
+          "ms": 55.02610000257846,
+          "ok": true,
+          "evidence": "9 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 53.69540999527089
+        },
+        {
+          "ms": 28.219678992172703,
+          "ok": true,
+          "evidence": "8 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 27.689244991051964
+        },
+        {
+          "ms": 55.89278999832459,
+          "ok": true,
+          "evidence": "7 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 54.12898899521679
+        },
+        {
+          "ms": 23.464347003027797,
+          "ok": true,
+          "evidence": "6 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 21.51756899547763
+        },
+        {
+          "ms": 30.066614010138437,
+          "ok": true,
+          "evidence": "5 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 28.551105002406985
+        },
+        {
+          "ms": 27.140142003190704,
+          "ok": true,
+          "evidence": "4 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 25.909192001563497
+        },
+        {
+          "ms": 28.998951995163225,
+          "ok": true,
+          "evidence": "3 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 26.731260993983597
+        },
+        {
+          "ms": 26.717593995272182,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 25.627422000980005
+        }
+      ]
+    },
+    {
+      "handler": "CopilotState.load_history",
+      "method": "socket.io /_event (real E2E)",
+      "note": "fresh authenticated socket per sample: `_history_loaded` makes repeat calls on one session a no-op",
+      "error": "",
+      "stats": {
+        "n": 8,
+        "min": 10.8,
+        "p50": 14.8,
+        "p95": 32.3,
+        "max": 34.9,
+        "mean": 18.0,
+        "verified": 8,
+        "pass": true,
+        "breach": "",
+        "evidence": "0 messages",
+        "cold_first_call_ms": 12.8,
+        "warm_p50": 15.6,
+        "warm_max": 34.9,
+        "first_delta_p50": 13.0
+      },
+      "samples": [
+        {
+          "ms": 12.839544011512771,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 11.709816011716612
+        },
+        {
+          "ms": 15.618136996636167,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 14.373343001352623
+        },
+        {
+          "ms": 34.86872999928892,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 32.82090999709908
+        },
+        {
+          "ms": 16.934818995650858,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 15.131488995393738
+        },
+        {
+          "ms": 27.452388996607624,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 24.01479698892217
+        },
+        {
+          "ms": 10.781934994156472,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 9.535588003927842
+        },
+        {
+          "ms": 14.05439799418673,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 11.396446992876008
+        },
+        {
+          "ms": 11.500027001602575,
+          "ok": true,
+          "evidence": "0 messages",
+          "deltas": 2,
+          "first_delta_ms": 10.59248999808915
+        }
+      ]
+    },
+    {
+      "handler": "CopilotState.send_message",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "REAL streaming LLM call with agentic tool loop over CopilotData",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 7346.9,
+        "p50": 8056.1,
+        "p95": 11751.0,
+        "max": 12161.6,
+        "mean": 9188.2,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "2 msgs, streamed, reply=\"I'll check your current Safe-to-Spend figure for you.He\"",
+        "cold_first_call_ms": 7346.9,
+        "warm_p50": 10108.9,
+        "warm_max": 12161.6,
+        "first_delta_p50": 4.7
+      },
+      "samples": [
+        {
+          "ms": 7346.85440499743,
+          "ok": true,
+          "evidence": "2 msgs, streamed, reply=\"I'll check your current Safe-to-Spend figure for you.He\"",
+          "deltas": 16,
+          "first_delta_ms": 4.744723002659157
+        },
+        {
+          "ms": 8056.146607006667,
+          "ok": true,
+          "evidence": "4 msgs, streamed, reply='Let me pull up your spending breakdown by category.Here'",
+          "deltas": 16,
+          "first_delta_ms": 3.0681480129715055
+        },
+        {
+          "ms": 12161.568444003933,
+          "ok": true,
+          "evidence": "6 msgs, streamed, reply='Let me look at a few things to give you an honest pictu'",
+          "deltas": 23,
+          "first_delta_ms": 5.459862994030118
+        }
+      ]
+    }
+  ]
+}

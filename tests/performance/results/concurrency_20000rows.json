@@ -1,0 +1,76 @@
+{
+  "phase": "concurrency",
+  "rows": 20000,
+  "no_llm_event_loop_test": {
+    "handler": "CommitmentsState.load_commitments_page (no LLM, pure sync DB)",
+    "serial_p50": 1322.2,
+    "serial_ms": [
+      1106.3,
+      1199.8,
+      1322.2,
+      1461.3,
+      1695.8
+    ],
+    "concurrent_n": 10,
+    "concurrent_ms": [
+      13034.9,
+      13042.2,
+      13042.2,
+      13042.3,
+      13042.4,
+      13042.4,
+      13042.4,
+      13042.5,
+      13042.5,
+      13042.6
+    ],
+    "concurrent_p50": 13042.4,
+    "concurrent_max": 13042.6,
+    "wall_ms": 13043.3,
+    "degradation_x": 9.86,
+    "verified": 10
+  },
+  "serial_load_dashboard_ms": [
+    5075.6,
+    5501.4,
+    5903.5,
+    6368.3,
+    8599.3
+  ],
+  "concurrent_load_dashboard": {
+    "n": 10,
+    "ms": [
+      46476.3,
+      46676.3,
+      46891.9,
+      46892.6,
+      46893.3,
+      47049.2,
+      47186.5,
+      47187.6,
+      47374.3,
+      47619.6
+    ],
+    "p50": 46971.2,
+    "max": 47619.6,
+    "wall_ms": 47620.4,
+    "verified": 10,
+    "serial_p50": 5903.5,
+    "degradation_x": 7.96
+  },
+  "under_llm_load": {
+    "send_message_ms": 11840.9,
+    "send_message_verified": true,
+    "evidence": "14 msgs, streamed, reply='Let me pull both your full category breakdown and your '",
+    "load_dashboard_ms": [
+      14907.3,
+      14962.6,
+      15584.0,
+      15849.4,
+      16231.5,
+      17447.8
+    ],
+    "load_dashboard_p50": 15716.7,
+    "load_dashboard_max": 17447.8
+  }
+}
