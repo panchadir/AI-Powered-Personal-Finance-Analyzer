@@ -81,9 +81,14 @@ class TimelineView:
 
 
 #: A calm, evidence-not-headline palette for the donut (UX-DR1: charts support, never shout).
+#: One entry per category in ``services/categorize/schema.py::CATEGORIES`` (19) so two slices
+#: never silently share a colour when a statement uses most of the taxonomy.
 _CHART_COLORS = (
     "#4f46e5", "#0ea5e9", "#14b8a6", "#f59e0b",
     "#ec4899", "#8b5cf6", "#10b981", "#64748b",
+    "#dc2626", "#0891b2", "#65a30d", "#c026d3",
+    "#ea580c", "#0284c7", "#059669", "#a16207",
+    "#7c3aed", "#db2777", "#4d7c0f",
 )
 _INK = "#334155"
 
@@ -121,8 +126,11 @@ def _empty_figure() -> go.Figure:
 def _category_figure(slices: list[CategorySlice]) -> go.Figure:
     """Donut of debit spend by category. Every rupee shown is ``formatINR``'d (NFR-7).
 
-    Slice labels carry the category name only; the exact amount rides in the hover via
-    ``formatINR`` — a raw ``125000.0`` on a label would fail acceptance (Story 5.4 AC).
+    The category name lives only in the legend and the hover tooltip; the exact amount rides
+    in the hover via ``formatINR`` — a raw ``125000.0`` on a label would fail acceptance
+    (Story 5.4 AC). Plotly's auto-placed outside slice labels were previously turned on
+    *together* with the legend, so with 8+ categories the two collided into an unreadable
+    tangle of overlapping text — the legend alone is enough to identify every slice.
     """
     fig = go.Figure(
         go.Pie(
@@ -131,18 +139,21 @@ def _category_figure(slices: list[CategorySlice]) -> go.Figure:
             text=[formatINR(s.total) for s in slices],
             hole=0.58,
             sort=False,  # keep the analytics' largest-first order → stable colour mapping
-            marker=dict(colors=list(_CHART_COLORS)),
-            textinfo="label",
+            marker=dict(colors=list(_CHART_COLORS), line=dict(color="#ffffff", width=1)),
+            textinfo="none",
             hovertemplate="%{label}<br>%{text} · %{percent}<extra></extra>",
         )
     )
     fig.update_layout(
         showlegend=True,
-        legend=dict(orientation="h", yanchor="top", y=-0.05, x=0.5, xanchor="center"),
+        legend=dict(
+            orientation="h", yanchor="top", y=-0.08, x=0.5, xanchor="center",
+            font=dict(size=11), itemwidth=60, tracegroupgap=4,
+        ),
         margin=dict(l=8, r=8, t=8, b=8),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=_INK, size=12),
-        height=320,
+        height=380,
     )
     return fig
 
