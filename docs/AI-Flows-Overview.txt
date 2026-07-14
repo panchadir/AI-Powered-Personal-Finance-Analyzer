@@ -1,0 +1,160 @@
+===============================================================================
+ HOW THE APP USES AI - SIMPLE OVERVIEW
+===============================================================================
+
+ The app uses an AI model (called Claude) in 4 places. This note explains how
+ each one works - simply, but with just enough of the "how" so it makes sense.
+ No code, no jargon dumps.
+
+ A few words used below, explained once:
+   - AI model    = Claude, the AI that reads/writes text.
+   - Rules engine= a small built-in program that matches keywords (no AI).
+   - Database    = where your data is stored (transactions, insights, chats...).
+   - Tools       = small helpers that FETCH your data (read-only: look, not change).
+
+ THE GOLDEN RULE:
+   The app's own code does all the money MATH and all the pattern-FINDING.
+   The AI model only SORTS things and WRITES friendly text. It never invents
+   your numbers.
+
+
+===============================================================================
+ 1. SORTING TRANSACTIONS  (when you upload a statement)
+===============================================================================
+
+ WHEN: you upload your bank statement.
+
+ HOW IT WORKS:
+   1. The rules engine checks each transaction against a built-in keyword list
+      (Swiggy -> Food & Dining, Netflix -> Entertainment, etc.), plus any
+      corrections you've taught it before. This step uses NO AI.
+   2. Anything it recognises is labelled instantly. The few it doesn't
+      recognise are marked "Uncategorized".
+   3. All the uncategorized ones are bundled together and sent in ONE request
+      to the AI model, along with the fixed list of allowed categories.
+   4. The AI picks a category for each and sends them back. Everything is saved
+      to the database.
+
+ WHAT IS SENT TO THE AI:
+   Only the DESCRIPTION text of the unknown transactions - not the amounts,
+   dates, or balances.
+
+ GOOD TO KNOW:
+   If the rules engine recognises everything, the AI is never called. And the
+   AI can only choose from the fixed category list, so it can't invent a
+   strange category.
+
+
+===============================================================================
+ 2. THE DASHBOARD SUMMARY  (when you open your Dashboard)
+===============================================================================
+
+ WHEN: you open the Dashboard.
+
+ HOW IT WORKS:
+   1. The app calculates your figures first - safe-to-spend, money reserved for
+      bills, and so on. This math is done by the app, not the AI.
+   2. It puts those finished numbers into a short "facts" list and sends it to
+      the AI model, asking for a calm 2-3 sentence summary.
+   3. The AI writes the summary using ONLY those numbers and sends the text
+      back. It appears at the top of your Dashboard.
+
+ WHAT IS SENT TO THE AI:
+   Only the already-calculated figures - and the AI is told it may not change
+   or add any number.
+
+ GOOD TO KNOW:
+   This runs every time you open the Dashboard. If the AI is turned off (or has
+   no key), the app shows a simple built-in summary instead, so the page is
+   never blank.
+
+
+===============================================================================
+ 3. SPENDING INSIGHTS  (when you open the Insights page)
+===============================================================================
+
+ WHEN: you open the Insights page.
+ (This one is the most misunderstood - read carefully.)
+
+ HOW IT WORKS:
+   1. The app's own detector logic scans your transactions and commitments and
+      FINDS the patterns - e.g. "spending spiked after payday", "a forgotten
+      subscription", "a big bill clashes with your balance". *** This is done by
+      the app, NOT by the AI. ***
+   2. For each pattern it found, the app sends just that pattern's facts to the
+      AI model, asking it to write a short, friendly note about it.
+   3. The AI writes the note and it is SAVED in the database.
+   4. Next time you visit, saved notes are reused. The AI is only asked again
+      for a brand-new pattern, or one whose numbers changed noticeably.
+
+ WHAT IS SENT TO THE AI:
+   Only the pattern's facts (what was found and the evidence) - NOT your raw
+   transaction list.
+
+ GOOD TO KNOW:
+   The AI does not decide what the insights are or work out any number. It only
+   writes up findings the app already made. Think of the app as the detective
+   and the AI as the writer.
+
+
+===============================================================================
+ 4. THE CHAT ASSISTANT / COPILOT  (when you ask a question)
+===============================================================================
+
+ WHEN: you type a question, e.g. "Can I afford Rs 5,000 this weekend?"
+
+ HOW IT WORKS:
+   1. The app builds the message to send: your earlier questions and answers,
+      then your new question - plus its built-in instructions and a set of
+      read-only tools.
+   2. It sends this to the AI model. The AI may reply, "I need real data - run
+      these tools."
+   3. The app runs those tools, which FETCH your real figures from the database
+      (they can only read your data, never change it), and sends the results
+      back to the AI.
+   4. The AI writes the final answer using those real numbers. It appears
+      word-by-word as it types, with small "Based on:" tags showing which data
+      it used.
+   5. The question and answer are saved to the database.
+
+ ABOUT MEMORY:
+   The AI has no memory of its own. So every time you ask something, the app
+   re-sends the WHOLE conversation so far, plus the new question. That is how it
+   "remembers" - the app keeps the memory, not the AI.
+
+ YOUR FIRST QUESTION:
+   The first time, there's no earlier conversation - so only your one question
+   is sent. But the AI is never clueless: the app ALWAYS sends its built-in
+   instructions and the data tools. From the second question on, the earlier
+   chat is added.
+
+ GOOD TO KNOW:
+   Because it looks up real data instead of guessing, the AI cannot make up your
+   figures. One question may take two quick trips to the AI: one to decide which
+   data to fetch, and one to write the answer.
+
+
+===============================================================================
+ QUICK SUMMARY
+===============================================================================
+
+   PLACE                    WHAT THE AI DOES              WHEN AI IS USED
+   ----------------------   ---------------------------   -------------------
+   1. Upload statement      labels the few unknown         only if some are
+                            transactions                    unknown
+   2. Dashboard summary     writes a summary of your        every time you
+                            calculated numbers               open it
+   3. Insights              writes up patterns the APP      only for new or
+                            already found                    changed patterns
+   4. Chat (Copilot)        answers using your real,        every question
+                            looked-up data
+
+   REMEMBER:
+     - The app does the MATH and FINDS the patterns.
+     - The AI only SORTS and WRITES.
+     - For chat, the AI looks up real data instead of guessing.
+     - Your numbers are always real, never invented.
+
+===============================================================================
+ END
+===============================================================================

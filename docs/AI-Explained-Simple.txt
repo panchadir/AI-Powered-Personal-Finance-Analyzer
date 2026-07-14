@@ -1,0 +1,190 @@
+===============================================================================
+ HOW THIS APP USES AI - EXPLAINED SIMPLY
+===============================================================================
+
+ This app uses an AI (Claude) in 4 places. This note explains each one in plain
+ English, so anyone can understand it - no technical background needed.
+
+
+-------------------------------------------------------------------------------
+ THE ONE THING TO REMEMBER FIRST
+-------------------------------------------------------------------------------
+
+ The app does ALL of your money math itself, like a calculator. The AI NEVER
+ makes up or calculates your numbers.
+
+ The AI only helps in two simple ways:
+     1. SORTING   - putting a label on things (like filing receipts).
+     2. EXPLAINING - writing your already-calculated numbers into friendly,
+                     easy-to-read sentences.
+
+ So the numbers you see are always the real, calculated numbers. The AI just
+ helps organise and describe them.
+
+
+===============================================================================
+ THE 4 PLACES THE AI IS USED
+===============================================================================
+
+
+-------------------------------------------------------------------------------
+ 1. SORTING YOUR TRANSACTIONS   (when you upload a bank statement)
+-------------------------------------------------------------------------------
+
+ WHAT YOU DO:
+     You upload your bank statement.
+
+ WHAT HAPPENS:
+     The app first sorts your transactions using a simple built-in list of
+     well-known names. For example, it already knows:
+         "Swiggy" or "Zomato"  -> Food & Dining
+         "Netflix"             -> Entertainment
+         "HDFC EMI"            -> Loan Repayment
+     Most transactions get sorted instantly this way, with NO AI needed.
+
+     Only the FEW leftover ones it doesn't recognise are shown to the AI, which
+     reads the name and suggests the right category.
+
+ SIMPLE ANALOGY:
+     Like sorting a pile of receipts. The obvious ones you file yourself in
+     seconds. Only the confusing few do you hand to a knowledgeable assistant
+     and ask, "which folder does this go in?"
+
+ DOES IT ALWAYS USE AI?
+     No. If the app recognises every transaction on its own, the AI is not
+     used at all. It's only called for the unknown leftovers - and even then,
+     all of them are sent together in ONE quick request (to keep it cheap).
+
+
+-------------------------------------------------------------------------------
+ 2. THE MORNING SUMMARY   (when you open your Dashboard)
+-------------------------------------------------------------------------------
+
+ WHAT YOU DO:
+     You open your Dashboard.
+
+ WHAT HAPPENS:
+     The app calculates your figures first - how much is safe to spend, what's
+     set aside for bills, and so on. Then it hands those finished numbers to the
+     AI and asks it to write a short, calm 2-3 sentence summary.
+
+     Example the AI might write:
+         "You have Rs 2,840 safe to spend today, after we set aside Rs 22,200
+          for the bills you've committed to. This is based on your statement up
+          to 30 Jun 2026."
+
+     Every number in that sentence is copied from the app's own calculation -
+     the AI is not allowed to change or invent any figure.
+
+ SIMPLE ANALOGY:
+     Like a helpful friend glancing at your finished bank summary and saying it
+     back to you in a warm, easy sentence - instead of you reading a wall of
+     numbers.
+
+ DOES IT ALWAYS USE AI?
+     Yes - each time you open the Dashboard, it writes a fresh summary.
+     (If the AI is switched off, the app shows a plain built-in summary instead,
+     so the page is never blank.)
+
+
+-------------------------------------------------------------------------------
+ 3. YOUR SPENDING INSIGHTS   (when you open the Insights page)
+-------------------------------------------------------------------------------
+
+ WHAT YOU DO:
+     You open the Insights page.
+
+ WHAT HAPPENS  (this one is often misunderstood):
+     The app itself - NOT the AI - studies your spending and FINDS the patterns.
+     For example, it detects things like:
+         - your spending spiked right after payday
+         - a subscription you seem to have forgotten about
+         - lots of small purchases adding up
+         - a big bill coming up that clashes with your balance
+
+     Finding these patterns is done by the app's own logic. The AI is NOT
+     involved in figuring them out.
+
+     THEN, once the app has found a pattern, it asks the AI to write it up as a
+     friendly, easy-to-read note (what we noticed, the evidence, why it matters,
+     and a gentle suggestion).
+
+ SIMPLE ANALOGY:
+     The app is the detective who finds the clues. The AI is the writer who
+     turns the detective's findings into a clear, readable story. The AI never
+     does the detective work - it only writes up what was already found.
+
+ DOES IT ALWAYS USE AI?
+     No. Once a note is written, it is SAVED. The AI is only asked again when a
+     brand-new pattern appears, or an existing one's numbers change noticeably
+     (for example, after you upload a new statement). Nothing new? No AI call -
+     it just reuses the saved note.
+
+
+-------------------------------------------------------------------------------
+ 4. THE CHAT ASSISTANT (COPILOT)   (when you ask a question)
+-------------------------------------------------------------------------------
+
+ WHAT YOU DO:
+     You type a question, like "Can I afford Rs 5,000 this weekend?"
+
+ WHAT HAPPENS:
+     The AI answers you - but it is not allowed to guess your numbers. When it
+     needs a figure, it looks it up from your real data first (safe, read-only
+     look-ups the app provides), and only then answers. The reply appears
+     word-by-word as it types.
+
+     It also shows little "Based on:" tags so you can see exactly which of your
+     real data it used.
+
+ REMEMBERING THE CONVERSATION:
+     The AI has no memory of its own. So how does it follow the conversation?
+     Each time you ask something, the app quietly re-sends the WHOLE chat so far
+     (all your earlier questions and its earlier answers) along with your new
+     question. That's how it "remembers" - the app keeps the memory for it.
+
+ YOUR VERY FIRST QUESTION:
+     On your first question there's no earlier chat to include - so it just
+     sends that one question. But it is never clueless: the app always sends its
+     built-in instructions (its personality and honesty rules) and gives it
+     access to your data look-up tools. From the second question onward, the
+     earlier conversation is added on.
+
+ SIMPLE ANALOGY:
+     Like texting an assistant who forgets everything between messages. To keep
+     them up to speed, you paste the whole conversation each time before your
+     new question. They can also look things up in your file cabinet (but only
+     READ it, never change it) before replying.
+
+ DOES IT ALWAYS USE AI?
+     Yes - every question you ask goes to the AI. For one question it may make
+     two quick trips: one to decide what data to look up, and one to write the
+     final answer using that data.
+
+
+===============================================================================
+ QUICK SUMMARY
+===============================================================================
+
+   PLACE                     WHAT THE AI DOES                 USES AI WHEN
+   -----------------------   ------------------------------   ------------------
+   1. Uploading statement    labels the few unknown           only if some
+                             transactions                      are unknown
+
+   2. Dashboard summary      writes a friendly summary of      every time you
+                             your calculated numbers            open it
+
+   3. Insights               writes up patterns the APP        only for new or
+                             already found (AI does not          changed patterns
+                             find them)
+
+   4. Chat (Copilot)         answers your questions using       every question
+                             your real looked-up data
+
+   THE GOLDEN RULE:
+     Your money numbers are always calculated by the app, never by the AI.
+     The AI only sorts things and writes friendly explanations.
+
+===============================================================================
+ END
+===============================================================================

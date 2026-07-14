@@ -1,0 +1,323 @@
+===============================================================================
+ LLM (CLAUDE) FLOWS - WHERE AND HOW THE APP CALLS THE MODEL
+===============================================================================
+
+ Reference notes for every place the app calls the Anthropic (Claude) API:
+ what triggers it, the full path from start to end, what is sent, and how it
+ behaves when the API key is missing.
+
+-------------------------------------------------------------------------------
+ GOVERNING PRINCIPLE (AD-1)
+-------------------------------------------------------------------------------
+
+ The deterministic engine computes every NUMBER. The LLM only turns numbers
+ into LANGUAGE (or picks a label). No financial figure is ever invented by the
+ model.
+
+   * All LLM calls live in only two packages: services/categorize/ and
+     services/narrate/.
+   * The money engine (services/engine/) makes ZERO LLM calls.
+   * Model IDs are centralised in services/narrate/config.py - never hardcoded
+     at the call sites.
+   * The API key comes from the ANTHROPIC_API_KEY environment variable (loaded
+     from .env). When it is missing, the narration flows fall back to plain
+     deterministic text instead of crashing.
+
+ THE FOUR FLOWS AT A GLANCE
+ --------------------------
+
+   1. Transaction Categorization
+        Model job : classify unlabelled rows
+        Model     : claude-haiku-4-5
+        Calls     : 1 batch  (only if some rows are "Uncategorized")
+        When      : on statement upload
+
+   2. Dashboard Briefing
+        Model job : narrate the engine's figures
+        Model     : claude-opus-4-8
+        Calls     : 1 per Dashboard load
+        When      : every Dashboard load
+
+   3. Insights Narration
+        Model job : narrate an already-detected pattern
+        Model     : claude-opus-4-8
+        Calls     : 1 per NEW or CHANGED insight
+        When      : Insights page load
+
+   4. Copilot Chat
+        Model job : answer questions using read-only tools
+        Model     : claude-opus-4-8
+        Calls     : up to 2 (tool round-trip)
+        When      : per chat message
+
+
+===============================================================================
+ FLOW 1 - TRANSACTION CATEGORIZATION  (rules first, then LLM)
+===============================================================================
+
+ TRIGGER: the user uploads a bank statement (CSV/PDF) on the Upload page.
+
+ Two tiers. Deterministic rules run first; only what they leave "Uncategorized"
+ is sent to Claude.
+
+ START -> END
+ ------------
+
+   Upload statement
+    |
+    +- finance_app/state/upload_state.py
+         |
+         +- line 246  categorize_rules(transactions, user_rules)   [TIER-1, no LLM]
+         |     services/categorize/rules.py
+         |       - RULES registry (line 40): swiggy -> Food & Dining, etc.
+         |       - user "Teach Me" rules are checked BEFORE the built-in rules
+         |       - unmatched DEBIT  -> category = "Uncategorized"  (goes to Tier-2)
+         |       - unmatched CREDIT -> "Transfer In"               (skips Tier-2)
+         |
+         +- line 258  _categorizer.categorize(rows)                [TIER-2, Claude]
+               services/categorize/llm_categorizer.py
+                 - line 116  keep ONLY rows where category == "Uncategorized"
+                 - line 118  if none uncategorized -> return  (NO Claude call)
+                 - line 89   build payload = [{index, description}, ...]
+                             (only the description text - no amounts/dates/balances)
+                 - line 122  client.messages.parse(...)   <=== CLAUDE CALL (Haiku)
+                 - line 144  map results back by index; category is a fixed enum
+
+ KEY FACTS
+ ---------
+   * ONE batched call for all uncategorised rows in an upload (cost control),
+     not one call per row.
+   * Structured output: the "category" field is limited to a fixed enum in
+     services/categorize/schema.py - the model cannot invent a category. This
+     also blocks prompt injection (a hostile merchant name cannot forge a
+     category).
+   * Only the description text is sent - never amounts, dates or balances.
+   * Failure handling (llm_categorizer.py line 138): a network/auth/malformed
+     response leaves rows "Uncategorized" - it never crashes the upload.
+   * Client is built at upload_state.py line 49: ClaudeCategorizer(Anthropic()).
+
+ DEBUG
+ -----
+   Breakpoint at llm_categorizer.py line 116 (the filter) and line 122 (the
+   call). Debug tests/categorize/test_llm_categorizer.py (uses a mock client -
+   no API key needed).
+
+
+===============================================================================
+ FLOW 2 - DASHBOARD BRIEFING
+===============================================================================
+
+ TRIGGER: the Dashboard page loads (its on_load handler).
+
+ The engine computes the figures first; the briefing just phrases them in
+ 2-4 sentences.
+
+ START -> END
+ ------------
+
+   Open Dashboard
+    |
+    +- finance_app/pages/dashboard.py line 274  on_load = [check_auth, load_dashboard]
+         |
+         +- finance_app/state/dashboard_state.py line 248  load_dashboard()
+              - compute_dashboard(...)      engine figures (deterministic)
+              - line 295  build BriefingContext (already-formatted numbers)
+              - line 302  generate_briefing(context)
+                   services/narrate/briefing.py line 157  generate_briefing()
+                     - line 167  if ANTHROPIC_API_KEY unset -> fallback  (returns here)
+                     - line 91   _facts_block(context) -> "<FACTS> ...numbers... </FACTS>"
+                     - line 178  client.messages.create(...)  <=== CLAUDE CALL (Opus)
+                     - line 196  extract the text
+                     - line 203  on any error -> fallback briefing
+
+ KEY FACTS
+ ---------
+   * Fires on EVERY Dashboard load - there is no content filter (unlike
+     categorization). Opening the Dashboard 5 times = 5 Claude calls.
+   * The model may only COPY numbers from the <FACTS> block - the system prompt
+     forbids it from deriving, summing or rounding any figure.
+   * Prompt-injection seam: user-derived text (merchant/insight strings) enters
+     as delimited DATA inside the user turn, never in the system prompt.
+   * Skips the call when: no API key (line 167), no data, or an error -> the
+     dashboard shows deterministic fallback prose instead.
+
+ DEBUG
+ -----
+   Breakpoint at briefing.py line 178 (call) and line 91 (facts). Debug
+   tests/narrate/test_briefing.py.
+   NOTE: live with an empty key it stops at line 167 (fallback) and never
+   reaches line 178.
+
+
+===============================================================================
+ FLOW 3 - INSIGHTS NARRATION   (IMPORTANT: detect first, then narrate)
+===============================================================================
+
+ TRIGGER: the Insights page loads (its on_load runs the insights sync).
+
+ *** The LLM does NOT analyse your data or "generate insights". ***
+ Deterministic Python detectors FIND the patterns. Claude is called only to
+ write each detected pattern as a sentence.
+
+ START -> END
+ ------------
+
+   Open Insights
+    |
+    +- Insights page on_load -> insights sync
+         finance_app/state/insights_bridge.py
+         |
+         +- load_insight_context(...)     transactions + commitments -> detector input
+         |
+         +- run_all_detectors(context)                  [DETECT - pure Python, NO LLM]
+         |     services/engine/insights/detectors.py
+         |       - contains NO anthropic import anywhere in the package
+         |       - finds: post-payday spike, zombie subscriptions,
+         |         death-by-small-purchases, weekend-vs-weekday pace,
+         |         upcoming-commitment collision, commitments-covered
+         |
+         +- for each detected candidate:                [NARRATE - only when needed]
+              - line 301  existing insight & materially changed?
+              |             -> generate_insight_narration()
+              - line 301  unchanged / dismissed-unchanged?
+              |             -> skip (reuse the narration already saved in the DB)
+              - line 329  brand-new insight?
+                            -> generate_insight_narration()
+                   services/narrate/insight_narrator.py line 429
+                     - line 442  if ANTHROPIC_API_KEY unset -> fallback  (returns here)
+                     - line 463  _facts_block(input)  = only the PATTERN's facts and
+                     |            evidence points - NOT the raw transactions
+                     - line 453  client.messages.create(...)  <=== CLAUDE CALL (Opus)
+                     - line 468  parse the Observation->Evidence->Explanation->Action text
+                     - line 472  SEBI guard: append "This is not investment advice."
+                                 if the topic is regulated
+
+ KEY FACTS
+ ---------
+   * Detection is 100% deterministic - proven by the detectors having no
+     anthropic/claude import. The numbers and which patterns exist are decided
+     by code, not the model.
+   * Narration is CACHED in the DB (the Insight row's observation, etc.). A new
+     Claude call happens only for a NEW pattern or one whose numbers MATERIALLY
+     CHANGED (insights_bridge.py line 301). Otherwise the stored text is reused
+     (no call).
+   * What is sent to Claude: the detected pattern's name + evidence points -
+     NOT the raw transaction list.
+   * Adding a commitment can trigger a new call, but only for the two
+     commitment-based insights (collision / covered) and only if the number
+     materially changed.
+
+ DEBUG
+ -----
+   The call: breakpoint insight_narrator.py line 453. Debug
+   tests/narrate/test_insight_narrator.py.
+   The detect-vs-cache decision: breakpoint insights_bridge.py line 301 and 329.
+
+
+===============================================================================
+ FLOW 4 - COPILOT CHAT   (streaming + read-only tools)
+===============================================================================
+
+ TRIGGER: the user sends a message on the Copilot page. Also: opening the page
+ restores the previous chat history.
+
+ The model can request READ-ONLY tools to fetch real data, then answers - so it
+ never invents figures.
+
+ START -> END
+ ------------
+
+   -- Open Copilot page (restore history) --
+   finance_app/pages/copilot.py line 241  on_load = [check_auth, load_history]
+     +- finance_app/state/copilot_state.py line 136  load_history()
+          - line 167  SELECT * FROM chat_messages WHERE user_id=? ORDER BY timestamp
+          - line 171  -> self.messages   (past conversation restored; empty for a
+                                           brand-new user)
+
+   -- Send a question --
+   finance_app/state/copilot_state.py line 227  send_message()
+     - line 280  add your bubble to self.messages         (shown instantly)
+     - line 290  SAVE your turn -> chat_messages DB
+     - line 303  api_messages = [ALL prior turns] + [new question]
+     |           (**the whole history is re-sent every time**)
+     - line 315  astream_events(api_messages, data_factory=open_copilot_data)
+          services/narrate/copilot.py line 112  astream_events()
+            - line 137  build AsyncAnthropic client
+            |
+            - ROUND 1  line 149  client.messages.stream(system=_SYSTEM,
+            |                                            tools=TOOL_SCHEMAS,
+            |                                            messages=history)
+            |            <=== CLAUDE CALL #1   (streams tokens live)
+            |       +- line 160  did the model request a tool?
+            |             +- YES -> line 174  run_tool()  -> queries the DB
+            |                       (user-scoped) -> real numbers
+            |                       line 186  append the tool result -> loop
+            |
+            - ROUND 2  line 149  client.messages.stream(... now with tool results ...)
+            |            <=== CLAUDE CALL #2   (streams the final answer)
+            |
+            - line 200  yield trace event   -> "Based on: ..." source chips
+            - line 212  finally: yield done  (ALWAYS - the browser never hangs)
+     |
+     +- back in send_message(), consuming the events:
+          - line 322  token -> streaming_content grows (answer types out live)
+          - line 341  done  -> append the assistant message to self.messages
+          - line 367  SAVE the assistant reply -> chat_messages DB
+
+ THE FIRST QUESTION (no history yet)
+ -----------------------------------
+   On question #1 the history is empty, so api_messages is just:
+       [ {"role":"user", "content": your first question} ]
+   BUT the model is never without context - the SYSTEM PROMPT and the TOOLS are
+   ALWAYS sent, on every request including the first. From question #2 onward the
+   previous Q&A is prepended and the list simply grows.
+
+ KEY FACTS
+ ---------
+   * The model is STATELESS - the app is the memory. Every question re-sends the
+     entire conversation (line 303).
+   * TWO calls per question: call #1 lets the model pick tools; your code runs
+     them; call #2 answers with the results. If the model answers directly with
+     no tool, it is one call.
+   * Read-only tools only (services/narrate/tools.py): get_safe_to_spend,
+     get_confidence_score, query_transactions, get_spending_by_category,
+     get_upcoming_commitments, get_spending_trend, ... Each is scoped to the
+     user; there is NO write tool.
+   * Answers about money come strictly from the DB via these tools; four
+     hardcoded honesty rules forbid inventing figures.
+   * History lives in two places: the chat_messages DB table (persistent,
+     per-user) and self.messages (in-memory, drives the UI + the request).
+   * Unlike flows 2 and 3, there is no pre-check of the key: the call at line 149
+     is attempted even with an empty key, then fails into the error event. A real
+     key is required for a real round-trip.
+
+ DEBUG
+ -----
+   Breakpoints: copilot_state.py line 303 (the assembled history),
+   copilot.py line 149 (the Claude call - hits TWICE), copilot.py line 174
+   (tool execution). Debug tests/narrate/test_copilot_stream.py (mock client).
+
+
+===============================================================================
+ APPENDIX - MODEL ROUTING & FALLBACKS
+===============================================================================
+
+   Model IDs (Haiku / Opus / Sonnet cost lever) : services/narrate/config.py
+   Category enum (limits Tier-2 output)         : services/categorize/schema.py
+   Copilot read-only tools                      : services/narrate/tools.py
+
+   Where the Anthropic client is built (services never build their own):
+       upload_state.py line 49
+       briefing.py line 175
+       insight_narrator.py line 450
+       copilot.py line 137
+
+   Debug tests (mock client, no API key needed):
+       tests/categorize/test_llm_categorizer.py
+       tests/narrate/test_briefing.py
+       tests/narrate/test_insight_narrator.py
+       tests/narrate/test_copilot_stream.py
+
+===============================================================================
+ END
+===============================================================================

@@ -1,0 +1,42 @@
+===============================================================================
+ AI (CLAUDE) FLOWS - SHORT SUMMARY
+===============================================================================
+
+ The app uses AI in 4 places. The app does all the math and finds all the
+ patterns itself. The AI only SORTS things and WRITES text - it never invents
+ your numbers.
+
+
+ 1. SORTING TRANSACTIONS  (on statement upload)
+    Simple rules label the transactions they recognise (Swiggy -> Food, etc.).
+    Only the unknown ones are sent to the AI - all together in one request - to
+    get a category. If nothing is unknown, the AI isn't used.
+
+ 2. DASHBOARD SUMMARY  (on opening the Dashboard)
+    The app calculates your figures, then asks the AI to write them into a calm
+    2-3 sentence summary. Happens every time you open the Dashboard.
+
+ 3. INSIGHTS  (on opening the Insights page)
+    The APP finds the spending patterns (spike, forgotten subscription, etc.) -
+    NOT the AI. The AI is only asked to write each pattern into a short note,
+    which is then saved. It runs again only for new or changed patterns.
+
+ 4. CHAT / COPILOT  (on asking a question)
+    The AI answers your questions. It looks up your real data (read-only) instead
+    of guessing. It has no memory, so the app re-sends the whole conversation
+    each time. First question = just that question + the AI's instructions/tools.
+
+
+ -----------------------------------------------------------------------------
+   PLACE                  WHAT THE AI DOES              WHEN AI IS USED
+   --------------------   ---------------------------   --------------------
+   1. Upload statement    labels unknown transactions   only if any unknown
+   2. Dashboard summary   writes the summary            every open
+   3. Insights            writes up found patterns      new/changed only
+   4. Chat (Copilot)      answers using real data       every question
+ -----------------------------------------------------------------------------
+
+   GOLDEN RULE: The app does the math and finds the patterns.
+                The AI only sorts and writes. Your numbers are always real.
+
+===============================================================================
