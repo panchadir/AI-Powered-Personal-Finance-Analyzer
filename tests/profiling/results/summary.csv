@@ -1,0 +1,93 @@
+scenario,rows,function,cold_ms,p50_ms,max_ms,sql_queries
+baseline_seeded,24,engine_bridge.load_transactions,1.53,1.35,1.68,1
+baseline_seeded,24,engine_bridge.compute_dashboard,8.27,4.52,6.03,3
+baseline_seeded,24,engine_bridge.detect_commitment_candidates,3.02,2.3,3.12,2
+baseline_seeded,24,insights_bridge.load_insight_context,2.82,1.8,2.69,2
+baseline_seeded,24,engine.build_engine_input (pure),0.03,0.02,0.02,0
+baseline_seeded,24,engine.compute_safe_to_spend (pure),0.02,0.01,0.01,0
+baseline_seeded,24,engine.compute_confidence_score (pure),0.02,0.0,0.01,0
+baseline_seeded,24,engine.detect_recurring_commitments (pure),0.04,0.02,0.03,0
+baseline_seeded,24,insights.run_all_detectors (pure),0.14,0.09,0.13,0
+baseline_seeded,24,categorize.categorize_rules (pure),0.4,0.39,0.41,0
+scale,100,engine_bridge.load_transactions,6.06,3.23,3.86,1
+scale,100,engine_bridge.compute_dashboard,8.89,4.96,6.11,3
+scale,100,engine_bridge.detect_commitment_candidates,5.04,3.77,5.05,2
+scale,100,insights_bridge.load_insight_context,3.93,3.79,4.15,2
+scale,100,insights_bridge.refresh_insights (steady-state),10.45,9.83,10.63,12
+scale,100,"insights_bridge.refresh_insights (first run, inserts)",38.36,38.36,38.36,26
+scale,100,engine.build_engine_input (pure),0.08,0.06,0.14,0
+scale,100,engine.compute_safe_to_spend (pure),0.01,0.01,0.01,0
+scale,100,engine.compute_confidence_score (pure),0.02,0.0,0.01,0
+scale,100,engine.detect_recurring_commitments (pure),0.16,0.09,0.11,0
+scale,100,insights.run_all_detectors (pure),0.6,0.54,0.67,0
+scale,100,categorize.categorize_rules (pure),1.42,1.31,1.35,0
+scale,100,analytics.spending_by_category (pure),0.08,0.05,0.06,0
+scale,100,analytics.monthly_spend (pure),0.07,0.05,0.06,0
+scale,100,ingestion.persist_transactions (50 new rows vs existing),4.28,2.74,2.88,1
+scale,1000,engine_bridge.load_transactions,15.15,16.18,80.02,1
+scale,1000,engine_bridge.compute_dashboard,21.17,21.71,92.35,3
+scale,1000,engine_bridge.detect_commitment_candidates,19.28,18.0,20.36,2
+scale,1000,insights_bridge.load_insight_context,16.37,17.49,19.31,2
+scale,1000,insights_bridge.refresh_insights (steady-state),26.52,27.76,88.07,11
+scale,1000,"insights_bridge.refresh_insights (first run, inserts)",46.49,46.49,46.49,23
+scale,1000,engine.build_engine_input (pure),0.22,0.22,0.28,0
+scale,1000,engine.compute_safe_to_spend (pure),0.03,0.01,0.01,0
+scale,1000,engine.compute_confidence_score (pure),0.01,0.0,0.01,0
+scale,1000,engine.detect_recurring_commitments (pure),1.01,0.8,0.85,0
+scale,1000,insights.run_all_detectors (pure),4.7,4.58,6.71,0
+scale,1000,categorize.categorize_rules (pure),21.02,15.98,18.0,0
+scale,1000,analytics.spending_by_category (pure),0.71,0.57,0.6,0
+scale,1000,analytics.monthly_spend (pure),0.78,0.64,0.73,0
+scale,1000,ingestion.persist_transactions (50 new rows vs existing),20.07,19.68,80.87,1
+scale,5000,engine_bridge.load_transactions,149.2,136.76,158.25,1
+scale,5000,engine_bridge.compute_dashboard,82.34,147.44,163.36,3
+scale,5000,engine_bridge.detect_commitment_candidates,150.26,169.4,173.36,2
+scale,5000,insights_bridge.load_insight_context,90.45,172.68,187.92,2
+scale,5000,insights_bridge.refresh_insights (steady-state),202.92,193.02,238.61,11
+scale,5000,"insights_bridge.refresh_insights (first run, inserts)",165.61,165.61,165.61,23
+scale,5000,engine.build_engine_input (pure),1.27,1.23,1.6,0
+scale,5000,engine.compute_safe_to_spend (pure),0.04,0.01,0.01,0
+scale,5000,engine.compute_confidence_score (pure),0.02,0.0,0.01,0
+scale,5000,engine.detect_recurring_commitments (pure),6.22,5.41,5.88,0
+scale,5000,insights.run_all_detectors (pure),28.05,28.68,31.19,0
+scale,5000,categorize.categorize_rules (pure),58.92,59.04,68.03,0
+scale,5000,analytics.spending_by_category (pure),3.27,2.52,2.56,0
+scale,5000,analytics.monthly_spend (pure),3.19,3.22,3.53,0
+scale,5000,ingestion.persist_transactions (50 new rows vs existing),167.97,149.62,152.56,1
+scale,20000,engine_bridge.load_transactions,986.82,538.28,711.92,1
+scale,20000,engine_bridge.compute_dashboard,605.35,544.28,641.33,3
+scale,20000,engine_bridge.detect_commitment_candidates,771.94,556.71,649.83,2
+scale,20000,insights_bridge.load_insight_context,516.37,570.46,637.32,2
+scale,20000,insights_bridge.refresh_insights (steady-state),888.59,795.57,992.9,11
+scale,20000,"insights_bridge.refresh_insights (first run, inserts)",959.74,959.74,959.74,23
+scale,20000,engine.build_engine_input (pure),7.36,5.17,7.37,0
+scale,20000,engine.compute_safe_to_spend (pure),0.04,0.01,0.01,0
+scale,20000,engine.compute_confidence_score (pure),0.02,0.0,0.01,0
+scale,20000,engine.detect_recurring_commitments (pure),22.05,22.46,25.01,0
+scale,20000,insights.run_all_detectors (pure),118.31,113.85,129.47,0
+scale,20000,categorize.categorize_rules (pure),230.52,264.56,326.73,0
+scale,20000,analytics.spending_by_category (pure),15.41,14.69,15.87,0
+scale,20000,analytics.monthly_spend (pure),13.04,13.59,14.02,0
+scale,20000,ingestion.persist_transactions (50 new rows vs existing),620.09,551.59,606.85,1
+composite_handler,100,"dashboard_db_path (no LLM, no sleep)",19.01,7.49,8.19,7
+composite_handler,100,insights_db_path first run (no LLM),37.2,37.2,37.2,26
+composite_handler,1000,"dashboard_db_path (no LLM, no sleep)",101.44,31.92,97.91,7
+composite_handler,1000,insights_db_path first run (no LLM),47.9,47.9,47.9,23
+composite_handler,5000,"dashboard_db_path (no LLM, no sleep)",219.0,215.93,284.61,7
+composite_handler,5000,insights_db_path first run (no LLM),201.3,201.3,201.3,23
+composite_handler,20000,"dashboard_db_path (no LLM, no sleep)",1075.87,1017.48,1074.01,7
+composite_handler,20000,insights_db_path first run (no LLM),609.4,609.4,609.4,23
+pdf_parse,65,parse_statement PDF 5p,592.51,552.96,596.08,0
+pdf_parse,130,parse_statement PDF 10p,1132.02,1143.76,1230.76,0
+pdf_parse,260,parse_statement PDF 20p,2207.61,2238.89,2305.11,0
+pdf_parse,520,parse_statement PDF 40p,4687.87,4500.73,4503.88,0
+pdf_parse,780,parse_statement PDF 60p,7178.81,7094.72,7247.82,0
+llm_live,100,"generate_briefing (Opus, blocking)",3698.1,3698.1,5008.8,
+llm_live,100,"generate_insight_narration (Opus, blocking, x1)",4604.9,4604.9,5047.8,
+llm_live,100,"llm_categorizer.categorize (Haiku, 15-txn batch)",7611.5,7611.5,9326.0,
+llm_live,100,copilot TTFT [How much can I safely spend toda],,1666.6,1666.6,
+llm_live,100,copilot FULL [How much can I safely spend toda],,10436.9,10436.9,
+llm_live,100,copilot TTFT [What are my biggest spending cat],,1749.2,1749.2,
+llm_live,100,copilot FULL [What are my biggest spending cat],,9560.1,9560.1,
+llm_live,100,copilot TTFT [Hi],,2108.2,2108.2,
+llm_live,100,copilot FULL [Hi],,3930.8,3930.8,

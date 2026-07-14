@@ -1,0 +1,292 @@
+{
+  "phase": "scale",
+  "user_id": 2,
+  "rows": 5000,
+  "sentinel_overhead_ms": {
+    "n": 10,
+    "min": 0.81,
+    "p50": 1.03,
+    "max": 1.48,
+    "mean": 1.06
+  },
+  "results": [
+    {
+      "handler": "DashboardState.load_dashboard",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "calls generate_briefing (LLM) on every invocation",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 3776.0,
+        "p50": 5993.2,
+        "p95": 10965.7,
+        "max": 11518.2,
+        "mean": 7095.8,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "safe_to_spend='\u20b949,000' briefing=yes(375ch)",
+        "cold_first_call_ms": 11518.2,
+        "warm_p50": 4884.6,
+        "warm_max": 5993.2,
+        "first_delta_p50": 303.6
+      },
+      "samples": [
+        {
+          "ms": 11518.164262990467,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b949,000' briefing=yes(375ch)",
+          "deltas": 3,
+          "first_delta_ms": 1128.3290629944531
+        },
+        {
+          "ms": 5993.165972002316,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b949,000' briefing=yes(393ch)",
+          "deltas": 3,
+          "first_delta_ms": 303.5792599985143
+        },
+        {
+          "ms": 3775.958512997022,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b949,000' briefing=yes(448ch)",
+          "deltas": 3,
+          "first_delta_ms": 299.1986350098159
+        }
+      ]
+    },
+    {
+      "handler": "TransactionsState.load_transactions",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 10,
+        "min": 305.4,
+        "p50": 437.2,
+        "p95": 844.2,
+        "max": 1151.7,
+        "mean": 489.3,
+        "verified": 10,
+        "pass": true,
+        "breach": "",
+        "evidence": "5000 rows",
+        "cold_first_call_ms": 1151.7,
+        "warm_p50": 436.1,
+        "warm_max": 468.3,
+        "first_delta_p50": 422.1
+      },
+      "samples": [
+        {
+          "ms": 1151.6875050001545,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 3,
+          "first_delta_ms": 1.921627001138404
+        },
+        {
+          "ms": 435.3359630040359,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 435.1101810025284
+        },
+        {
+          "ms": 462.6606340025319,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 462.3562050110195
+        },
+        {
+          "ms": 409.28495999833103,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 409.0774039941607
+        },
+        {
+          "ms": 436.0960340127349,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 435.71244600752834
+        },
+        {
+          "ms": 443.31678000162356,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 334.9730209884001
+        },
+        {
+          "ms": 305.4299970099237,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 305.20789200090803
+        },
+        {
+          "ms": 468.34488499735016,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 468.08253999915905
+        },
+        {
+          "ms": 342.84814599959645,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 342.6139680086635
+        },
+        {
+          "ms": 438.2045649981592,
+          "ok": true,
+          "evidence": "5000 rows",
+          "deltas": 2,
+          "first_delta_ms": 437.9657370009227
+        }
+      ]
+    },
+    {
+      "handler": "InsightsState.load_insights",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "refresh_insights: LLM only for new/changed patterns",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 240.9,
+        "p50": 245.6,
+        "p95": 11697.0,
+        "max": 12969.4,
+        "mean": 4485.3,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "cards=1 wins=2 has_data=True",
+        "cold_first_call_ms": 12969.4,
+        "warm_p50": 243.2,
+        "warm_max": 245.6,
+        "first_delta_p50": 240.5
+      },
+      "samples": [
+        {
+          "ms": 12969.364238000708,
+          "ok": true,
+          "evidence": "cards=1 wins=2 has_data=True",
+          "deltas": 3,
+          "first_delta_ms": 1.8260659999214113
+        },
+        {
+          "ms": 245.59380699065514,
+          "ok": true,
+          "evidence": "cards=1 wins=2 has_data=True",
+          "deltas": 2,
+          "first_delta_ms": 245.08185200102162
+        },
+        {
+          "ms": 240.86760700447485,
+          "ok": true,
+          "evidence": "cards=1 wins=2 has_data=True",
+          "deltas": 2,
+          "first_delta_ms": 240.4575809923699
+        }
+      ]
+    },
+    {
+      "handler": "CommitmentsState.load_commitments_page",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 10,
+        "min": 152.4,
+        "p50": 300.2,
+        "p95": 374.2,
+        "max": 425.3,
+        "mean": 284.0,
+        "verified": 10,
+        "pass": true,
+        "breach": "",
+        "evidence": "2 commitments protecting='\u20b90'",
+        "cold_first_call_ms": 152.4,
+        "warm_p50": 302.0,
+        "warm_max": 425.3,
+        "first_delta_p50": 299.0
+      },
+      "samples": [
+        {
+          "ms": 152.42734701314475,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 151.58256600261666
+        },
+        {
+          "ms": 289.0438109898241,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 288.3684539992828
+        },
+        {
+          "ms": 306.17745900235604,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 305.47622599988244
+        },
+        {
+          "ms": 425.2810460020555,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 424.6508649957832
+        },
+        {
+          "ms": 158.63413699844386,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 158.01108100276906
+        },
+        {
+          "ms": 292.86015800607856,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 291.966725999373
+        },
+        {
+          "ms": 298.2757770078024,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 296.893890001229
+        },
+        {
+          "ms": 311.7228569899453,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 309.70308399992064
+        },
+        {
+          "ms": 302.0440870022867,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 301.08127900166437
+        },
+        {
+          "ms": 303.07144099788275,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 302.04342400247697
+        }
+      ]
+    }
+  ]
+}

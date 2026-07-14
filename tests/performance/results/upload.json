@@ -1,0 +1,51 @@
+{
+  "phase": "upload",
+  "rows_after": 32,
+  "results": [
+    {
+      "handler": "UploadState.handle_upload",
+      "method": "HTTP POST /_upload (streamed deltas)",
+      "note": "parse_statement + Tier-1 rules + Tier-2 Claude categorizer + bulk INSERT",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 5577.9,
+        "p50": 6086.8,
+        "p95": 6224.4,
+        "max": 6239.7,
+        "mean": 5968.2,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "HTTP 200, 2207B streamed",
+        "cold_first_call_ms": 6239.7,
+        "warm_p50": 5832.4,
+        "warm_max": 6086.8,
+        "first_delta_p50": null
+      },
+      "samples": [
+        {
+          "ms": 6239.723423001124,
+          "ok": true,
+          "evidence": "HTTP 200, 2207B streamed",
+          "deltas": 9,
+          "first_delta_ms": null
+        },
+        {
+          "ms": 5577.933274995303,
+          "ok": true,
+          "evidence": "HTTP 200, 2205B streamed",
+          "deltas": 9,
+          "first_delta_ms": null
+        },
+        {
+          "ms": 6086.795494004036,
+          "ok": true,
+          "evidence": "HTTP 200, 2205B streamed",
+          "deltas": 9,
+          "first_delta_ms": null
+        }
+      ]
+    }
+  ]
+}

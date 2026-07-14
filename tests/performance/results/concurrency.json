@@ -1,0 +1,76 @@
+{
+  "phase": "concurrency",
+  "rows": 24,
+  "no_llm_event_loop_test": {
+    "handler": "CommitmentsState.load_commitments_page (no LLM, pure sync DB)",
+    "serial_p50": 13.4,
+    "serial_ms": [
+      12.2,
+      12.5,
+      13.4,
+      13.5,
+      16.1
+    ],
+    "concurrent_n": 10,
+    "concurrent_ms": [
+      90.2,
+      90.3,
+      90.4,
+      92.4,
+      92.5,
+      92.6,
+      92.6,
+      92.7,
+      92.8,
+      92.9
+    ],
+    "concurrent_p50": 92.5,
+    "concurrent_max": 92.9,
+    "wall_ms": 93.3,
+    "degradation_x": 6.92,
+    "verified": 10
+  },
+  "serial_load_dashboard_ms": [
+    3420.4,
+    3442.9,
+    3576.6,
+    4473.9,
+    5123.7
+  ],
+  "concurrent_load_dashboard": {
+    "n": 10,
+    "ms": [
+      4453.4,
+      4465.2,
+      4574.2,
+      4589.5,
+      4641.6,
+      4728.0,
+      4774.3,
+      5047.4,
+      5067.1,
+      6154.1
+    ],
+    "p50": 4684.8,
+    "max": 6154.1,
+    "wall_ms": 6154.9,
+    "verified": 10,
+    "serial_p50": 3576.6,
+    "degradation_x": 1.31
+  },
+  "under_llm_load": {
+    "send_message_ms": 4147.4,
+    "send_message_verified": true,
+    "evidence": "8 msgs, streamed, reply=\"I ran into a problem and couldn't finish that response.\"",
+    "load_dashboard_ms": [
+      3867.0,
+      3881.4,
+      3881.5,
+      3881.5,
+      3882.8,
+      3895.9
+    ],
+    "load_dashboard_p50": 3881.5,
+    "load_dashboard_max": 3895.9
+  }
+}

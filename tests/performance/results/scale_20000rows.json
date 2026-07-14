@@ -1,0 +1,292 @@
+{
+  "phase": "scale",
+  "user_id": 2,
+  "rows": 20000,
+  "sentinel_overhead_ms": {
+    "n": 10,
+    "min": 0.8,
+    "p50": 1.03,
+    "max": 1.29,
+    "mean": 1.04
+  },
+  "results": [
+    {
+      "handler": "DashboardState.load_dashboard",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "calls generate_briefing (LLM) on every invocation",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 4260.3,
+        "p50": 4631.2,
+        "p95": 5329.0,
+        "max": 5406.5,
+        "mean": 4766.0,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "safe_to_spend='\u20b949,000' briefing=yes(391ch)",
+        "cold_first_call_ms": 5406.5,
+        "warm_p50": 4445.7,
+        "warm_max": 4631.2,
+        "first_delta_p50": 1077.7
+      },
+      "samples": [
+        {
+          "ms": 5406.549497987726,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b949,000' briefing=yes(391ch)",
+          "deltas": 3,
+          "first_delta_ms": 1973.7405889900401
+        },
+        {
+          "ms": 4260.2535670012,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b949,000' briefing=yes(383ch)",
+          "deltas": 3,
+          "first_delta_ms": 1070.5922579945764
+        },
+        {
+          "ms": 4631.162734003738,
+          "ok": true,
+          "evidence": "safe_to_spend='\u20b949,000' briefing=yes(388ch)",
+          "deltas": 3,
+          "first_delta_ms": 1077.6842180057429
+        }
+      ]
+    },
+    {
+      "handler": "TransactionsState.load_transactions",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 10,
+        "min": 1528.3,
+        "p50": 1744.3,
+        "p95": 2346.5,
+        "max": 2445.5,
+        "mean": 1837.5,
+        "verified": 10,
+        "pass": true,
+        "breach": "",
+        "evidence": "20000 rows",
+        "cold_first_call_ms": 2445.5,
+        "warm_p50": 1700.5,
+        "warm_max": 2225.5,
+        "first_delta_p50": 1682.6
+      },
+      "samples": [
+        {
+          "ms": 2445.5277469969587,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 3,
+          "first_delta_ms": 1.5406699967570603
+        },
+        {
+          "ms": 1672.6532860047882,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1665.0368480040925
+        },
+        {
+          "ms": 1700.490354996873,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1700.2267469943035
+        },
+        {
+          "ms": 1593.276435000007,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1593.0607529880945
+        },
+        {
+          "ms": 1580.109785994864,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1579.7580719954567
+        },
+        {
+          "ms": 1815.5093600071268,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1814.9997889995575
+        },
+        {
+          "ms": 1528.3320320013445,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1520.6135820044437
+        },
+        {
+          "ms": 1788.0575070012128,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 1787.7355520031415
+        },
+        {
+          "ms": 2025.0475010107039,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 2024.2260660015745
+        },
+        {
+          "ms": 2225.5080309987534,
+          "ok": true,
+          "evidence": "20000 rows",
+          "deltas": 2,
+          "first_delta_ms": 2225.220805994468
+        }
+      ]
+    },
+    {
+      "handler": "InsightsState.load_insights",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "refresh_insights: LLM only for new/changed patterns",
+      "error": "",
+      "stats": {
+        "n": 3,
+        "min": 955.3,
+        "p50": 1250.8,
+        "p95": 5317.4,
+        "max": 5769.2,
+        "mean": 2658.5,
+        "verified": 3,
+        "pass": false,
+        "breach": "p95+max",
+        "evidence": "cards=1 wins=2 has_data=True",
+        "cold_first_call_ms": 5769.2,
+        "warm_p50": 1103.1,
+        "warm_max": 1250.8,
+        "first_delta_p50": 954.7
+      },
+      "samples": [
+        {
+          "ms": 5769.232420003391,
+          "ok": true,
+          "evidence": "cards=1 wins=2 has_data=True",
+          "deltas": 3,
+          "first_delta_ms": 2.475079003488645
+        },
+        {
+          "ms": 1250.8044649875956,
+          "ok": true,
+          "evidence": "cards=1 wins=2 has_data=True",
+          "deltas": 2,
+          "first_delta_ms": 1249.9102809961187
+        },
+        {
+          "ms": 955.3360300051281,
+          "ok": true,
+          "evidence": "cards=1 wins=2 has_data=True",
+          "deltas": 2,
+          "first_delta_ms": 954.6724460087717
+        }
+      ]
+    },
+    {
+      "handler": "CommitmentsState.load_commitments_page",
+      "method": "socket.io /_event (real E2E round-trip)",
+      "note": "",
+      "error": "",
+      "stats": {
+        "n": 10,
+        "min": 1242.4,
+        "p50": 1313.7,
+        "p95": 1428.0,
+        "max": 1488.9,
+        "mean": 1322.1,
+        "verified": 10,
+        "pass": true,
+        "breach": "",
+        "evidence": "2 commitments protecting='\u20b90'",
+        "cold_first_call_ms": 1353.5,
+        "warm_p50": 1293.5,
+        "warm_max": 1488.9,
+        "first_delta_p50": 1311.7
+      },
+      "samples": [
+        {
+          "ms": 1353.4967419982422,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1352.3331309988862
+        },
+        {
+          "ms": 1277.082739994512,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1276.091303996509
+        },
+        {
+          "ms": 1338.7920590030262,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1337.2662970068632
+        },
+        {
+          "ms": 1269.227675991715,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1267.6970699976664
+        },
+        {
+          "ms": 1282.3919090005802,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1280.9069539944176
+        },
+        {
+          "ms": 1488.8836089958204,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1487.8219319944037
+        },
+        {
+          "ms": 1242.352007990121,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1239.667620990076
+        },
+        {
+          "ms": 1333.9318970101885,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1331.0756959981518
+        },
+        {
+          "ms": 1341.1894230084727,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1339.2351390066324
+        },
+        {
+          "ms": 1293.462254005135,
+          "ok": true,
+          "evidence": "2 commitments protecting='\u20b90'",
+          "deltas": 2,
+          "first_delta_ms": 1292.3386940092314
+        }
+      ]
+    }
+  ]
+}
