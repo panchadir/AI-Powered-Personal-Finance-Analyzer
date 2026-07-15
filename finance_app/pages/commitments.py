@@ -203,12 +203,6 @@ def _add_edit_modal() -> rx.Component:
                         aria_disabled=CommitmentsState.saving.to_string(),
                         type="button",
                     ),
-                    rx.el.button(
-                        "Cancel",
-                        on_click=CommitmentsState.close_modal,
-                        class_name="link",
-                        type="button",
-                    ),
                 ),
                 class_name="modal modal--commit",
             ),
@@ -262,7 +256,25 @@ def commitments() -> rx.Component:
         side_nav("dashboard"),
         rx.el.main(
             rx.el.div(
-                rx.el.h1("Commitments", class_name="commit-page-title"),
+                rx.el.div(
+                    rx.el.a(
+                        rx.el.svg(
+                            rx.el.path(d="M19 12H5M12 19l-7-7 7-7"),
+                            view_box="0 0 24 24",
+                            fill="none",
+                            stroke="currentColor",
+                            stroke_width="2.25",
+                            stroke_linecap="round",
+                            stroke_linejoin="round",
+                            class_name="commit-back-icon",
+                        ),
+                        href="/dashboard",
+                        class_name="commit-back-arrow",
+                        aria_label="Back to Dashboard",
+                    ),
+                    rx.el.h1("Commitments", class_name="commit-page-title"),
+                    class_name="commit-title-row",
+                ),
                 _impact_bar(),
                 _suggestions(),
                 rx.cond(

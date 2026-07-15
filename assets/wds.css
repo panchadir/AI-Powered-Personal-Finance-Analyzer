@@ -984,9 +984,16 @@ a { color: inherit; }
 .modal-close:hover { background: var(--gray-100); color: var(--ink); }
 
 /* ---- Commitments Management (02.1) ---- */
-/* Keeps the commitment list/form a focused reading width even inside the wide .dash column. */
-.commit-content { max-width: 960px; }
-.commit-page-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-lg) 0 var(--space-md); }
+/* Fills the wide .dash column instead of capping to a narrow reading width. */
+.commit-content { width: 100%; }
+.commit-title-row { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-lg) 0 var(--space-md); }
+.commit-back-arrow {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; color: var(--ink); text-decoration: none; border-radius: 50%;
+}
+.commit-back-arrow:hover { background: var(--gray-100); }
+.commit-back-icon { width: 20px; height: 20px; }
+.commit-page-title { font-size: var(--text-lg); font-weight: 600; margin: 0; }
 .commit-impact-bar {
   display: flex; flex-wrap: wrap; gap: var(--space-md);
   background: var(--primary-tint); border: 1px solid #d6ebe6; border-radius: var(--radius);
