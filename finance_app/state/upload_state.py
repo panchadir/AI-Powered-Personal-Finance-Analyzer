@@ -23,6 +23,8 @@ import asyncio
 import logging
 
 import reflex as rx
+import sqlmodel
+from pydantic import BaseModel
 from anthropic import Anthropic
 from sqlmodel import select
 
@@ -79,6 +81,15 @@ PARSE_STEPS = (
 # "Leave site?" confirmation (FR-2.10). Cleared the moment the parse finishes or fails.
 _ARM_LEAVE_GUARD = "window.onbeforeunload = function (e) { e.preventDefault(); e.returnValue = ''; return ''; };"
 _CLEAR_LEAVE_GUARD = "window.onbeforeunload = null;"
+
+
+class FileRow(BaseModel):
+    """Display-only snapshot of an uploaded file for the statements grid."""
+
+    id: int
+    filename: str
+    status: str
+    uploaded_at: str  # pre-formatted "DD Mon YYYY, HH:MM" for display
 
 
 def _ext_of(name: str) -> str:
@@ -144,6 +155,10 @@ class UploadState(AuthState):
         """Dashboard button is active if a fresh parse just finished OR prior uploads exist."""
         return self.summary_visible or self.has_prior_uploads
 
+    # Uploaded statements grid
+    uploaded_files: list[FileRow] = []
+    delete_error: str = ""
+
     @rx.event
     def reset_page(self):
         self.error = self.filename = self.active_step = ""
@@ -156,11 +171,65 @@ class UploadState(AuthState):
                 self.has_prior_uploads = session.exec(
                     select(UploadedFile).where(UploadedFile.user_id == user.id).limit(1)
                 ).first() is not None
+        self.delete_error = ""
 
     @rx.event
     def dismiss_ai_caveat(self):
         """Dismiss the Tier-2 failure caveat banner (Story 8.1 AC4)."""
         self.ai_caveat = False
+
+    @rx.event
+    def load_uploaded_files(self):
+        """Load the user's uploaded statements for the grid."""
+        with rx.session() as session:
+            user = user_for_token(session, self.auth_token)
+            if user is None:
+                self.uploaded_files = []
+                return
+            rows = session.exec(
+                sqlmodel.select(UploadedFile)
+                .where(UploadedFile.user_id == user.id)
+                .order_by(UploadedFile.uploaded_at.desc())
+            ).all()
+            self.uploaded_files = [
+                FileRow(
+                    id=r.id,
+                    filename=r.filename,
+                    status=r.status,
+                    uploaded_at=r.uploaded_at.strftime("%d %b %Y, %H:%M"),
+                )
+                for r in rows
+            ]
+
+    @rx.event
+    def delete_file(self, file_id: int):
+        """Delete an uploaded file and its transactions."""
+        self.delete_error = ""
+        try:
+            with rx.session() as session:
+                user = user_for_token(session, self.auth_token)
+                if user is None:
+                    return
+                file_row = session.exec(
+                    sqlmodel.select(UploadedFile).where(
+                        UploadedFile.id == file_id,
+                        UploadedFile.user_id == user.id,
+                    )
+                ).first()
+                if file_row is None:
+                    return
+                # Delete linked transactions first (no cascade defined in model)
+                session.exec(
+                    sqlmodel.delete(TxnModel).where(TxnModel.source_file_id == file_id)
+                )
+                session.delete(file_row)
+                session.commit()
+        except Exception:
+            log.exception("Failed to delete uploaded file id=%d", file_id)
+            self.delete_error = "Could not delete the statement. Please try again."
+            return
+        # Refresh the list after deletion
+        self.load_uploaded_files()
 
     @rx.event
     def logout(self):
@@ -311,5 +380,6 @@ class UploadState(AuthState):
         self.need_review = summary.need_review
         self.parsing = False  # always clear before showing summary (Finding 2 fix)
         self.summary_visible = True
+        self.load_uploaded_files()
         yield rx.call_script(_CLEAR_LEAVE_GUARD)
         yield rx.redirect("/dashboard")

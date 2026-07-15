@@ -13,7 +13,7 @@ from finance_app.state.upload_state import UPLOAD_ID, UploadState
 
 def _topbar() -> rx.Component:
     return rx.el.div(
-        rx.el.span("Step 1 of 3", class_name="step-indicator"),
+        rx.el.span(),
         rx.el.button(
             rx.el.span("⏻", class_name="ico", aria_hidden="true"),
             " Log out",
@@ -75,12 +75,6 @@ def _upload_zone() -> rx.Component:
                 class_name="upload-error",
                 role="alert",
             ),
-        ),
-        rx.el.a(
-            "Use a sample statement (demo)",
-            on_click=UploadState.use_sample,
-            class_name="link upload-sample",
-            cursor="pointer",
         ),
     )
 
@@ -149,7 +143,7 @@ def _ai_caveat_banner() -> rx.Component:
                 class_name="btn btn--ghost btn--sm",
                 aria_label="Dismiss AI categorisation warning",
             ),
-            class_name="needs-review-banner",  # amber tone — reuses existing WDS class
+            class_name="needs-review-banner",
             role="alert",
             aria_live="assertive",
             display="flex",
@@ -159,8 +153,67 @@ def _ai_caveat_banner() -> rx.Component:
     )
 
 
+def _status_badge(status: str) -> rx.Component:
+    return rx.el.span(
+        rx.cond(status == "parsed", "✓ Parsed",
+                rx.cond(status == "failed", "✗ Failed",
+                        rx.cond(status == "parsing", "⏳ Parsing", "Uploaded"))),
+        class_name=rx.cond(
+            status == "parsed", "stmt-badge stmt-badge--parsed",
+            rx.cond(status == "failed", "stmt-badge stmt-badge--failed", "stmt-badge"),
+        ),
+    )
+
+
+def _statements_grid() -> rx.Component:
+    """Grid of uploaded statements with delete action. Shown only when files exist."""
+    return rx.cond(
+        UploadState.uploaded_files.length() > 0,
+        rx.el.div(
+            rx.el.h2("Your uploaded statements", class_name="stmt-grid-title"),
+            rx.cond(
+                UploadState.delete_error != "",
+                rx.el.p(UploadState.delete_error, class_name="stmt-delete-error"),
+            ),
+            rx.el.div(
+                rx.el.div(
+                    rx.el.span("File", class_name="stmt-col stmt-col--file"),
+                    rx.el.span("Uploaded", class_name="stmt-col stmt-col--date"),
+                    rx.el.span("Status", class_name="stmt-col stmt-col--status"),
+                    rx.el.span("", class_name="stmt-col stmt-col--action"),
+                    class_name="stmt-row stmt-row--header",
+                ),
+                rx.foreach(
+                    UploadState.uploaded_files,
+                    lambda row: rx.el.div(
+                        rx.el.span(
+                            rx.el.span("📄", aria_hidden="true"),
+                            " ",
+                            row.filename,
+                            class_name="stmt-col stmt-col--file",
+                        ),
+                        rx.el.span(row.uploaded_at, class_name="stmt-col stmt-col--date"),
+                        rx.el.span(_status_badge(row.status), class_name="stmt-col stmt-col--status"),
+                        rx.el.span(
+                            rx.el.button(
+                                "Delete",
+                                on_click=UploadState.delete_file(row.id),
+                                class_name="stmt-delete-btn",
+                            ),
+                            class_name="stmt-col stmt-col--action",
+                        ),
+                        class_name="stmt-row",
+                    ),
+                ),
+                class_name="stmt-grid",
+            ),
+            class_name="stmt-grid-section",
+        ),
+    )
+
+
 @rx.page(route="/upload", title="Upload your statement · AI Financial Copilot",
-         on_load=[UploadState.check_auth, UploadState.reset_page])
+         on_load=[UploadState.check_auth, UploadState.reset_page, UploadState.load_uploaded_files])
 def upload() -> rx.Component:
     return rx.el.main(
         _topbar(),
@@ -180,5 +233,6 @@ def upload() -> rx.Component:
             ),
             margin_top="var(--space-lg)",
         ),
+        _statements_grid(),
         class_name="page--flow",
     )
