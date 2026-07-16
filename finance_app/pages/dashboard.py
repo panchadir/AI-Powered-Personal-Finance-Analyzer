@@ -96,11 +96,11 @@ def _hero_card() -> rx.Component:
     """Safe-to-Spend, freshness caveat, second layer, confidence chip, "Why?" (Story 5.1)."""
     return rx.el.section(
         rx.el.div(
-            rx.el.p("Safe to spend today", class_name="hero-label"),
+            rx.el.p("Safe to spend", class_name="hero-label"),
             rx.el.p(
                 DashboardState.safe_to_spend_today,
                 class_name="hero-amount",
-                aria_label="Safe to spend today: " + DashboardState.safe_to_spend_today,
+                aria_label="Safe to spend: " + DashboardState.safe_to_spend_today,
             ),
             # FR-4.7 / UX-DR4: the caveat lives on the card, not in a footer or tooltip.
             rx.el.p(DashboardState.freshness_caveat, class_name="hero-freshness"),
@@ -131,12 +131,6 @@ def _hero_card() -> rx.Component:
             # The second STS layer is its own row — never merged with today's figure (FR-4.5).
             rx.el.div(
                 rx.el.span(DashboardState.after_income_label, class_name="hero-after-label"),
-                rx.cond(
-                    DashboardState.has_income,
-                    rx.el.span(
-                        DashboardState.after_income_amount, class_name="hero-after-amount"
-                    ),
-                ),
                 class_name="hero-after",
             ),
             _confidence_chip(),

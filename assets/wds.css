@@ -479,8 +479,8 @@ a { color: inherit; }
      3-column grid (the label paragraph would otherwise land in the 1px separator column). */
   .hero-card--empty { display: block; }
 }
-.hero-label { font-size: var(--text-sm); font-weight: 500; color: var(--gray-600); margin: 0; }
-.hero-amount { font-size: var(--text-4xl); font-weight: 700; color: var(--ink); margin: var(--space-xs) 0 0; line-height: 1.05; letter-spacing: -0.03em; }
+.hero-label { font-size: var(--text-md); font-weight: 500; color: var(--gray-600); margin: 0; }
+.hero-amount { font-size: var(--text-4xl); font-weight: 700; color: var(--ink); margin: var(--space-md) 0 0; line-height: 1.05; letter-spacing: -0.03em; }
 .hero-freshness { font-size: var(--text-xs); color: var(--muted); margin: var(--space-xs) 0 0; }
 .hero-sep { height: 1px; background: #cfe6e0; margin: var(--space-md) 0; border: 0; }
 .hero-after { display: flex; align-items: baseline; justify-content: space-between; }
