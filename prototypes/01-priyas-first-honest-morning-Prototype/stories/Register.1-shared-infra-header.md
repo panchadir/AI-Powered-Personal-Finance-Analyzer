@@ -1,7 +1,7 @@
 # Story — Register § Section 1: Shared Infra + Page Shell + Header
 
 **View:** 01.1 Register · **Section:** 1 of 6 · **Est:** 20 min
-**Spec:** `_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md`
+**Spec:** UX Scenario 01.1 — Register (Priya's First Honest Morning)
 **Output:** `01.1-register.html` + `shared/styles.css`, `shared/format.js`, `shared/data.js`, `shared/nav.js`
 
 ---

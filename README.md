@@ -73,14 +73,7 @@ assets/             CSS design system (wds.css)
 
 ## Architecture decisions
 
-The full architecture decision log is at:
-
-```
-_bmad-output/planning-artifacts/architecture/
-  architecture-AI-Powered-Personal-Finance-Analyzer-2026-07-08/ARCHITECTURE-SPINE.md
-```
-
-Key decisions documented there:
+Key architecture decisions:
 
 - **AD-1** — No arithmetic outside `services/engine/`
 - **AD-2** — `services/` never imports `reflex` or `finance_app`

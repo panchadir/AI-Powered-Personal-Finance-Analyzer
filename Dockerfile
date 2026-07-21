@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Both frontend/ and backend/ must be importable by Python.
+ENV PYTHONPATH=/app/frontend:/app/backend
+
 # Install Python dependencies first (layer-cached unless requirements.txt changes).
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

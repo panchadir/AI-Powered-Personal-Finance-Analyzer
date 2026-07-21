@@ -2,7 +2,7 @@
 
 Interactive, **branded**, **desktop-web** prototype of the AI Financial Copilot (Scenario 01 golden path + Scenario 02 Commitments Management), built in WDS Phase 5 (Agentic Development → Prototyping). No backend — everything runs off a local demo dataset.
 
-**Desktop-only (Phase 1 MVP):** PRD open item X1 is resolved — this is a localhost, single-user desktop web app (1280px+ baseline). Mobile/responsive layout is an optional future-phase concern, not committed Phase-1 scope. See `_bmad-output/planning-artifacts/architecture/.../ARCHITECTURE-SPINE.md`.
+**Desktop-only (Phase 1 MVP):** PRD open item X1 is resolved — this is a localhost, single-user desktop web app (1280px+ baseline). Mobile/responsive layout is an optional future-phase concern, not committed Phase-1 scope.
 
 ---
 

@@ -18,7 +18,7 @@ demo: ## Build, start, and seed the demo (first-time or after a clean clone)
 		sleep 2; elapsed=$$((elapsed+2)); \
 		if [ $$elapsed -ge 120 ]; then echo "ERROR: container did not become ready after 120s." && exit 1; fi; \
 	done
-	docker compose exec app python scripts/seed_demo.py
+	docker compose exec app python backend/scripts/seed_demo.py
 	@echo ""
 	@echo "  Demo ready at http://localhost:3000"
 	@echo "  Login: demo@example.com / demodemo1"
@@ -26,12 +26,12 @@ demo: ## Build, start, and seed the demo (first-time or after a clean clone)
 
 # ── Reset demo data ────────────────────────────────────────────────────────────
 reset: ## Wipe the demo user's data and re-seed for a clean demo run
-	docker compose exec app python scripts/seed_demo.py --reset
+	docker compose exec app python backend/scripts/seed_demo.py --reset
 	@echo "Demo data reset. Login: demo@example.com / demodemo1"
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
 test: ## Run the engine unit tests (fast, no Docker needed)
-	pytest services/engine/
+	pytest backend/services/engine/
 
 test-all: ## Run the full test suite
 	pytest

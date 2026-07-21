@@ -1,6 +1,6 @@
 # Prototype Handoff — deltas from the specs
 
-Read this before acceptance testing or production development. The prototype faithfully implements the WDS page specs in `_bmad-output/C-UX-Scenarios/` (Scenarios 01 and 02), **with the deliberate decisions and divergences below**. These came from live review with ALPHA during the build.
+Read this before acceptance testing or production development. The prototype faithfully implements the UX scenario page specs (Scenarios 01 and 02), **with the deliberate decisions and divergences below**. These came from live review with ALPHA during the build.
 
 **2026-07-09 reconciliation:** the architecture and UX-Scenarios specs were updated to (1) resolve PRD X1 — MVP is **desktop-only** (1280px+, non-responsive; mobile/responsive is optional future-phase) — and (2) promote **Commitments Management (02.1)** from P2 to committed P1 scope, and commit the **Confidence Score Drill-In Panel** (epics.md Story 5.2). The prototype was updated to match: the sidebar is now the desktop-only 208px labeled rail everywhere (no mobile icon-rail variant), the Commitments Management page (`02.1-commitments-management.html`) is built and reachable from the sidebar and the Dashboard, and the Dashboard's confidence chip now opens a Drill-In panel instead of a plain tooltip. Several rows in the table below that were previously "not built" divergences are now resolved and have been removed; the rest still stand.
 

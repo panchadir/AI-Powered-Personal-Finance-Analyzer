@@ -16,9 +16,6 @@ reflex.db
 .gitignore
 
 # Dev/planning artifacts
-_bmad/
-_bmad-output/
-design-artifacts/
 docs/
 prototypes/
 *.log

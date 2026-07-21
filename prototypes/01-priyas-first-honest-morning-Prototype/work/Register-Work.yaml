@@ -6,7 +6,7 @@ metadata:
   view: Register
   page_number: "01.1"
   scenario: "01 - Priya's First Honest Morning"
-  spec: "_bmad-output/C-UX-Scenarios/01-priyas-first-honest-morning/01.1-register/01.1-register.md"
+  spec: "UX Scenario 01.1 - Register (Priya's First Honest Morning)"
   output_html: "01.1-register.html"
   visibility: Public
   device_compatibility: fully-responsive   # 375px -> 1920px

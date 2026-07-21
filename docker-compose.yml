@@ -32,7 +32,7 @@ services:
       - "8000:8000"
     volumes:
       # Persist compiled frontend — avoids full Node rebuild on every restart.
-      - reflex_web:/app/.web
+      - reflex_web:/app/frontend/.web
     env_file:
       - .env
 

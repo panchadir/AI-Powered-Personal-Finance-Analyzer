@@ -51,7 +51,8 @@ do
 done
 
 echo "Postgres ready. Running migrations..."
-alembic upgrade head
+alembic -c /app/backend/alembic.ini upgrade head
 
 echo "Starting Reflex..."
+cd /app/frontend
 exec reflex run --backend-host 0.0.0.0
